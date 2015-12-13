@@ -11,6 +11,10 @@ depincpath=icu:/usr/include
 depincpath=icu:/usr/local/opt/icu4c
 depfinish=icu
 
+incpaths=.
+
+headers=hbicu.ch
+
 {HBMK_HAS_ICU&HB_STATIC_ICU}cflags=-DU_STATIC_IMPLEMENTATION
 
 {HBMK_HAS_ICU}libs=${hb_name}

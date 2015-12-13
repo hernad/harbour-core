@@ -13,51 +13,50 @@ environment:
 # - HB_COMPILER: msvc
 # - HB_COMPILER: mingw64
   - HB_COMPILER: mingw
-    BINTRAY_APIKEY:
-      secure: FUQVzdqjaAvLYH/yTdL1rdtrVcAheHbK4YUvNNpvArR09vfkkuAk+8ntrg2MRYa2
-    BINTRAY_USER:
-      secure: jfLq1ApyVLNouxv07skhrg==
-    BINTRAY_PATH:
-      secure: +CyA1IIhoPpI7EY54BsRADDxb1V62HDWLSekCX4mTxk=
+    GITHUB_TOKEN:
+      secure: EAvrbP8pR3X0XMvu+PtEpAsTS5hh7jWZl5T+6sLOuCUqmyTLxNY8P2JPYMidRbpf
     VIRUSTOTAL_APIKEY:
       secure: TdJYONfrpH45DuyKxraVqgHYy25IQ/F8TKHzYf+u5zz1aiM2yR0YTMaGxyj2EMReEearSI9kD9D2ZykybSVEbRyEaotZlceUb2lPDKELl3M=
 install:
-- set VER_CURL=7.45.0
-- set VER_OPENSSL=1.0.2d
+- set VER_CURL=7.46.0
+- set VER_OPENSSL=1.0.2e
 - ps: rm alias:curl
+# Use the _native_ curl build provided by Git for Windows because the default,
+# msys one in 'usr\bin' fails in spectacular ways in the PATCH request.
+- set PATH=C:\Program Files\Git\mingw64\bin;%PATH%
 - mkdir C:\w\
 - curl -fsS https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/s/se/sevenzip/7-Zip/9.20/7za920.zip -o 7z.7z
-- openssl dgst -sha256 7z.7z | findstr /i /c:"2a3afe19c180f8373fa02ff00254d5394fec0349f5804e0ad2f6067854ff28ac"
+- openssl dgst -sha256 7z.7z | findstr /i /c:2a3afe19c180f8373fa02ff00254d5394fec0349f5804e0ad2f6067854ff28ac
 - 7z x -y -oC:\w\7z 7z.7z > nul
 - curl -fsS http://7zsfx.info/files/7zsd_150_2712.7z -o 7zsfx.7z
-- openssl dgst -sha256 7zsfx.7z | findstr /i /c:"e5a2a05997553cde6318149951da1e449b0fd277a6e671ac06bfde8572754739"
+- openssl dgst -sha256 7zsfx.7z | findstr /i /c:e5a2a05997553cde6318149951da1e449b0fd277a6e671ac06bfde8572754739
 - 7z x -y -oC:\w\7zsfx 7zsfx.7z > nul
 - curl -fsS -L --proto-redir =https https://fossies.org/windows/misc/upx391w.zip -o upx.zip
-- openssl dgst -sha256 upx.zip | findstr /i /c:"d7d4817f46d2616c209c46fb8bce44e4bec93ab5adef5e4dfc93ee879527be1b"
+- openssl dgst -sha256 upx.zip | findstr /i /c:d7d4817f46d2616c209c46fb8bce44e4bec93ab5adef5e4dfc93ee879527be1b
 - 7z e -y -oC:\w\upx upx.zip > nul
 #- ps: curl -fsS https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/5.2.0/threads-posix/dwarf/i686-5.2.0-release-posix-dwarf-rt_v4-rev0.7z -o mingw.7z
-#- openssl dgst -sha256 mingw.7z | findstr /i /c:"25de3b1164df7a3d06978900664462fa2f651036491291d90ca8870be451f439"
+#- openssl dgst -sha256 mingw.7z | findstr /i /c:25de3b1164df7a3d06978900664462fa2f651036491291d90ca8870be451f439
 #- ps: curl -fsS https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/5.2.0/threads-posix/seh/x86_64-5.2.0-release-posix-seh-rt_v4-rev0.7z -o mingw.7z
-#- openssl dgst -sha256 mingw.7z | findstr /i /c:"3876e8a73218f07761f0f2966725510dfc7294160ba728d1a0e6bdfca93f03f5"
+#- openssl dgst -sha256 mingw.7z | findstr /i /c:3876e8a73218f07761f0f2966725510dfc7294160ba728d1a0e6bdfca93f03f5
 - ps: curl -fsS https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/5.2.0/threads-posix/sjlj/x86_64-5.2.0-release-posix-sjlj-rt_v4-rev0.7z -o mingw.7z
-- openssl dgst -sha256 mingw.7z | findstr /i /c:"c0536c55a1d12882987afd0a9be377413eaf6cee105e921c949899fa9b308b35"
+- openssl dgst -sha256 mingw.7z | findstr /i /c:c0536c55a1d12882987afd0a9be377413eaf6cee105e921c949899fa9b308b35
 # Will unpack into C:\w\mingw64
 - 7z x -y -oC:\w\ mingw.7z > nul
 - curl -fsS -L --proto-redir =https https://dl.bintray.com/vszakats/generic/openssl-%VER_OPENSSL%-win32-mingw.7z -o openssl-win-mingw.7z
-- openssl dgst -sha256 openssl-win-mingw.7z | findstr /i /c:"4b3dca65875918c179f15d395046a35d3ff1a8bd7ee2875e0e8b1816e62cb5b4"
+- openssl dgst -sha256 openssl-win-mingw.7z | findstr /i /c:f9191a81fedbc42eae6249b838ffbab24e43ab17dcc47b7902bbacde4998b8ec
 - 7z x -y -oC:\w\ openssl-win-mingw.7z > nul
 - curl -fsS -L --proto-redir =https https://dl.bintray.com/vszakats/generic/openssl-%VER_OPENSSL%-win64-mingw.7z -o openssl-win-mingw64.7z
-- openssl dgst -sha256 openssl-win-mingw64.7z | findstr /i /c:"2450a81b59cbb57db40128fefea3d4a2bd6d00d24b97b7d1b96ced75e66d9ef6"
+- openssl dgst -sha256 openssl-win-mingw64.7z | findstr /i /c:82d25df66124ca94b3c52545a0cc3266f2db8f1bcc758709d922aaa32477f5c0
 - 7z x -y -oC:\w\ openssl-win-mingw64.7z > nul
 - curl -fsS -L --proto-redir =https https://dl.bintray.com/vszakats/generic/curl-%VER_CURL%-win32-mingw.7z -o curl-win-mingw.7z
-- openssl dgst -sha256 curl-win-mingw.7z | findstr /i /c:"de582e8eaf0280a63194d094af12120b2ef1a063dbb3739b3c6f3980a3bdf90e"
+- openssl dgst -sha256 curl-win-mingw.7z | findstr /i /c:fba8de622143023639c23530e91ff6d1b44eaae07cd33622d35bf6285a8d98c8
 - 7z x -y -oC:\w\ curl-win-mingw.7z > nul
 - curl -fsS -L --proto-redir =https https://dl.bintray.com/vszakats/generic/curl-%VER_CURL%-win64-mingw.7z -o curl-win-mingw64.7z
-- openssl dgst -sha256 curl-win-mingw64.7z | findstr /i /c:"97cfc7700d0f89dadb2c11e8f199f70c17d3b34d71302367c3bdea2317c1c4b0"
+- openssl dgst -sha256 curl-win-mingw64.7z | findstr /i /c:021a49f54f0ba1799d0386b2289ec1512a58a474d1ab1a9b1f0f162cf2542be8
 - 7z x -y -oC:\w\ curl-win-mingw64.7z > nul
 # Change to ISO date and 24-hour time format
-- reg add "HKCU\Control Panel\International" /v sShortDate /t REG_SZ /d "yyyy-MM-dd" /f
-- reg add "HKCU\Control Panel\International" /v sShortTime /t REG_SZ /d "HH:mm" /f
+- reg add "HKCU\Control Panel\International" /v sShortDate /t REG_SZ /d yyyy-MM-dd /f
+- reg add "HKCU\Control Panel\International" /v sShortTime /t REG_SZ /d HH:mm /f
 build_script:
 - set HB_SFX_7Z=C:\w\7zsfx\7zsd.sfx
 - set HB_DIR_7Z=C:\w\7z\
@@ -91,9 +90,7 @@ build_script:
 #- set HB_BUILD_CONTRIBS=no
 - set HB_INSTALL_3RDDYN=yes
 - set HB_BUILD_STRIP=bin
-- set HB_BUILD_DYN=no
 - set HB_BUILD_CONTRIB_DYN=yes
-- set HB_BUILD_OPTIM=yes
 - set HB_BUILD_PKG=yes
 - set HB_BUILD_POSTRUN=".\hbtest -noenv" ".\hbspeed --noenv --stdout"
 - set _HB_BUILD_PKG_ARCHIVE=no
@@ -114,11 +111,25 @@ build_script:
 #- set PATH=%_ORI_PATH%
 #- call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
 #- win-make.exe clean install HB_VERSION=%HB_VF%
-deploy_script:
 - call package\mpkg_win.bat
-- curl -fsS -X POST "https://www.virustotal.com/vtapi/v2/file/scan" --form apikey=%VIRUSTOTAL_APIKEY% --form file=@harbour-daily-win.7z.exe
-# NOTE: After 180 days the release version number should be deleted and recreated
-#       (along with download stats), otherwise Bintray will reject further updates 
-#       to it. Without publishing, the upload disappears in 6 days. Incrementing
-#       it fails too if the same filename exist under another version number.
-- curl -fsS -u "%BINTRAY_USER%:%BINTRAY_APIKEY%" -X PUT "https://api.bintray.com/content/%BINTRAY_PATH%/3.4.0dev/harbour-daily-win.7z.exe?override=1&publish=1" --data-binary @harbour-daily-win.7z.exe
+artifacts:
+- path: harbour-daily-win.7z.exe
+  name: pkg-win
+before_deploy:
+- cmd: 'curl -sS -H "Authorization: token %GITHUB_TOKEN%" -X PATCH https://api.github.com/repos/vszakats/harbour-core/git/refs/tags/v3.4.0dev -d @git_tag_patch.json'
+deploy:
+- provider: GitHub
+  auth_token: $(github_token)
+  tag: v3.4.0dev
+  release: 'Harbour 3.4.0dev daily'
+  description: 'Snapshot build generated after each commit.'
+  artifact: pkg-win
+  draft: false
+  prerelease: true
+  on:
+    branch: master
+    appveyor_repo_tag: false
+after_deploy:
+- curl -fsS -X POST https://www.virustotal.com/vtapi/v2/file/scan --form apikey=%VIRUSTOTAL_APIKEY% --form file=@harbour-daily-win.7z.exe
+build:
+  verbosity: detailed

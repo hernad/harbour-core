@@ -55,8 +55,8 @@
   with care - most existing sources are well-formatted, so make
   sure to only apply it to newly added or modified code sections)
 
-        $ uncrustify -c <harbour_dir>/bin/harbour.ucf <source{.c|.h}>
-        $ <harbour_dir>/bin/hbformat <source{.prg|.hb|.ch}>
+        $ uncrustify -c <harbour-dir>/bin/harbour.ucf <source{.c|.h}>
+        $ <harbour-dir>/bin/hbformat <source{.prg|.hb|.ch}>
 
 - Text editor setting for Harbour files
   - Encoding is either 7-bit ASCII or UTF-8, without [BOM](https://en.wikipedia.org/wiki/Byte_order_mark)
@@ -101,7 +101,7 @@ Evaluate these points before reporting an issue:
     tools or other Harbour versions when building Harbour. The surest way
     to achieve this is to leave only the C compiler directory in `PATH`:
 
-        set PATH=C:\<c_compiler_bin_dir>
+        set PATH=C:\<c-compiler-bin-dir>
 
     > If you use Harbour official binary distro on Windows, even above is
     > unnecessary and should be avoided.
@@ -132,18 +132,18 @@ Evaluate these points before reporting an issue:
 10. <a name="trbl-10"></a> Do not alter the directory layout and files in
     Harbour and 3rd party packages and tools (including C compilers).
 11. <a name="trbl-11"></a> If you are to report a build problem with
-    a Harbour application, all of the above points apply, plus make sure
+    a Harbour application, all the above points apply, plus make sure
     to use `hbmk2` with the `-trace` command-line option and redirect its
     output to a file (see above how). Also include your full command-line
     and any referenced build script in your report.
-    It's good idea to first remove all manual references to Harbour
+    It is good idea to first remove all manual references to Harbour
     core components from makefiles and custom environment. F.e. it's
     commom mistake to add C compiler header and/or lib dirs, Harbour core
     header and/or lib dirs, built-in constants to makefiles or environment.
     No such thing is necessary as all of these are automatically handled
     by `hbmk2`. IOW start simple and don't be overbusy with *fine-tuning*
     your configuration. If you need to, the problem is most probably
-    elsewhere. It's also good idea to try with latest Harbour revision
+    elsewhere. It's also good idea to try with the latest Harbour revision
     or Harbour's mainline branch first.
 12. <a name="trbl-12"></a> If you are to report a problem with Harbour
     itself, provide self-contained, minimal source code example. Do not use
@@ -160,13 +160,14 @@ Evaluate these points before reporting an issue:
     way.<br />
     Also make sure not to report multiple issues under a single GitHub Issue.<br />
     * See more on self-contained examples:
-      <http://sscce.org/>
+      * <http://sscce.org/>
+      * <https://stackoverflow.com/help/mcve>
     * See more on how to report issues in an effective and useful way:
       <http://www.chiark.greenend.org.uk/~sgtatham/bugs.html>
 13. <a name="trbl-13"></a> Please do not report warnings or bugs &ndash;
-    with the exception of build _errors_ &ndash; in 3rd party component
-    hosted inside the Harbour source tree. You can recognize these by their
-    source path, which always contains a subdirectory named `/3rd/`. Report
+    except of _build errors_ &ndash; in 3rd party component hosted inside
+    the Harbour source tree. You can recognize these by their source path,
+    which always contains a subdirectory named `/3rd/`. Report
     these to the maintainer(s) of the respective component instead.
 14. <a name="trbl-14"></a> If your example or report contains human readable
     text, use English only.
@@ -181,5 +182,5 @@ Evaluate these points before reporting an issue:
 
 
 ---
-This document Copyright &copy;&nbsp;2009&ndash;2015 Viktor Szakáts (vszakats.net/harbour)<br />
+This document Copyright &copy;&nbsp;2009&ndash;2016 Viktor Szakáts (vszakats.net/harbour)<br />
 [![Creative Commons Attribution-ShareAlike 4.0](https://rawgit.com/cc-icons/cc-icons/master/fonts/cc-icons-svg/small.by-sa.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
