@@ -1,3 +1,9 @@
+harbour (3.4.0-2) unstable; urgency=medium
+
+  * dch -i, new debian build system
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Sun, 13 Dec 2015 19:53:04 +0000
+
 harbour (3.4.0-1) unstable; urgency=low
 
   * 3.4.0-1
