@@ -1,3 +1,9 @@
+harbour (3.4.0-4) unstable; urgency=medium
+
+  * debian info 
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Sun, 13 Dec 2015 21:10:20 +0000
+
 harbour (3.4.0-3) unstable; urgency=medium
 
   * merge upstream master https://github.com/vszakats/harbour-core.git
