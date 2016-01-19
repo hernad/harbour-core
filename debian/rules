@@ -1,14 +1,8 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
-# Sample debian/rules that uses debhelper.
-# GNU copyright 1997 to 1999 by Joey Hess.
 
 # Uncomment this to turn on verbose mode.
-export DH_VERBOSE := 1
-
-ifeq ($(DH_VERBOSE),1)
-   export HB_BUILD_VERBOSE := yes
-endif
+export DH_VERBOSE=1
 
 export HB_INSTALL_PKG_ROOT := $(CURDIR)/debian/harbour
 export HB_INSTALL_BIN := $(HB_INSTALL_PKG_ROOT)/usr/bin
@@ -33,56 +27,10 @@ ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
    export HB_BUILD_OPTIM := no
 endif
 
-build: build-stamp
 
-build-stamp:
-	dh_testdir
-
-	$(MAKE)
-
-	touch build-stamp
-
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp configure-stamp
-
-	-$(MAKE) clean
-
-	dh_clean
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-
-	$(MAKE) install
+%:
+	dh $@ 
 
 
-# Build architecture-independent files here.
-binary-indep: build install
-# We have nothing to do by default.
-
-# Build architecture-dependent files here.
-binary-arch: build install
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs
-	dh_installdocs
-	dh_installexamples
-#	dh_install
-	dh_installman
-	dh_link
-	dh_strip --dbg-package=harbour-dbg
-	dh_compress
-	dh_fixperms
-#	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install configure
+override_dh_auto_install:
+	$(MAKE) DESTDIR=$$(pwd)/debian/harbour/usr/local install
