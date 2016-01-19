@@ -1,3 +1,5 @@
+#!/usr/bin/env hbmk2
+
 /* Copyright 2015 Viktor Szakats (vszakats.net/harbour) */
 
 /* Set timestamps for non-generated (repository) files
@@ -10,9 +12,9 @@
 // #define DEBUG
 
 #ifdef DEBUG
-   #translate _DEBUG( [<x,...>] ) => OutStd( <x> )
+   #translate _DEBUG( <x> ) => OutStd( __FILE__ + ": " + <x> + hb_eol() )
 #else
-   #translate _DEBUG( [<x,...>] ) =>
+   #translate _DEBUG( <x> ) =>
 #endif
 
 PROCEDURE Main( cMode )
@@ -20,7 +22,7 @@ PROCEDURE Main( cMode )
    LOCAL tmp, aFiles, file, cStdOut, tDate, tDateHEAD
    LOCAL cGitRoot, lShallow, cBinMask
 
-   _DEBUG( __FILE__ + ": BEGIN" + hb_eol() )
+   _DEBUG( "BEGIN" )
 
    SWITCH Lower( cMode := hb_defaultValue( cMode, "" ) )
    CASE "nl"
@@ -53,8 +55,8 @@ PROCEDURE Main( cMode )
       cGitRoot := hb_DirSepAdd( hb_DirSepToOS( hb_defaultValue( hb_PValue( 2 ), "." ) ) ) + ".git"
       IF hb_vfDirExists( cGitRoot )
 
-         _DEBUG( __FILE__ + ": cwd:", hb_cwd() + hb_eol() )
-         _DEBUG( __FILE__ + ": git:", cGitRoot + hb_eol() )
+         _DEBUG( "cwd: " + hb_cwd() )
+         _DEBUG( "git: " + cGitRoot )
 
          hb_processRun( "git" + ;
             " " + FNameEscape( "--git-dir=" + cGitRoot ) + ;
@@ -79,7 +81,7 @@ PROCEDURE Main( cMode )
                                Val( SubStr( cStdOut, 24, 2 ) ) ) ) - hb_UTCOffset() ) / 86400 )
          ENDIF
 
-         _DEBUG( __FILE__ + ": date HEAD:", tDateHEAD, hb_eol() )
+         _DEBUG( "date HEAD:" + hb_TToC( tDateHEAD ) )
 
          IF ! Empty( tDateHEAD ) .OR. ! lShallow
 
@@ -138,28 +140,16 @@ PROCEDURE Main( cMode )
             NEXT
          ENDIF
       ELSE
-         OutStd( __FILE__ + ": Error: Repository not found:", cGitRoot + hb_eol() )
+         OutStd( "! mpkg.hb: Error: Repository not found:", cGitRoot + hb_eol() )
       ENDIF
 
       EXIT
 
-   CASE "ch"
-
-      tmp := hb_DirSepToOS( hb_defaultValue( hb_PValue( 2 ), "" ) )
-
-      OutStd( "! mpkg.hb: Calculating SHA-256 hash for", tmp + hb_eol() )
-
-      FOR EACH file IN hb_vfDirectory( tmp )
-         OutStd( hb_SHA256( hb_MemoRead( hb_FNameDir( tmp ) + file[ F_NAME ] ) ), hb_FNameDir( tmp ) + file[ F_NAME ] + hb_eol() )
-      NEXT
-
-      EXIT
-
    OTHERWISE
-      OutStd( __FILE__ + ": Error: Wrong mode:", "'" + cMode + "'" + hb_eol() )
+      OutStd( "! mpkg.hb: Error: Wrong mode:", "'" + cMode + "'" + hb_eol() )
    ENDSWITCH
 
-   _DEBUG( __FILE__ + ": FINISH" + hb_eol() )
+   _DEBUG( "FINISH" )
 
    RETURN
 

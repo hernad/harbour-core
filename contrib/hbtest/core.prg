@@ -1,7 +1,7 @@
 /*
  * Regression tests for the runtime library
  *
- * Copyright 1999-2013 Viktor Szakats (vszakats.net/harbour)
+ * Copyright 1999-2015 Viktor Szakats (vszakats.net/harbour)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -313,11 +313,11 @@ FUNCTION hbtest_AllValues()
       10, ;
       65, ;
       100000, ;
-      10.567, ; /* Use different number of decimals than the default */
+      10.567, ;  /* Use different number of decimals than the default */
       -10, ;
       -100000, ;
-      -10.567, ; /* Use different number of decimals than the default */
-      1234567890123, ;
+      -10.567, ;  /* Use different number of decimals than the default */
+      1234567654321, ;
       hb_SToD( "19840325" ), ;
       hb_SToD(), ;
       hb_SToT( "19850325123456789" ), ;

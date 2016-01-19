@@ -2,123 +2,170 @@ version: 3.4.{build}
 branches:
   only:
   - master
+  - test_appveyor
+  - lto
+  - msvc2008
+  - msvc2010
+  - msvc2012
+  - msvc2013
+  - msvc2015
 skip_tags: true
 os: Windows Server 2012 R2
 clone_depth: 8
 clone_folder: C:\hb\
+build:
+  verbosity: detailed
+
 environment:
-  HB_VF: daily
-  matrix:
-# - HB_COMPILER: msvc64
-# - HB_COMPILER: msvc
-# - HB_COMPILER: mingw64
-  - HB_COMPILER: mingw
-    BINTRAY_APIKEY:
-      secure: FUQVzdqjaAvLYH/yTdL1rdtrVcAheHbK4YUvNNpvArR09vfkkuAk+8ntrg2MRYa2
-    BINTRAY_USER:
-      secure: jfLq1ApyVLNouxv07skhrg==
-    BINTRAY_PATH:
-      secure: +CyA1IIhoPpI7EY54BsRADDxb1V62HDWLSekCX4mTxk=
-    VIRUSTOTAL_APIKEY:
-      secure: TdJYONfrpH45DuyKxraVqgHYy25IQ/F8TKHzYf+u5zz1aiM2yR0YTMaGxyj2EMReEearSI9kD9D2ZykybSVEbRyEaotZlceUb2lPDKELl3M=
+  GITHUB_TOKEN:
+    secure: EAvrbP8pR3X0XMvu+PtEpAsTS5hh7jWZl5T+6sLOuCUqmyTLxNY8P2JPYMidRbpf
+  VIRUSTOTAL_APIKEY:
+    secure: TdJYONfrpH45DuyKxraVqgHYy25IQ/F8TKHzYf+u5zz1aiM2yR0YTMaGxyj2EMReEearSI9kD9D2ZykybSVEbRyEaotZlceUb2lPDKELl3M=
+  PUSHOVER_USER:
+    secure: zKEcvmxcPuch0HUR9NuvXSXrMJL13qbQ0Ixh65VQUi0=
+  PUSHOVER_TOKEN:
+    secure: DjWTkh5sUw6dUQkHv3KhTvi2llF9GN17z60h9kRGYX4=
+
+  NGHTTP2_VER: 1.6.0
+  NGHTTP2_HASH_32: 0e20a0a3c33123aba7e032cae2a0c3db7383e2b53e91e04c12a579075e08659e
+  NGHTTP2_HASH_64: 2f3050587c7147643c1ed267c671bd71234711028e941b0dc4f852f77e498abe
+  OPENSSL_VER: 1.0.2e
+  OPENSSL_HASH_32: 46cca8b7e073f948266819c878b9e95eff06c1b277c88c3d84e48a06cc615d78
+  OPENSSL_HASH_64: 337e595354327776a974f71b026d24b1d349181867de1259f918d1f93df87663
+  LIBSSH2_VER: 1.6.0
+  LIBSSH2_HASH_32: b955334c27c0fdb9e17b003050b05e43bdada9ac73f0d4a6e956585bc58b5c6c
+  LIBSSH2_HASH_64: 4882e42b6ecfd77a0167e77ffdda1006b020058660e6684e7e4b7fc06f95dbac
+  CURL_VER: 7.46.0
+  CURL_HASH_32: c7bfd0a3edccb25f84ce6c479e523e235cdb0514cecb891bdb0427a3f7313365
+  CURL_HASH_64: 5317dc93f276ccb9282bdd453a2e31d53d289574256807b59997dbb970c2eba2
+
+#init:
+#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
 install:
-- set VER_CURL=7.45.0
-- set VER_OPENSSL=1.0.2d
-- ps: rm alias:curl
-- mkdir C:\w\
-- curl -fsS https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/s/se/sevenzip/7-Zip/9.20/7za920.zip -o 7z.7z
-- openssl dgst -sha256 7z.7z | findstr /i /c:"2a3afe19c180f8373fa02ff00254d5394fec0349f5804e0ad2f6067854ff28ac"
-- 7z x -y -oC:\w\7z 7z.7z > nul
-- curl -fsS http://7zsfx.info/files/7zsd_150_2712.7z -o 7zsfx.7z
-- openssl dgst -sha256 7zsfx.7z | findstr /i /c:"e5a2a05997553cde6318149951da1e449b0fd277a6e671ac06bfde8572754739"
-- 7z x -y -oC:\w\7zsfx 7zsfx.7z > nul
-- curl -fsS -L --proto-redir =https https://fossies.org/windows/misc/upx391w.zip -o upx.zip
-- openssl dgst -sha256 upx.zip | findstr /i /c:"d7d4817f46d2616c209c46fb8bce44e4bec93ab5adef5e4dfc93ee879527be1b"
-- 7z e -y -oC:\w\upx upx.zip > nul
-#- ps: curl -fsS https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/5.2.0/threads-posix/dwarf/i686-5.2.0-release-posix-dwarf-rt_v4-rev0.7z -o mingw.7z
-#- openssl dgst -sha256 mingw.7z | findstr /i /c:"25de3b1164df7a3d06978900664462fa2f651036491291d90ca8870be451f439"
-#- ps: curl -fsS https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/5.2.0/threads-posix/seh/x86_64-5.2.0-release-posix-seh-rt_v4-rev0.7z -o mingw.7z
-#- openssl dgst -sha256 mingw.7z | findstr /i /c:"3876e8a73218f07761f0f2966725510dfc7294160ba728d1a0e6bdfca93f03f5"
-- ps: curl -fsS https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/5.2.0/threads-posix/sjlj/x86_64-5.2.0-release-posix-sjlj-rt_v4-rev0.7z -o mingw.7z
-- openssl dgst -sha256 mingw.7z | findstr /i /c:"c0536c55a1d12882987afd0a9be377413eaf6cee105e921c949899fa9b308b35"
-# Will unpack into C:\w\mingw64
-- 7z x -y -oC:\w\ mingw.7z > nul
-- curl -fsS -L --proto-redir =https https://dl.bintray.com/vszakats/generic/openssl-%VER_OPENSSL%-win32-mingw.7z -o openssl-win-mingw.7z
-- openssl dgst -sha256 openssl-win-mingw.7z | findstr /i /c:"4b3dca65875918c179f15d395046a35d3ff1a8bd7ee2875e0e8b1816e62cb5b4"
-- 7z x -y -oC:\w\ openssl-win-mingw.7z > nul
-- curl -fsS -L --proto-redir =https https://dl.bintray.com/vszakats/generic/openssl-%VER_OPENSSL%-win64-mingw.7z -o openssl-win-mingw64.7z
-- openssl dgst -sha256 openssl-win-mingw64.7z | findstr /i /c:"2450a81b59cbb57db40128fefea3d4a2bd6d00d24b97b7d1b96ced75e66d9ef6"
-- 7z x -y -oC:\w\ openssl-win-mingw64.7z > nul
-- curl -fsS -L --proto-redir =https https://dl.bintray.com/vszakats/generic/curl-%VER_CURL%-win32-mingw.7z -o curl-win-mingw.7z
-- openssl dgst -sha256 curl-win-mingw.7z | findstr /i /c:"de582e8eaf0280a63194d094af12120b2ef1a063dbb3739b3c6f3980a3bdf90e"
-- 7z x -y -oC:\w\ curl-win-mingw.7z > nul
-- curl -fsS -L --proto-redir =https https://dl.bintray.com/vszakats/generic/curl-%VER_CURL%-win64-mingw.7z -o curl-win-mingw64.7z
-- openssl dgst -sha256 curl-win-mingw64.7z | findstr /i /c:"97cfc7700d0f89dadb2c11e8f199f70c17d3b34d71302367c3bdea2317c1c4b0"
-- 7z x -y -oC:\w\ curl-win-mingw64.7z > nul
-# Change to ISO date and 24-hour time format
-- reg add "HKCU\Control Panel\International" /v sShortDate /t REG_SZ /d "yyyy-MM-dd" /f
-- reg add "HKCU\Control Panel\International" /v sShortTime /t REG_SZ /d "HH:mm" /f
+  - if not "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" sh -c ./package/mpkg_win_dl.sh
+
 build_script:
-- set HB_SFX_7Z=C:\w\7zsfx\7zsd.sfx
-- set HB_DIR_7Z=C:\w\7z\
-- set HB_DIR_UPX=C:\w\upx\
-- set HB_DIR_MINGW=C:\w\mingw64
-- set _ORI_PATH=%PATH%
-- if "%HB_COMPILER:~0,5%" == "mingw" set PATH=%HB_DIR_MINGW%\bin;%PATH%
-- if "%HB_COMPILER%" == "mingw" set HB_CPU=x86
-- if "%HB_COMPILER%" == "mingw64" set HB_CPU=x86_64
-- if "%HB_COMPILER%" == "msvc" if exist "%ProgramFiles(x86)%\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" call "%ProgramFiles(x86)%\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x86
-- if "%HB_COMPILER%" == "msvc" if exist "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
-- if "%HB_COMPILER%" == "msvc64" if exist "%ProgramFiles(x86)%\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" call "%ProgramFiles(x86)%\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x86_amd64
-- if "%HB_COMPILER%" == "msvc64" if exist "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
-#- if "%HB_COMPILER:~0,4%" == "msvc" set _HB_MSVC_ANALYZE=yes
-- if "%HB_COMPILER%" == "mingw" set HB_WITH_CURL=C:\w\curl-%VER_CURL%-win32-mingw\include
-- if "%HB_COMPILER%" == "mingw" set HB_WITH_OPENSSL=C:\w\openssl-%VER_OPENSSL%-win32-mingw\include
-#- if "%HB_COMPILER%" == "mingw" set HB_WITH_QT=C:\w\Qt\5.4\mingw491_32\include
-- if "%HB_COMPILER%" == "mingw64" set HB_WITH_CURL=C:\w\curl-%VER_CURL%-win64-mingw\include
-- if "%HB_COMPILER%" == "mingw64" set HB_WITH_OPENSSL=C:\w\openssl-%VER_OPENSSL%-win64-mingw\include
-#- if "%HB_COMPILER%" == "msvc" set HB_WITH_QT=C:\w\Qt\5.4\msvc2013_64_opengl\include
-#- if "%HB_COMPILER%" == "msvc64" set HB_WITH_QT=C:\w\Qt\5.4\msvc2013_64_opengl\include
-- if "%HB_COMPILER:~0,5%-%HB_BUILD_MODE%" == "mingw-cpp" set HB_USER_LDFLAGS=-static-libgcc -static-libstdc++
-#- set HB_WITH_ADS=C:\w\ads\acesdk
-#- set HB_WITH_CAIRO=C:\w\cairo\include\cairo
-#- set HB_WITH_FIREBIRD=C:\w\firebird\include
-#- set HB_WITH_FREEIMAGE=C:\w\freeimage\Dist
-#- set HB_WITH_GD=C:\w\gd\include
-#- set HB_WITH_MYSQL=C:\w\mariadb\include\mysql
-#- set HB_WITH_OCILIB=C:\w\ocilib\include
-#- set HB_WITH_PGSQL=C:\w\pgsql\include
-#- set HB_BUILD_CONTRIBS=no
-- set HB_INSTALL_3RDDYN=yes
-- set HB_BUILD_STRIP=bin
-- set HB_BUILD_DYN=no
-- set HB_BUILD_CONTRIB_DYN=yes
-- set HB_BUILD_OPTIM=yes
-- set HB_BUILD_PKG=yes
-- set HB_BUILD_POSTRUN=".\hbtest -noenv" ".\hbspeed --noenv --stdout"
-- set _HB_BUILD_PKG_ARCHIVE=no
-#- set _HB_PKG_DEBUG=yes
-- win-make.exe clean install HB_VERSION=%HB_VF%
-- set HB_COMPILER=mingw64
-- set HB_CPU=x86_64
-- set HB_WITH_CURL=C:\w\curl-%VER_CURL%-win64-mingw\include
-- set HB_WITH_OPENSSL=C:\w\openssl-%VER_OPENSSL%-win64-mingw\include
-- win-make.exe clean install HB_VERSION=%HB_VF%
-#- set HB_COMPILER=
-#- set HB_CPU=
-#- set HB_WITH_CURL=
-#- set HB_WITH_OPENSSL=
-#- set PATH=%_ORI_PATH%
-#- call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
-#- win-make.exe clean install HB_VERSION=%HB_VF%
-#- set PATH=%_ORI_PATH%
-#- call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
-#- win-make.exe clean install HB_VERSION=%HB_VF%
-deploy_script:
-- call package\mpkg_win.bat
-- curl -fsS -X POST "https://www.virustotal.com/vtapi/v2/file/scan" --form apikey=%VIRUSTOTAL_APIKEY% --form file=@harbour-daily-win.7z.exe
-# NOTE: After 180 days the release version number should be deleted and recreated
-#       (along with download stats), otherwise Bintray will reject further updates 
-#       to it. Without publishing, the upload disappears in 6 days. Incrementing
-#       it fails too if the same filename exist under another version number.
-- curl -fsS -u "%BINTRAY_USER%:%BINTRAY_APIKEY%" -X PUT "https://api.bintray.com/content/%BINTRAY_PATH%/3.4.0dev/harbour-daily-win.7z.exe?override=1&publish=1" --data-binary @harbour-daily-win.7z.exe
+  - set HB_VF=daily
+  - set HB_RT=%APPVEYOR_BUILD_FOLDER%
+  - set HB_MKFLAGS=clean install HB_VERSION=%HB_VF%
+  - if "%APPVEYOR_REPO_BRANCH%" == "lto" set HB_BASE=64
+  - if not "%HB_BASE%" == "64" set HB_SFX_7Z=%HB_RT%\7zsfx\7zsd_All.sfx
+# - if     "%HB_BASE%" == "64" set HB_SFX_7Z=%HB_RT%\7zsfx\7zsd_All_x64.sfx
+  - set HB_DIR_7Z=%HB_RT%\7z\
+  - set HB_DIR_UPX=%HB_RT%\upx\
+  - set HB_DIR_MINGW=%HB_RT%\mingw64
+  - set HB_DIR_OPENSSL_32=%HB_RT%\openssl-mingw32\
+  - set HB_DIR_OPENSSL_64=%HB_RT%\openssl-mingw64\
+  - set HB_DIR_LIBSSH2_32=%HB_RT%\libssh2-mingw32\
+  - set HB_DIR_LIBSSH2_64=%HB_RT%\libssh2-mingw64\
+  - set HB_DIR_NGHTTP2_32=%HB_RT%\nghttp2-mingw32\
+  - set HB_DIR_NGHTTP2_64=%HB_RT%\nghttp2-mingw64\
+  - set HB_DIR_CURL_32=%HB_RT%\curl-mingw32\
+  - set HB_DIR_CURL_64=%HB_RT%\curl-mingw64\
+  - set _ORI_PATH=%PATH%
+
+  # common settings
+
+  - if "%APPVEYOR_REPO_BRANCH%" == "lto" set HB_BUILD_CONTRIBS=hbrun hbformat/utils hbct hbcurl hbhpdf hbmzip hbwin hbsqlit3 hbtip hbssl hbexpat hbmemio rddsql hbzebra sddsqlt3 sddodbc hbunix hbmisc hbmxml hbcups hbtest hbtcpio hbcomio hbcrypto hbnetio hbpipeio hbgzio hbbz2io
+  - set HB_BUILD_STRIP=bin
+  - set HB_BUILD_PKG=yes
+  - set _HB_BUILD_PKG_ARCHIVE=no
+
+  # can disable to save time/space
+
+  - if not "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set _HB_BUNDLE_3RDLIB=yes
+  - set HB_INSTALL_3RDDYN=yes
+  - set HB_BUILD_CONTRIB_DYN=yes
+  - set HB_BUILD_POSTRUN=".\hbtest -noenv" ".\hbspeed --noenv --stdout"
+
+  # debug
+
+# - set HB_BUILD_CONTRIBS=no
+# - set HB_MKFLAGS=%HB_MKFLAGS% HB_BUILD_OPTIM=no
+# - set HB_BUILD_VERBOSE=yes
+# - set _HB_PKG_DEBUG=yes
+# - set _HB_BUNDLE_3RDLIB=yes
+
+  # mingw
+
+  - if "%APPVEYOR_REPO_BRANCH%" == "lto" set HB_USER_CFLAGS=%HB_USER_CFLAGS% -flto -ffat-lto-objects
+  - if not "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" if "%HB_BUILD_MODE%" == "cpp" set HB_USER_LDFLAGS=%HB_USER_LDFLAGS% -static-libgcc -static-libstdc++
+
+  - set HB_COMPILER=mingw
+  - set HB_CPU=x86
+  - set HB_WITH_CURL=%HB_DIR_CURL_32%include
+  - set HB_WITH_OPENSSL=%HB_DIR_OPENSSL_32%include
+# - set HB_WITH_QT=%HB_RT%\Qt\5.4\mingw491_32\include
+  - set PATH=%HB_DIR_MINGW%\bin;%_ORI_PATH%
+  - if not "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" win-make.exe %HB_MKFLAGS%
+
+  - set HB_COMPILER=mingw64
+  - set HB_CPU=x86_64
+  - set HB_WITH_CURL=%HB_DIR_CURL_64%include
+  - set HB_WITH_OPENSSL=%HB_DIR_OPENSSL_64%include
+  - set HB_WITH_QT=
+  - set PATH=%HB_DIR_MINGW%\bin;%_ORI_PATH%
+  - if not "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" win-make.exe %HB_MKFLAGS%
+
+  # msvc
+
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set HB_USER_CFLAGS=
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set HB_USER_LDFLAGS=
+
+# - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set _HB_MSVC_ANALYZE=yes
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set HB_CPU=
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set HB_WITH_CURL=
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set HB_WITH_OPENSSL=
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set HB_WITH_QT=%HB_RT%\Qt\5.4\msvc2013_64_opengl\include
+
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc2008" set APPVEYOR_REPO_BRANCH=msvc1500
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc2010" set APPVEYOR_REPO_BRANCH=msvc1600
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc2012" set APPVEYOR_REPO_BRANCH=msvc1700
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc2013" set APPVEYOR_REPO_BRANCH=msvc1800
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc2015" set APPVEYOR_REPO_BRANCH=msvc1900
+
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set PATH=%_ORI_PATH%
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1500" "%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC\vcvarsall.bat"  x86
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1600" "%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x86
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1700" "%ProgramFiles(x86)%\Microsoft Visual Studio 11.0\VC\vcvarsall.bat" x86
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1800" "%ProgramFiles(x86)%\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x86
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1900" "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" win-make.exe %HB_MKFLAGS% HB_COMPILER_VER=%APPVEYOR_REPO_BRANCH:~4,4% HB_COMPILER=msvc
+
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" set PATH=%_ORI_PATH%
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1500" "%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC\vcvarsall.bat"  x86_amd64
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1600" "%ProgramFiles(x86)%\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x86_amd64
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1700" "%ProgramFiles(x86)%\Microsoft Visual Studio 11.0\VC\vcvarsall.bat" x86_amd64
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1800" "%ProgramFiles(x86)%\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x86_amd64
+  - if "%APPVEYOR_REPO_BRANCH%" == "msvc1900" "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
+  - if "%APPVEYOR_REPO_BRANCH:~0,4%" == "msvc" win-make.exe %HB_MKFLAGS% HB_COMPILER_VER=%APPVEYOR_REPO_BRANCH:~4,4% HB_COMPILER=msvc64
+
+  # packaging
+
+  - sh -c ./package/mpkg_win.sh
+
+artifacts:
+  - path: harbour-daily-win.7z*
+    name: pkg-win
+
+deploy:
+  - provider: GitHub
+    auth_token: $(github_token)
+    tag: v3.4.0dev
+    release: 'Harbour 3.4.0dev daily'
+    description: 'Snapshot build generated after each commit.'
+    artifact: pkg-win
+    draft: false
+    prerelease: true
+    on:
+      branch: master
+      appveyor_repo_tag: false
+  - provider: Local
+    on:
+      branch: test_appveyor
+
+after_deploy:
+  - if not "%_HB_BUNDLE_3RDLIB%" == "yes" curl -sS -X POST https://www.virustotal.com/vtapi/v2/file/scan --form "apikey=%VIRUSTOTAL_APIKEY%" --form file=@harbour-daily-win.7z.exe

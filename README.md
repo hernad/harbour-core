@@ -1,6 +1,11 @@
 # Welcome to Harbour
-[![License](https://img.shields.io/badge/license-GPLv2%20%2B%20Library%20Exception-blue.svg)](LICENSE.txt) [![Download](https://api.bintray.com/packages/vszakats/generic/harbour/images/download.svg)](https://bintray.com/vszakats/generic/harbour/_latestVersion)<br />
-[![Build Status](https://travis-ci.org/vszakats/harbour-core.svg?branch=master)](https://travis-ci.org/vszakats/harbour-core) [![Build status](https://ci.appveyor.com/api/projects/status/1kx6w3y6qasymah3/branch/master?svg=true)](https://ci.appveyor.com/project/vsz/harbour-core/branch/master) [![Coverity Status](https://scan.coverity.com/projects/3208/badge.svg)](https://scan.coverity.com/projects/3208)
+[![License](https://img.shields.io/badge/license-GPLv2%20%2B%20Library%20Exception-blue.svg)](LICENSE.txt)
+[![Tag](https://img.shields.io/github/tag/vszakats/harbour-core.svg)](https://github.com/vszakats/harbour-core/tree/v3.4.0dev)
+[![Commits](https://img.shields.io/github/commits-since/vszakats/harbour-core/v3.0.0.svg)](https://github.com/vszakats/harbour-core/commits/v3.4.0dev)<br />
+[![Build Status](https://travis-ci.org/vszakats/harbour-core.svg?branch=master)](https://travis-ci.org/vszakats/harbour-core)
+[![Build status](https://ci.appveyor.com/api/projects/status/1kx6w3y6qasymah3/branch/master?svg=true)](https://ci.appveyor.com/project/vsz/harbour-core/branch/master)
+[![Coverity Status](https://scan.coverity.com/projects/3208/badge.svg)](https://scan.coverity.com/projects/3208)
+[![Download](https://img.shields.io/badge/download-daily-brightgreen.svg)](https://github.com/vszakats/harbour-core/releases)
 
 Harbour is the free software implementation of a multi-platform,
 multi-threading, object-oriented, scriptable programming language,
@@ -42,7 +47,7 @@ and interfaces to popular APIs.
   * [Twitter](https://twitter.com/vszakats)
   * [GitHub](https://github.com/vszakats)
   * [PGP](https://keybase.io/vszakats) [key](https://keybase.io/vszakats/key.asc)
-  * [Homepage](http://vszakats.net/)
+  * [Homepage](https://vszakats.net/)
 
 # How to Get
 
@@ -91,8 +96,7 @@ Download source archive from any of these URLs and unpack:
 
 #### Windows (mingw, 32-bit, 7-zip archive and installer combined)
 
-* <https://dl.bintray.com/vszakats/generic/harbour-daily-win.7z.exe><br />
-  [![Get automatic notifications about new versions](https://www.bintray.com/docs/images/bintray_badge_bw.png)](https://bintray.com/vszakats/generic/harbour/view?source=watch)
+* <https://github.com/vszakats/harbour-core/releases/download/v3.4.0dev/harbour-daily-win.7z.exe>
 
 #### OS X (using Homebrew :beer:)
 
@@ -389,7 +393,7 @@ system locations.
 
 You only need to use manual setup if the dependency isn't available
 on your platform on a system location, or you wish to use
-a non-standard location. Typically you need to do this on non-\*nix
+a non-standard location. Typically, you need to do this on non-\*nix
 (Windows, MS-DOS, OS/2) systems for all packages and for a few packages
 on \*nix which are not available through official package managers
 (f.e. ADS Client).
@@ -438,9 +442,10 @@ See contrib-specific dependencies and build notes in the projects'
 1. Install [Homebrew :beer:](http://brew.sh/)
 2. Install packages:
 
-        $ brew install brew-cask pcre pcre2 upx uncrustify ack optipng jpegoptim
+        $ brew install pcre pcre2 s-lang upx uncrustify ack optipng jpegoptim eg
+        $ brew tap caskroom/cask
 
-3. Install [X11](https://xquartz.macosforge.org/landing/) (optional, for gtxwc)
+3. Install [X11](http://www.xquartz.org/) (optional, for gtxwc)
 
         $ brew cask install xquartz
 
@@ -479,7 +484,7 @@ You will need these packages to compile optional core Harbour features:
 
 > NOTES:
 >
->   * See [this](http://distrowatch.com/dwres.php?resource=package-management) on
+>   * See [this](https://distrowatch.com/dwres.php?resource=package-management) on
 >       package management in various distros.
 >   * On openSUSE, if you want to build 32-bit Harbour on a 64-bit host, install
 >       above packages with `-32bit` suffix, f.e. `slang-devel-32bit`
@@ -507,8 +512,8 @@ get the correct permissions:
 You can fine-tune Harbour builds with below listed
 environment variables. You can add most of these via the
 GNU Make command-line also, using `make VARNAME=value` syntax.
-All of these settings are optional and all settings are case
-sensitive.
+All of these settings are optional and all settings are
+case-sensitive.
 
 ## General
 
@@ -566,7 +571,7 @@ sensitive.
 
    - `HB_BUILD_DEBUG=yes`
 
-     Create a debug build. Default: `no`
+     Create debug build. Default: `no`
 
    - `HB_BUILD_STRIP=[all|bin|lib|no]`
 
@@ -616,7 +621,7 @@ sensitive.
 
    - `HB_BUILD_NAME=[<name>]`
 
-     Create named build. This allows to keep multiple builds in parallel for any
+     Create named build. This allows keeping multiple builds in parallel for any
      given platform/compiler. F.e. debug / release.
 
      > In current implementation it's appended to compiler directory name, so
@@ -697,10 +702,10 @@ sensitive.
 
 ## Cross-builds
 
-You can build Harbour for target platforms different than host
+You can build Harbour for target platforms different from host
 platform. F.e. you can create Windows build on \*nix systems, Linux
 builds on Windows systems, etc. It's also possible to build targets
-for different than host CPU architectures. F.e. you can create
+for different from host CPU architectures. F.e. you can create
 Windows 64-bit build on 32-bit Windows platform, or Linux x86-64
 build on x86 hosts, or Linux MIPS build on x86 host, etc.
 
@@ -1443,7 +1448,7 @@ Press `<Alt+D>` in the app.
      x | darwin   | android/gcc       | x86
      x | darwin   | android/gccarm    | arm
        | hpux     | hpux/gcc          | (CPU cross-builds possible)
-       | qnx      | qnx/gcc           | (CPU cross-builds possible - no tested)
+       | qnx      | qnx/gcc           | (CPU cross-builds possible - not tested)
        | beos     | beos/gcc          | x86
      x | hpux     | wce/mingwarm      | arm
      x | hpux     | wce/mingw         | x86
@@ -1482,12 +1487,12 @@ Supported shells per host platforms:
      * MinGW/MinGW-64 [win, \*nix, free, open-source]
         * <http://mingw-w64.org/>, <https://duckduckgo.com/?q=mingw-w64> (recommended, look for niXman builds)
           * Dual-target for x86-64 and x86 hosts (select non-native target with `HB_CPU=x86` or `HB_CPU=x86_64`):
-            * <https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/5.2.0/threads-posix/sjlj/>
-            * <https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/5.2.0/threads-posix/sjlj/>
+            * 32-bit hosted, posix, sjlj
+            * 64-bit hosted, posix, sjlj
           * x86:
-            * <https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/5.2.0/threads-posix/dwarf/>
+            * 32-bit hosted, posix, dwarf-2
           * x86-64:
-            * <https://www.mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/m/mi/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/5.2.0/threads-posix/seh/>
+            * 64-bit hosted, posix, seh
      * MinGW CEGCC [win, \*nix, free, open-source]
         * <https://web.archive.org/https://sourceforge.net/projects/cegcc/files/cegcc/>
           * To use this package, you will also need Cygwin package
@@ -1499,7 +1504,7 @@ Supported shells per host platforms:
 
           * Compiler will be in the `opt\mingw32ce` subdirectory.
      * Clang [multi-platform, free, open-source]
-        * <http://llvm.org/builds/> (Windows snapshots)
+        * <http://llvm.org/releases/>
      * Cygwin [win, free, open-source]
         * <https://cygwin.com/>
      * OS/2 GCC [os2, free, open-source]
@@ -1513,7 +1518,7 @@ Supported shells per host platforms:
         * <https://developer.apple.com/downloads/>
      * MS Windows SDK [win, free, closed-source]
         * <https://msdn.microsoft.com/en-us/windows/desktop/bg162891.aspx><br />
-         ([7.x](https://www.microsoft.com/en-us/download/details.aspx?id=8279) includes compilers for x86, x86_64 and IA-64)
+         ([7.x](https://www.microsoft.com/en-us/download/details.aspx?id=8279) includes compilers for x86, x86-64 and IA-64)
      * MS Windows Mobile SDK [wce, free]
         * <https://www.microsoft.com/en-us/download/details.aspx?id=42>
      * MS Visual Studio Express [win, free, closed-source]
@@ -1565,7 +1570,7 @@ Supported shells per host platforms:
      * Travis CI [continuous integration, web service, free plan]
         * <https://travis-ci.org/>
      * AppVeyor CI [continuous integration, web service, free plan]
-        * <http://www.appveyor.com/>
+        * <https://www.appveyor.com/>
      * Read the Docs [online documentation creator, web service, free]
         * <https://readthedocs.org/>
      * ReadMe.io [online documentation creator, web service, free plan]
@@ -1585,11 +1590,6 @@ Supported shells per host platforms:
         * <http://7-zip.org/>
      * 7-Zip SFX modules [win, free, open-source]
         * <http://7zsfx.info/en/>
-     * bzip2 [multi-platform, free, open-source]
-        * Windows binary:
-           * <http://bzip.org/downloads.html>
-     * Win-builds [multi-platform, free, open-source]
-        * <http://win-builds.org/>
      * GNU Make
 
         Windows binary + source:
@@ -1681,7 +1681,7 @@ Supported shells per host platforms:
      * Harbour [online documentation](https://vszakats.github.io/harbour-core/harbour.html)
      * Harbour [internal documents](doc/)
      * [Wikipedia](https://en.wikipedia.org/wiki/Harbour_compiler)
-     * [Stack Exchange](https://stackoverflow.com/questions/tagged/clipper)
+     * [Stack Overflow](https://stackoverflow.com/questions/tagged/clipper)
 
 
 # Guarantees and Liability
@@ -1707,5 +1707,5 @@ Supported shells per host platforms:
    you feel the best.
 
 ---
-This document Copyright &copy;&nbsp;2009&ndash;2015 Viktor Szakáts (vszakats.net/harbour)<br />
+This document Copyright &copy;&nbsp;2009&ndash;2016 Viktor Szakáts (vszakats.net/harbour)<br />
 [![Creative Commons Attribution-ShareAlike 4.0](https://rawgit.com/cc-icons/cc-icons/master/fonts/cc-icons-svg/small.by-sa.svg)](https://creativecommons.org/licenses/by-sa/4.0/)

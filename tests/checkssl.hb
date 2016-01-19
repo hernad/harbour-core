@@ -1,3 +1,5 @@
+#!/usr/bin/env hbmk2
+
 /* Copyright 2014 Viktor Szakats (vszakats.net/harbour) */
 
 /* Fetch all http URLs from source base and check
@@ -17,7 +19,7 @@ procedure Main( cURLList )
    hb_default( @cURLList, "_url" )
 
    if ! hb_vfExists( cURLList )
-      hb_run( 'grep -R -H -I -n -o "http://[a-zA-Z0-9/\.\~\%\?&\+=@:-]*" * > ' + cURLList )
+      hb_run( 'grep -R -H -I -n -o "http://[a-zA-Z0-9_/\.\~\%\?&\+=@:-]*" * > ' + cURLList )
    endif
 
    for each url in hb_ATokens( hb_MemoRead( cURLList ), .T. )

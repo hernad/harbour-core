@@ -581,7 +581,7 @@ static PVOID hb_gt_os2_allocMem( int iSize )
    APIRET rc;     /* return code from DosXXX api call */
    PVOID pMem;
 
-   rc = DosAllocMem( &pMem, iSize, PAG_COMMIT | OBJ_TILE | PAG_WRITE );
+   rc = DosAllocMem( &pMem, iSize, PAG_COMMIT | PAG_READ | PAG_WRITE | OBJ_TILE );
    if( rc != NO_ERROR )
       hb_errInternal( HB_EI_XGRABALLOC, "hb_gt_os2_allocMem() memory allocation failure.", NULL, NULL );
 
@@ -683,13 +683,16 @@ static int hb_gt_os2_ReadKey( PHB_GT pGT, int iEventMask )
    /* zero out keyboard event record */
    memset( s_key, 0, sizeof( *s_key ) );
 
+#if defined( __WATCOMC__ )
    if( s_fBreak )
    {
       s_fBreak = HB_FALSE; /* Indicate that Ctrl+Break has been handled */
       iKey = HB_BREAK_FLAG; /* Note that Ctrl+Break was pressed */
    }
+   else
+#endif
    /* Get next character without wait */
-   else if( KbdCharIn( s_key, IO_NOWAIT, ( HKBD ) 0 ) == NO_ERROR )
+   if( KbdCharIn( s_key, IO_NOWAIT, ( HKBD ) 0 ) == NO_ERROR )
    {
       iFlags = hb_gt_os2_keyFlags( s_key->fsState );
 

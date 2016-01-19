@@ -1287,7 +1287,7 @@ int hb_vmQuit( void )
    hb_cdpReleaseAll();              /* releases codepages */
 
    /* release all known garbage */
-   if( hb_xquery( HB_MEM_USEDMAX ) == 0 ) /* check if fmstat is ON */
+   if( hb_xquery( HB_MEM_STATISTICS ) == 0 ) /* check if fmstat is ON */
       hb_gcReleaseAll();
 
    hb_vmUnsetExceptionHandler();
@@ -3906,6 +3906,27 @@ static void hb_vmExactlyEqual( void )
       hb_itemClear( pItem1 );
       pItem1->type = HB_IT_LOGICAL;
       pItem1->item.asLogical.value = fResult;
+   }
+#ifndef HB_CLP_STRICT
+   else if( HB_IS_BLOCK( pItem1 ) && HB_IS_BLOCK( pItem2 ) )
+   {
+      HB_BOOL fResult = pItem1->item.asBlock.value == pItem2->item.asBlock.value;
+
+      hb_stackPop();
+      hb_itemClear( pItem1 );
+      pItem1->type = HB_IT_LOGICAL;
+      pItem1->item.asLogical.value = fResult;
+   }
+#endif
+   else if( HB_IS_SYMBOL( pItem1 ) && HB_IS_SYMBOL( pItem2 ) )
+   {
+      pItem1->item.asLogical.value =
+               pItem1->item.asSymbol.value == pItem2->item.asSymbol.value ||
+               ( pItem1->item.asSymbol.value->pDynSym != NULL &&
+                 pItem1->item.asSymbol.value->pDynSym ==
+                 pItem2->item.asSymbol.value->pDynSym );
+      pItem1->type = HB_IT_LOGICAL;
+      hb_stackDec();
    }
    else if( HB_IS_ARRAY( pItem1 ) && HB_IS_ARRAY( pItem2 ) &&
             ! hb_objHasOperator( pItem1, HB_OO_OP_EXACTEQUAL ) )
@@ -12394,6 +12415,23 @@ HB_FUNC( __VMCOUNTTHREADS )
 HB_FUNC( __BREAKBLOCK )
 {
    hb_itemReturn( hb_breakBlock() );
+}
+
+HB_FUNC( __RECOVERERRORBLOCK )
+{
+   HB_STACK_TLS_PRELOAD
+
+   HB_ISIZ nRecoverBase = hb_stackGetRecoverBase();
+
+   if( nRecoverBase > 0 && nRecoverBase < hb_stackTopOffset() )
+   {
+      PHB_ITEM pItem = hb_stackItem( nRecoverBase );
+
+      if( HB_IS_POINTER( pItem ) &&
+          pItem->item.asPointer.collect && pItem->item.asPointer.single &&
+          hb_gcFuncs( pItem->item.asPointer.value ) == &s_gcSeqBlockFuncs )
+         hb_itemReturn( ( PHB_ITEM ) pItem->item.asPointer.value );
+   }
 }
 
 HB_FUNC( HB_ARRAYTOPARAMS )

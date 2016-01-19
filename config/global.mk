@@ -160,6 +160,12 @@ ifeq ($(HB_INIT_DONE),)
          $(warning ! Warning: HB_INSTALL_IMPLIB option has an effect only if 'install' is requested.)
       endif
    endif
+
+   ifneq ($(__HB_MT),)
+      ifeq ($(filter $(__HB_MT),yes no),)
+         export __HB_MT :=
+      endif
+   endif
 endif
 
 # Make platform detection
@@ -270,6 +276,9 @@ ifeq ($(HB_INIT_DONE),)
    endif
    ifneq ($(HB_INSTALL_IMPLIB),)
       $(info ! HB_INSTALL_IMPLIB: $(HB_INSTALL_IMPLIB))
+   endif
+   ifneq ($(__HB_MT),)
+      $(info ! __HB_MT: $(__HB_MT))
    endif
 endif
 
@@ -902,6 +911,8 @@ ifeq ($(HB_COMPILER_VER),)
       else
       ifneq ($(findstring 3.5,$(_C_VER)),)
          HB_COMPILER_VER := 0305
+      else
+         HB_COMPILER_VER := 0304
       endif
       endif
       endif
@@ -943,9 +954,7 @@ ifeq ($(HB_COMPILER_VER),)
       ifneq ($(findstring version 4.3.,$(_C_VER)),)
          HB_COMPILER_VER := 0403
       else
-      ifneq ($(findstring version 3.4.,$(_C_VER)),)
          HB_COMPILER_VER := 0304
-      endif
       endif
       endif
       endif
@@ -980,9 +989,7 @@ ifeq ($(HB_COMPILER_VER),)
       ifneq ($(findstring Version 13.,$(_C_VER)),)
          HB_COMPILER_VER := 1300
       else
-      ifneq ($(findstring Version 12.,$(_C_VER)),)
          HB_COMPILER_VER := 1200
-      endif
       endif
       endif
       endif
@@ -1008,9 +1015,7 @@ ifeq ($(HB_COMPILER_VER),)
       ifneq ($(findstring 5.00.,$(_C_VER)),)
          HB_COMPILER_VER := 0500
       else
-      ifneq ($(findstring 4.50.,$(_C_VER)),)
          HB_COMPILER_VER := 0450
-      endif
       endif
       endif
       endif
@@ -1467,9 +1472,6 @@ ifeq ($(HB_HOST_PKGM),)
       ifneq ($(wildcard /usr/local/bin/brew),)
          HB_HOST_PKGM += homebrew
       endif
-      ifneq ($(wildcard /usr/local/bin/rudix),)
-         HB_HOST_PKGM += rudix
-      endif
       ifneq ($(wildcard /opt/local/bin/port),)
          HB_HOST_PKGM += macports
       endif
@@ -1487,6 +1489,22 @@ ifeq ($(HB_HOST_PKGM),)
          HB_HOST_PKGM += rpm
       endif
       endif
+   else
+   ifeq ($(HB_PLATFORM),bsd)
+      ifneq ($(wildcard /etc/pkg),)
+         HB_HOST_PKGM += pkg
+      else
+         HB_HOST_PKGM += ports
+      endif
+   else
+   ifeq ($(HB_PLATFORM),sunos)
+      HB_HOST_PKGM += pkg
+   else
+   ifeq ($(HB_PLATFORM),cygwin)
+      HB_HOST_PKGM += cygwin
+   endif
+   endif
+   endif
    endif
    endif
 endif

@@ -1,21 +1,31 @@
 branches:
   only:
   - master
+  - test_travis
 language: c
+env:
+  - HB_CI_THREADS=4
 os:
   - linux
   - osx
 compiler:
   - clang
   - gcc
+  - i686-w64-mingw32-gcc
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
+    - os: osx
+      compiler: i686-w64-mingw32-gcc
 sudo: false
 addons:
   apt:
     sources:
-      - llvm-toolchain-precise-3.6
+      - llvm-toolchain-precise-3.7
       - ubuntu-toolchain-r-test
     packages:
-      - clang-3.6
+      - clang-3.7
       - gcc-5
       - g++-5
       - firebird2.5-dev
@@ -34,18 +44,12 @@ addons:
       - libpq-dev
      #- libslang2-dev
       - unixodbc-dev
-script: export HB_COMPILER=$CC && make
+      - binutils-mingw-w64
+      - gcc-mingw-w64
+      - wine
+      - p7zip-full
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-       if [ "$CC" = "gcc" ]; then
-          export HB_CCSUFFIX=-5;
-          ls -lA /usr/bin/gcc*;
-       else
-          export HB_CCSUFFIX=-3.6;
-          ls -lA /usr/bin/clang*;
-       fi;
-    fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  - if [ "$TRAVIS_OS_NAME" = "osx" ] ; then
        brew update > /dev/null;
        brew install cairo;
        brew install curl;
@@ -56,8 +60,37 @@ before_install:
        brew install libmagic;
        brew install mariadb;
        brew install openssl;
+       brew install qt5;
+       brew install s-lang;
        brew install unixodbc;
+       brew install p7zip;
     fi
+script:
+  - if [ "$CC" = "i686-w64-mingw32-gcc" ] ; then
+       export HB_COMPILER=clang && make -j $HB_CI_THREADS HB_BUILD_DYN=no HB_BUILD_CONTRIBS=no;
+       export HB_BUILD_3RDEXT=no;
+       export HB_PLATFORM=win;
+       export HB_CCPREFIX=i686-w64-mingw32-;
+       ls -lA /usr/bin/${HB_CCPREFIX}*;
+       export HB_COMPILER=mingw && make -j $HB_CI_THREADS;
+       wine ./bin/${HB_PLATFORM}/${HB_COMPILER}/harbour.exe -build;
+       export HB_CCPREFIX=x86_64-w64-mingw32-;
+       ls -lA /usr/bin/${HB_CCPREFIX}*;
+       export HB_COMPILER=mingw64 && make -j $HB_CI_THREADS;
+       wine ./bin/${HB_PLATFORM}/${HB_COMPILER}/harbour.exe -build;
+    else
+       if [ "$TRAVIS_OS_NAME" = "linux" ] ; then
+          if [ "$CC" = "gcc" ] ; then
+             export HB_CCSUFFIX=-5;
+          else
+             export HB_CCSUFFIX=-3.7;
+          fi;
+          export HB_USER_CFLAGS='-fstack-protector-strong';
+       fi;
+       export HB_USER_CFLAGS="${HB_USER_CFLAGS} -D_FORTIFY_SOURCE=2";
+       ls -lA /usr/bin/$CC*;
+       export HB_COMPILER=$CC && make -j $HB_CI_THREADS;
+    fi;
 notifications:
   email: false
 git:
