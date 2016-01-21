@@ -1,3 +1,9 @@
+harbour (3.4.0-6) UNRELEASED; urgency=medium
+
+  * update upsteream
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Thu, 21 Jan 2016 14:52:42 +0000
+
 harbour (3.4.0-5) unstable; urgency=medium
 
   *  update master
