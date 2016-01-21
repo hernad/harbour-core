@@ -33,7 +33,7 @@ Files:
      dput bintray harbour_3.4.0-4_amd64.changes 
 
 
-     curl -u hernad:0apikeyF -X POST https://api.bintray.com/content/hernad/deb/harbour/3.4.0/publish
+     curl -u $BINTRAY_API_USER:$BINTRAY_API_KEY -X POST https://api.bintray.com/content/hernad/deb/harbour/3.4.0/publish
 
         => {files:3}
 
