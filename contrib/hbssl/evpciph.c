@@ -442,7 +442,8 @@ HB_FUNC( EVP_CIPHER_CTX_RESET )
       EVP_CIPHER_CTX * ctx = hb_EVP_CIPHER_CTX_par( 1 );
 
       if( ctx )
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+    ! defined( LIBRESSL_VERSION_NUMBER )
          hb_retni( EVP_CIPHER_CTX_reset( ctx ) );
 #else
          hb_retni( EVP_CIPHER_CTX_cleanup( ctx ) );
@@ -511,7 +512,7 @@ HB_FUNC( EVP_CIPHER_CTX_CTRL )
       if( ctx )
          /* NOTE: 4th param doesn't have a 'const' qualifier. This is a setter
                   function, so even if we do a copy, what sort of allocation
-                  routines to use? Probably an omission from OpenSSLs part. [vszakats] */
+                  routine to use? [vszakats] */
          hb_retni( EVP_CIPHER_CTX_ctrl( ctx, hb_parni( 2 ), hb_parni( 3 ), ( void * ) hb_parc( 4 ) ) );
    }
    else

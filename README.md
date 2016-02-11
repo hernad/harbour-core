@@ -38,7 +38,7 @@ and interfaces to popular APIs.
 
   You can donate to fund further maintenance of this fork:
 
-  * [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BPSZQYKXMQJYG)
+  [![PayPal](https://www.paypalobjects.com/webstatic/i/logo/rebrand/ppcom.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BPSZQYKXMQJYG)
 
   Thanks to all who did!
 
@@ -481,6 +481,18 @@ You will need these packages to compile optional core Harbour features:
       for gtxwc terminal lib:    xorg-x11-devel OR XFree86-devel
       for console mouse support: gpm-devel OR gpm
 
+## pacman based systems (Windows/MSYS2, Arch Linux)
+
+For Windows/MSYS2 environment:
+
+      git base-devel msys2-devel mingw-w64-{x86_64,i686}-toolchain upx uncrustify p7zip
+
+Packages for optional core Harbour features:
+
+      for gtcrs terminal lib:    ncurses
+      for gtsln terminal lib:    slang
+      for gtxwc terminal lib:    libx11
+      for console mouse support: gpm
 
 > NOTES:
 >
@@ -1503,6 +1515,8 @@ Supported shells per host platforms:
             `tar -xvf cegcc_mingw32ce_cygwin1.7_r1399.tar -h`
 
           * Compiler will be in the `opt\mingw32ce` subdirectory.
+     * MSYS2 [Windows, free, open-source]
+        * <https://msys2.github.io/>
      * Clang [multi-platform, free, open-source]
         * <http://llvm.org/releases/>
      * Cygwin [win, free, open-source]
@@ -1530,7 +1544,7 @@ Supported shells per host platforms:
      * Borland/CodeGear/Embarcadero Compiler [win, free, closed-source]
         * <https://downloads.embarcadero.com/free/c_builder>
      * Intel Compiler [win, linux, darwin, commercial, closed-source]
-        * <https://software.intel.com/en-us/intel-compilers/>
+        * <https://software.intel.com/en-us/c-compilers>
 
 * Libraries:
 
@@ -1656,6 +1670,7 @@ Supported shells per host platforms:
      * [Harbour mainline development](https://groups.google.com/forum/#!forum/harbour-devel)
      * [HMG](http://hmgforum.com/viewforum.php?f=7)
      * [hbqt](https://groups.google.com/forum/#!forum/qtcontribs)
+     * [hwgui](https://sourceforge.net/p/hwgui/mailman/hwgui-developers/)
      * [FiveWin](http://forums.fivetechsupport.com/viewforum.php?f=3)
      * [xHarbour](https://groups.google.com/forum/#!forum/comp.lang.xharbour)
 

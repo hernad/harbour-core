@@ -355,7 +355,7 @@ static HB_BOOL s_fileExists( PHB_FILE_FUNCS pFuncs, const char * pszFileName, ch
 {
    HB_SYMBOL_UNUSED( pFuncs );
 
-   return hb_spFileExists( pszFileName, pRetPath );
+   return pRetPath ? hb_spFileExists( pszFileName, pRetPath ) : hb_fsFileExists( pszFileName );
 }
 
 static HB_BOOL s_fileDelete( PHB_FILE_FUNCS pFuncs, const char * pszFileName )
@@ -659,7 +659,7 @@ static PHB_FILE s_fileExtOpen( PHB_FILE_FUNCS pFuncs, const char * pszFileName, 
    if( ! fResult )
       hb_fsSetError( ( nExFlags & FXO_TRUNCATE ) ? 5 : 32 );
    if( ( nExFlags & FXO_COPYNAME ) != 0 && pFile )
-      hb_strncpy( ( char * ) pszFileName, pszFile, HB_PATH_MAX - 1 );
+      hb_strncpy( ( char * ) HB_UNCONST( pszFileName ), pszFile, HB_PATH_MAX - 1 );
    if( pError )
    {
       hb_errPutFileName( pError, pszFile );
@@ -827,7 +827,7 @@ static HB_FOFFSET s_fileSeek( PHB_FILE pFile, HB_FOFFSET nOffset,
 
 static HB_FOFFSET s_fileSize( PHB_FILE pFile )
 {
-   return hb_fsSeekLarge( pFile->hFile, 0, FS_END );
+   return hb_fsGetSize( pFile->hFile );
 }
 
 static HB_BOOL s_fileEof( PHB_FILE pFile )
@@ -1150,7 +1150,7 @@ HB_BOOL hb_fileExists( const char * pszFileName, char * pRetPath )
    if( i >= 0 )
       return s_pFileTypes[ i ]->Exists( s_pFileTypes[ i ], pszFileName, pRetPath );
 
-   return hb_spFileExists( pszFileName, pRetPath );
+   return pRetPath ? hb_spFileExists( pszFileName, pRetPath ) : hb_fsFileExists( pszFileName );
 }
 
 HB_BOOL hb_fileDelete( const char * pszFileName )

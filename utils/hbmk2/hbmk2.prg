@@ -1451,6 +1451,8 @@ STATIC FUNCTION DetectPackageManager()
       DO CASE
       CASE hb_vfExists( "/etc/debian_version" )
          cPkgMgr := "deb"
+      CASE hb_vfExists( "/etc/pacman.conf" )
+         cPkgMgr := "pacman"
       CASE hb_vfExists( "/etc/gentoo-release" )
          cPkgMgr := "portage"
       OTHERWISE
@@ -1467,6 +1469,11 @@ STATIC FUNCTION DetectPackageManager()
       cPkgMgr := "pkg"
    #elif defined( __PLATFORM__CYGWIN )
       cPkgMgr := "cygwin"
+   #elif defined( __PLATFORM__WINDOWS )
+      DO CASE
+      CASE hb_vfExists( "/etc/pacman.conf" )
+         cPkgMgr := "pacman"
+      ENDCASE
    /* extend below as needed */
    #else
       cPkgMgr := ""
@@ -4510,8 +4517,10 @@ STATIC FUNCTION __hbmk( aArgs, nArgTarget, nLevel, /* @ */ lPause, /* @ */ lExit
             ENDSWITCH
          ENDIF
          IF !( hbmk[ _HBMK_lCPP ] != NIL .AND. hbmk[ _HBMK_lCPP ] )
-            AAdd( hbmk[ _HBMK_aOPTL ], "-Wl,--no-demangle" )
-            AAdd( hbmk[ _HBMK_aOPTD ], "-Wl,--no-demangle" )
+            IF !( hbmk[ _HBMK_cPLAT ] == "darwin" )
+               AAdd( hbmk[ _HBMK_aOPTL ], "-Wl,--no-demangle" )
+               AAdd( hbmk[ _HBMK_aOPTD ], "-Wl,--no-demangle" )
+            ENDIF
          ENDIF
          IF hbmk[ _HBMK_lHARDEN ]
             IF HBMK_ISPLAT( "linux" )
@@ -4594,7 +4603,11 @@ STATIC FUNCTION __hbmk( aArgs, nArgTarget, nLevel, /* @ */ lPause, /* @ */ lExit
             ENDIF
          ENDIF
          IF hbmk[ _HBMK_lSTATICFULL ]
-            AAdd( hbmk[ _HBMK_aOPTL ], "-static" )
+            IF hbmk[ _HBMK_cPLAT ] == "darwin" .AND. hbmk[ _HBMK_cCOMP ] == "clang"
+               _hbmk_OutErr( hbmk, I_( "Warning: '-fullstatic' option not supported on this platform/compiler and it was therefore ignored." ) )
+            ELSE
+               AAdd( hbmk[ _HBMK_aOPTL ], "-static" )
+            ENDIF
          ENDIF
          IF hbmk[ _HBMK_cPLAT ] == "darwin" .AND. hbmk[ _HBMK_cCOMP ] == "gcc"
             IF hbmk[ _HBMK_lSHARED ]
@@ -4769,7 +4782,7 @@ STATIC FUNCTION __hbmk( aArgs, nArgTarget, nLevel, /* @ */ lPause, /* @ */ lExit
 #ifdef HARBOUR_SUPPORT
          IF hbmk[ _HBMK_cPLAT ] == "cygwin"
             l_aLIBSHAREDPOST := { "hbmainstd" }
-            l_aLIBSHARED := { cHarbourDyn + cDL_Version_Alter + hbmk_DYNSUFFIX( hbmk ) }
+            l_aLIBSHARED := { cHarbourDyn + hbmk_IMPSUFFIX( hbmk, cDL_Version_Alter ) }
             IF ! l_lNOHBLIB .AND. ! hbmk[ _HBMK_lCreateDyn ]
                l_aLIBSTATICPOST := l_aLIBSHAREDPOST
             ENDIF
@@ -5024,7 +5037,7 @@ STATIC FUNCTION __hbmk( aArgs, nArgTarget, nLevel, /* @ */ lPause, /* @ */ lExit
             /* NOTE: Newer xhb versions use "-x.y.z" version numbers. */
             l_aLIBSHARED := { iif( hbmk[ _HBMK_lMT ], "xharbourmt", "xharbour" ) }
          OTHERWISE
-            l_aLIBSHARED := { cHarbourDyn + cDL_Version_Alter + hbmk_DYNSUFFIX( hbmk ) }
+            l_aLIBSHARED := { cHarbourDyn + hbmk_IMPSUFFIX( hbmk, cDL_Version_Alter ) }
          ENDCASE
 
          IF _HBMODE_IS_XHB( hbmk[ _HBMK_nHBMODE ] )
@@ -5852,7 +5865,7 @@ STATIC FUNCTION __hbmk( aArgs, nArgTarget, nLevel, /* @ */ lPause, /* @ */ lExit
          ENDIF
          l_aLIBSYS := ArrayAJoin( { l_aLIBSYS, l_aLIBSYSCORE, l_aLIBSYSMISC } )
 #ifdef HARBOUR_SUPPORT
-         l_aLIBSHARED := { cHarbourDyn + cDL_Version_Alter + hbmk_DYNSUFFIX( hbmk ) + cLibExt }
+         l_aLIBSHARED := { cHarbourDyn + hbmk_IMPSUFFIX( hbmk, cDL_Version_Alter ) + cLibExt }
          l_aLIBSHAREDPOST := { "hbmainstd", "hbmainwin" }
 #endif
 
@@ -5973,7 +5986,7 @@ STATIC FUNCTION __hbmk( aArgs, nArgTarget, nLevel, /* @ */ lPause, /* @ */ lExit
          ENDIF
          l_aLIBSYS := ArrayAJoin( { l_aLIBSYS, l_aLIBSYSCORE, l_aLIBSYSMISC } )
 #ifdef HARBOUR_SUPPORT
-         l_aLIBSHARED := { cHarbourDyn + cDL_Version_Alter + hbmk_DYNSUFFIX( hbmk ) + cLibExt }
+         l_aLIBSHARED := { cHarbourDyn + hbmk_IMPSUFFIX( hbmk, cDL_Version_Alter ) + cLibExt }
          l_aLIBSHAREDPOST := { "hbmainstd", "hbmainwin" }
 #endif
          IF hbmk[ _HBMK_lHARDEN ]
@@ -8459,19 +8472,21 @@ STATIC FUNCTION __hbmk( aArgs, nArgTarget, nLevel, /* @ */ lPause, /* @ */ lExit
       IF Empty( hb_FNameDir( hbmk[ _HBMK_cPROGNAME ] ) )
          cCommand := "." + hb_ps() + hbmk[ _HBMK_cPROGNAME ]
       ENDIF
-      #if defined( __PLATFORM__DARWIN )
-         IF hbmk[ _HBMK_lGUI ]
-            /* TOFIX: Find a way to pass arbitrary options to an .app. */
-            l_aOPTRUN := {}
-            cCommand += ".app"
-         ENDIF
-      #endif
       IF hbmk[ _HBMK_lGUI ] .OR. ( ! hbmk[ _HBMK_lCLI ] .AND. hbmk[ _HBMK_cGT ] != NIL .AND. ! HBMK_IS_IN( Lower( hbmk[ _HBMK_cGT ] ), "gtcgi|gtstd|gtpca" ) )
-         cCommand := LaunchCommand( cCommand )
+         #if defined( __PLATFORM__DARWIN )
+            cCommand := "open -a " + FNameEscape( hb_PathNormalize( PathMakeAbsolute( cCommand + ".app", hb_cwd() ) ), _ESC_NIX ) + " --args"
+         #else
+            cCommand := LaunchCommand( cCommand )
+         #endif
       ELSE
          cCommand := FNameEscape( cCommand, hbmk[ _HBMK_nCmd_Esc ] )
       ENDIF
       cCommand := AllTrim( cCommand + " " + ArrayToList( l_aOPTRUN ) )
+      #if defined( __PLATFORM__DARWIN )
+         IF hbmk[ _HBMK_lGUI ]
+            cCommand += " &"
+         ENDIF
+      #endif
       IF hbmk[ _HBMK_lTRACE ]
          IF ! hbmk[ _HBMK_lQuiet ]
             _hbmk_OutStd( hbmk, I_( "Running executable:" ) )
@@ -9988,6 +10003,8 @@ STATIC PROCEDURE dep_postprocess_one( hbmk, dep )
       FOR EACH tmp IN dep[ _HBMKDEP_aINCPATH ]
          IF tmp == _HBMK_DEP_CTRL_MARKER
             tmp := dep[ _HBMKDEP_cControl ]
+            /* disable `pkg-config`-based detection when a custom search path is specified */
+            dep[ _HBMKDEP_aPKG ] := {}
             EXIT
          ENDIF
       NEXT
@@ -14503,6 +14520,12 @@ STATIC FUNCTION hbmk_DYNSUFFIX( hbmk )
 
    RETURN ""
 
+/* Return standard dynamic lib implib name suffix used by Harbour */
+STATIC FUNCTION hbmk_IMPSUFFIX( hbmk, cDL_Version_Alter )
+   RETURN iif( hbmk[ _HBMK_nHBMODE ] == _HBMODE_NATIVE, ;
+      "_dll", ;
+      cDL_Version_Alter + hbmk_DYNSUFFIX( hbmk ) )
+
 /* Keep this public, it is used from macro. */
 FUNCTION hbmk_KEYW( hbmk, cFileName, cKeyword, cValue, cOperator )
 
@@ -15882,26 +15905,27 @@ FUNCTION hbshell_ext_load( cName )
                AEval( hbsh[ _HBSH_hbmk ][ _HBMK_aCH ], {| tmp | AAdd( hbsh[ _HBSH_hCH ][ cName ], tmp ) } )
                AAddNew( hbsh[ _HBSH_hOPTPRG ][ cName ], "-D" + hb_StrFormat( _HBMK_HAS_TPL_HBC, StrToDefine( cName ) ) + "=" + cVersion )
 
+               IF ! Empty( hbsh[ _HBSH_hbmk ][ _HBMK_aLIBUSER ] ) .OR. ;
+                  ! Empty( hbsh[ _HBSH_hbmk ][ _HBMK_aLIBUSERGT ] )
                /* NOTE: Hack. We detect if the .hbc had defined any libs to load.
                         (f.e. there will not be any libs if the .hbc was skipped due
                         to filters)
                   TODO: In the future the .hbc should specify a list of dynamic libs
                         to load, and we should load those, if any. */
-               IF ! Empty( hbsh[ _HBSH_hbmk ][ _HBMK_aLIBUSER ] ) .OR. ;
-                  ! Empty( hbsh[ _HBSH_hbmk ][ _HBMK_aLIBUSERGT ] )
-                  cFileName := FindInPath( tmp := hb_libName( cName + hb_libSuffix() ), ;
-                                           iif( hb_Version( HB_VERSION_UNIX_COMPAT ), GetEnv( "LD_LIBRARY_PATH" ), GetEnv( "PATH" ) ) )
-                  IF cFileName == NIL
-                     _hbmk_OutErr( hbsh[ _HBSH_hbmk ], hb_StrFormat( I_( "'%1$s' (%2$s) not found." ), cName, tmp ) )
-                  ELSE
-                     hLib := hb_libLoad( cFileName )
-                     IF Empty( hLib )
-                        _hbmk_OutErr( hbsh[ _HBSH_hbmk ], hb_StrFormat( I_( "Error loading '%1$s' (%2$s)." ), cName, cFileName ) )
-                     ELSE
-                        hbsh[ _HBSH_hLibExt ][ cName ] := hLib
-                        RETURN .T.
-                     ENDIF
-                  ENDIF
+               ENDIF
+            ENDIF
+
+            cFileName := FindInPath( tmp := hb_libName( cName + hb_libSuffix() ), ;
+                                     iif( hb_Version( HB_VERSION_UNIX_COMPAT ), GetEnv( "LD_LIBRARY_PATH" ), GetEnv( "PATH" ) ) )
+            IF cFileName == NIL
+               _hbmk_OutErr( hbsh[ _HBSH_hbmk ], hb_StrFormat( I_( "'%1$s' (%2$s) not found." ), cName, tmp ) )
+            ELSE
+               hLib := hb_libLoad( cFileName )
+               IF Empty( hLib )
+                  _hbmk_OutErr( hbsh[ _HBSH_hbmk ], hb_StrFormat( I_( "Error loading '%1$s' (%2$s)." ), cName, cFileName ) )
+               ELSE
+                  hbsh[ _HBSH_hLibExt ][ cName ] := hLib
+                  RETURN .T.
                ENDIF
             ENDIF
          ENDIF

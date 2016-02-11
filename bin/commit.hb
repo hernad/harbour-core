@@ -69,7 +69,7 @@ PROCEDURE Main()
       RETURN
    ENDIF
 
-   IF CheckFileList( aFiles, cLocalRoot, .F. )
+   IF CheckFileList( aFiles, cLocalRoot, .F. ) .OR. "--force" $ cli_Options()
 
       cLogName := FindChangeLog( cVCS )
       IF HB_ISNULL( cLogName )
@@ -623,7 +623,7 @@ STATIC FUNCTION CheckFile( cName, /* @ */ aErr, lApplyFixes, cLocalRoot, lRebase
       "README.md", ;
       "LICENSE.txt", ;
       "*/RELNOTES.txt", ;
-      "*/README.txt", ;
+      "README.txt", ;
       "ChangeLog.txt", ;
       "*/doc/*/*.txt", ;
       "*.po", ;

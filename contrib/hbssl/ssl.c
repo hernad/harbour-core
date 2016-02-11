@@ -163,7 +163,8 @@ HB_FUNC( OPENSSL_VERSION )
       case HB_OPENSSL_DIR:       value = OPENSSL_DIR;      break;
    }
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+    ! defined( LIBRESSL_VERSION_NUMBER )
    hb_retc( OpenSSL_version( value ) );
 #else
    hb_retc( SSLeay_version( value ) );
@@ -177,7 +178,8 @@ HB_FUNC( OPENSSL_VERSION_NUMBER )
 
 HB_FUNC( OPENSSL_VERSION_NUM )
 {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+    ! defined( LIBRESSL_VERSION_NUMBER )
    hb_retnint( OpenSSL_version_num() );
 #else
    hb_retnint( SSLeay() );
@@ -704,15 +706,7 @@ HB_FUNC( SSL_GET_SSL_METHOD )
 #endif
          int n;
 
-         if(      p == SSLv3_method()         ) n = HB_SSL_CTX_NEW_METHOD_SSLV3;
-         else if( p == SSLv3_server_method()  ) n = HB_SSL_CTX_NEW_METHOD_SSLV3_SERVER;
-         else if( p == SSLv3_client_method()  ) n = HB_SSL_CTX_NEW_METHOD_SSLV3_CLIENT;
-#if OPENSSL_VERSION_NUMBER < 0x10000000L
-         else if( p == SSLv2_method()         ) n = HB_SSL_CTX_NEW_METHOD_SSLV2;
-         else if( p == SSLv2_server_method()  ) n = HB_SSL_CTX_NEW_METHOD_SSLV2_SERVER;
-         else if( p == SSLv2_client_method()  ) n = HB_SSL_CTX_NEW_METHOD_SSLV2_CLIENT;
-#endif
-         else if( p == TLSv1_method()         ) n = HB_SSL_CTX_NEW_METHOD_TLSV1;
+         if(      p == TLSv1_method()         ) n = HB_SSL_CTX_NEW_METHOD_TLSV1;
          else if( p == TLSv1_server_method()  ) n = HB_SSL_CTX_NEW_METHOD_TLSV1_SERVER;
          else if( p == TLSv1_client_method()  ) n = HB_SSL_CTX_NEW_METHOD_TLSV1_CLIENT;
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
@@ -740,7 +734,7 @@ HB_FUNC( SSL_GET_CURRENT_CIPHER )
       SSL * ssl = hb_SSL_par( 1 );
 
       if( ssl )
-         hb_retptr( ( void * ) SSL_get_current_cipher( ssl ) );
+         hb_retptr( HB_UNCONST( SSL_get_current_cipher( ssl ) ) );
    }
    else
       hb_errRT_BASE( EG_ARG, 2010, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
@@ -858,7 +852,7 @@ HB_FUNC( SSL_SET_TLSEXT_HOST_NAME )
       SSL * ssl = hb_SSL_par( 1 );
 
       if( ssl )
-         hb_retni( SSL_set_tlsext_host_name( ssl, hb_parc( 2 ) ) );
+         hb_retni( SSL_set_tlsext_host_name( ssl, HB_UNCONST( hb_parc( 2 ) ) ) );
 #endif
    }
    else
@@ -1558,10 +1552,15 @@ HB_FUNC( SSL_USE_RSAPRIVATEKEY_ASN1 )
       SSL * ssl = hb_SSL_par( 1 );
 
       if( ssl )
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+    ! defined( LIBRESSL_VERSION_NUMBER )
+         hb_retni( SSL_use_RSAPrivateKey_ASN1( ssl, ( const unsigned char * ) hb_parc( 2 ), ( int ) hb_parclen( 2 ) ) );
+#else
          /* 'const' not used in 2nd param because ssh.h misses it, too.
-             Bug report sent: #1988
+             Bug reported: #1988 [Fixed in 1.1.0 after submitting patch]
              [vszakats] */
-         hb_retni( SSL_use_RSAPrivateKey_ASN1( ssl, ( unsigned char * ) hb_parc( 2 ), ( int ) hb_parclen( 2 ) ) );
+         hb_retni( SSL_use_RSAPrivateKey_ASN1( ssl, ( unsigned char * ) HB_UNCONST( hb_parc( 2 ) ), ( int ) hb_parclen( 2 ) ) );
+#endif
    }
    else
       hb_errRT_BASE( EG_ARG, 2010, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );

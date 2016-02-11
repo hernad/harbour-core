@@ -543,7 +543,7 @@ static void hb_gt_alleg_Init( PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hF
 {
    int iRet;
 
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_alleg_Init(%p,%p,%p,%p)", pGT, ( void * ) ( HB_PTRDIFF ) hFilenoStdin, ( void * ) ( HB_PTRDIFF ) hFilenoStdout, ( void * ) ( HB_PTRDIFF ) hFilenoStderr ) );
+   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_alleg_Init(%p,%p,%p,%p)", pGT, ( void * ) ( HB_PTRUINT ) hFilenoStdin, ( void * ) ( HB_PTRUINT ) hFilenoStdout, ( void * ) ( HB_PTRUINT ) hFilenoStderr ) );
 
    ssfCreateThinFont( &s_ssfDefaultFont );
 
@@ -881,7 +881,7 @@ static HB_BOOL hb_gt_alleg_Info( PHB_GT pGT, int iType, PHB_GT_INFO pInfo )
 
       case HB_GTI_WINTITLE:
          if( hb_itemType( pInfo->pNewVal ) & HB_IT_STRING )
-            al_set_window_title( ( char * ) hb_itemGetCPtr( pInfo->pNewVal ) );
+            al_set_window_title( ( char * ) HB_UNCONST( hb_itemGetCPtr( pInfo->pNewVal ) ) );
 
          break;
 

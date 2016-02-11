@@ -167,7 +167,7 @@
 #  elif defined( __POCC__ ) && ! defined( __XCC__ )
 #     define HB_HAS_SOCKADDR_STORAGE
 #  elif defined( _MSC_VER )
-#     if _MSC_VER >= 1900
+#     if _MSC_VER >= 1800
 #        define HB_HAS_INET_PTON
 #        define HB_HAS_INET_NTOP
 #        define HB_HAS_ADDRINFO
@@ -1829,7 +1829,7 @@ char * hb_socketAddrGetName( const void * pSockAddr, unsigned len )
             const char * szAddr;
 #  if defined( HB_HAS_INET_NTOP )
             char buf[ INET_ADDRSTRLEN ];
-            szAddr = inet_ntop( AF_INET, ( void * ) &sa->sin_addr, buf, sizeof( buf ) );
+            szAddr = inet_ntop( AF_INET, HB_UNCONST( &sa->sin_addr ), buf, sizeof( buf ) );
 #  elif defined( HB_IS_INET_NTOA_MT_SAFE )
             szAddr = inet_ntoa( sa->sin_addr );
 #  else
@@ -1849,7 +1849,7 @@ char * hb_socketAddrGetName( const void * pSockAddr, unsigned len )
             const char * szAddr;
 #  if defined( HB_HAS_INET_NTOP )
             char buf[ INET6_ADDRSTRLEN ];
-            szAddr = inet_ntop( AF_INET6, ( void * ) &sa->sin6_addr, buf, sizeof( buf ) );
+            szAddr = inet_ntop( AF_INET6, HB_UNCONST( &sa->sin6_addr ), buf, sizeof( buf ) );
 #  else
             {
                int iTODO;
@@ -1979,7 +1979,7 @@ PHB_ITEM hb_socketAddrToItem( const void * pSockAddr, unsigned len )
             const char * szAddr;
 #  if defined( HB_HAS_INET_NTOP )
             char buf[ INET_ADDRSTRLEN ];
-            szAddr = inet_ntop( AF_INET, ( void * ) &sa->sin_addr, buf, sizeof( buf ) );
+            szAddr = inet_ntop( AF_INET, HB_UNCONST( &sa->sin_addr ), buf, sizeof( buf ) );
 #  elif defined( HB_IS_INET_NTOA_MT_SAFE )
             szAddr = inet_ntoa( sa->sin_addr );
 #  else
@@ -2004,7 +2004,7 @@ PHB_ITEM hb_socketAddrToItem( const void * pSockAddr, unsigned len )
             const char * szAddr;
 #  if defined( HB_HAS_INET_NTOP )
             char buf[ INET6_ADDRSTRLEN ];
-            szAddr = inet_ntop( AF_INET6, ( void * ) &sa->sin6_addr, buf, sizeof( buf ) );
+            szAddr = inet_ntop( AF_INET6, HB_UNCONST( &sa->sin6_addr ), buf, sizeof( buf ) );
 #  else
             {
                int iTODO;
@@ -2787,7 +2787,7 @@ static HB_SOCKET s_socketSelectCallback( PHB_ITEM pItem )
       {
          sd = hb_socketItemGet( pItem );
          if( sd == HB_NO_SOCKET )
-            sd = ( HB_SOCKET ) ( HB_PTRDIFF ) hb_itemGetPtr( pItem );
+            sd = ( HB_SOCKET ) ( HB_PTRUINT ) hb_itemGetPtr( pItem );
       }
    }
    return sd;
@@ -2932,7 +2932,7 @@ HB_BOOL hb_socketResolveInetAddr( void ** pSockAddr, unsigned * puiLen, const ch
       if( getaddrinfo( szAddr, NULL, &hints, &res ) == 0 )
       {
          if( ( int ) res->ai_addrlen >= ( int ) sizeof( struct sockaddr_in ) &&
-             hb_socketGetAddrFamily( res->ai_addr, res->ai_addrlen ) == AF_INET )
+             hb_socketGetAddrFamily( res->ai_addr, ( unsigned ) res->ai_addrlen ) == AF_INET )
          {
             sa.sin_addr.s_addr = ( ( struct sockaddr_in * ) res->ai_addr )->sin_addr.s_addr;
             fTrans = HB_TRUE;
@@ -3057,7 +3057,7 @@ char * hb_socketResolveAddr( const char * szAddr, int af )
       hints.ai_family = af;
       if( getaddrinfo( szAddr, NULL, &hints, &res ) == 0 )
       {
-         szResult = hb_socketAddrGetName( res->ai_addr, res->ai_addrlen );
+         szResult = hb_socketAddrGetName( res->ai_addr, ( unsigned ) res->ai_addrlen );
          freeaddrinfo( res );
       }
       hb_vmLock();
@@ -3100,7 +3100,7 @@ PHB_ITEM hb_socketGetHosts( const char * szAddr, int af )
          iCount = 0;
          while( ai )
          {
-            char * szResult = hb_socketAddrGetName( res->ai_addr, res->ai_addrlen );
+            char * szResult = hb_socketAddrGetName( res->ai_addr, ( unsigned ) res->ai_addrlen );
             if( szResult )
             {
                int i;
