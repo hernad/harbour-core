@@ -58,7 +58,7 @@ static HB_GARBAGE_FUNC( PGconn_release )
    if( ph && *ph )
    {
       /* Destroy the object */
-      PQfinish( ( PGconn * ) *ph );
+      //PQfinish( ( PGconn * ) *ph );
 
       /* set pointer to NULL to avoid multiple freeing */
       *ph = NULL;

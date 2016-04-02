@@ -131,6 +131,7 @@ METHOD New( cHost, cDatabase, cUser, cPass, nPort, cSchema, hCustom ) CLASS TPQs
 METHOD PROCEDURE Destroy() CLASS TPQserver
 
    ::TraceOff()
+   PQFinish( ::pDb )
    ::pDb := NIL
 
    RETURN
