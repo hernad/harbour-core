@@ -1,3 +1,39 @@
+harbour (3.4.0-7) unstable; urgency=medium
+
+  * my test changes
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Thu, 21 Jan 2016 15:54:47 +0000
+
+harbour (3.4.0-6) UNRELEASED; urgency=medium
+
+  * update upsteream
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Thu, 21 Jan 2016 14:52:42 +0000
+
+harbour (3.4.0-5) unstable; urgency=medium
+
+  *  update master
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Tue, 19 Jan 2016 12:05:00 +0000
+
+harbour (3.4.0-4) unstable; urgency=medium
+
+  * debian info 
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Sun, 13 Dec 2015 21:10:20 +0000
+
+harbour (3.4.0-3) unstable; urgency=medium
+
+  * merge upstream master https://github.com/vszakats/harbour-core.git
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Sun, 13 Dec 2015 20:10:53 +0000
+
+harbour (3.4.0-2) unstable; urgency=medium
+
+  * dch -i, new debian build system
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Sun, 13 Dec 2015 19:53:04 +0000
+
 harbour (3.4.0-1) unstable; urgency=low
 
   * 3.4.0-1
