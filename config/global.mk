@@ -34,6 +34,9 @@ HB_VER_STATUS    := dev
 # Short status (d, a1, a2, b1, b2, r1, r2, empty for final)
 HB_VER_STATUS_SH := d
 
+export HB_VER_MAJOR
+export HB_VER_MINOR
+
 ifeq ($(HB_VER_STATUS_SH),)
    HB_VER_STATUS_SH := $(HB_VER_MINOR)$(HB_VER_RELEASE)
 endif
@@ -900,6 +903,9 @@ ifeq ($(HB_COMPILER_VER),)
       ifneq ($(findstring 3.8,$(_C_VER)),)
          HB_COMPILER_VER := 0308
       else
+      ifneq ($(findstring 7.3,$(_C_VER)),)
+         HB_COMPILER_VER := 0307
+      else
       ifneq ($(findstring 7.0,$(_C_VER)),)
          HB_COMPILER_VER := 0307
       else
@@ -913,6 +919,7 @@ ifeq ($(HB_COMPILER_VER),)
          HB_COMPILER_VER := 0305
       else
          HB_COMPILER_VER := 0304
+      endif
       endif
       endif
       endif

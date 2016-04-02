@@ -151,13 +151,13 @@ STATIC PROCEDURE LoadCertificates( ssl_ctx, cCertFile, cKeyFile )
 
    /* Server using hb_inetSSL_ACCEPT() needs certificates,
       they can be generated using the following command:
-         openssl req -x509 -nodes -days 365 -newkey rsa:1024 \
-                 -out <cCertFile> -keyout <cKeyFile>
+         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                 -sha256 -out <cCertFile> -keyout <cKeyFile>
     */
    IF ! hb_vfExists( cCertFile ) .AND. ! hb_vfExists( cKeyFile )
       ? "SERVER: generating certificates..."
-      hb_run( "openssl req -x509 -nodes -days 365 -newkey rsa:1024 " + ;
-              "-out " + cCertFile + " -keyout " + cKeyFile )
+      hb_run( "openssl req -x509 -nodes -days 365 -newkey rsa:2048 " + ;
+              "-sha256 -out " + cCertFile + " -keyout " + cKeyFile )
    ENDIF
 
    /* set the local certificate from CertFile */

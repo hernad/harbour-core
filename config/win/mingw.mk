@@ -12,8 +12,17 @@ OBJ_EXT := .o
 LIB_PREF := lib
 LIB_EXT := .a
 
+3RDLIBS_DYN := $(3RDLIBS)
+
 ifneq ($(HB_COMPILER),mingw64)
-   ifneq ($(findstring unicows,$(3RDLIBS)),)
+
+   # Since unicows support in harbour-*.dll effectively
+   # doubles build time for core, allow it to be disabled.
+   ifeq ($(__HB_HARBOUR_DLL_UNICOWS),no)
+      3RDLIBS_DYN := $(filter-out $(3RDLIBS_DYN),unicows)
+   endif
+
+   ifneq ($(findstring unicows,$(3RDLIBS_DYN)),)
       # Required to be able to link harbour-*.dll against unicows lib
       # without 'Cannot export <*>: symbol not found' errors.
       HB_DYN_COPT := -DHB_DYNLIB
@@ -21,10 +30,10 @@ ifneq ($(HB_COMPILER),mingw64)
 endif
 
 CC := $(HB_CCPATH)$(HB_CCPREFIX)$(HB_CMP)$(HB_CCSUFFIX)
-CC_IN := -c
+CC_IN :=
 CC_OUT := -o
 
-CFLAGS += -I. -I$(HB_HOST_INC)
+CFLAGS += -I. -I$(HB_HOST_INC) -c
 
 # Similar to MSVC -GS (default) option:
 ifeq ($(filter $(HB_COMPILER_VER),0209 0304 0400 0401 0402 0403 0404 0405 0406 0407 0408),)
@@ -42,7 +51,11 @@ endif
 
 ifneq ($(HB_COMPILER_VER),)
    ifeq ($(filter $(HB_COMPILER_VER),0209 0304 0400 0401 0402 0403 0404 0405 0406 0407),)
+      LDFLAGS += -static-libgcc
       DFLAGS += -static-libgcc
+#     ifeq ($(HB_BUILD_MODE),cpp)
+#        LDFLAGS += -static-libstdc++
+#     endif
    endif
 endif
 
@@ -53,10 +66,15 @@ ifneq ($(HB_COMPILER_VER),)
    ifeq ($(filter $(HB_COMPILER_VER),0209 0304 0400 0401 0402 0403 0404),)
       LDFLAGS += -Wl,--nxcompat -Wl,--dynamicbase
       DFLAGS += -Wl,--nxcompat -Wl,--dynamicbase
+      ifeq ($(HB_COMPILER),mingw64)
+         LDFLAGS += -Wl,--pic-executable,-e,mainCRTStartup
+      else
+         LDFLAGS += -Wl,--pic-executable,-e,_mainCRTStartup
+      endif
       ifeq ($(filter $(HB_COMPILER_VER),0405 0406 0407 0408 0409),)
          ifeq ($(HB_COMPILER),mingw64)
-            LDFLAGS += -Wl,--high-entropy-va
-            DFLAGS += -Wl,--high-entropy-va
+            LDFLAGS += -Wl,--high-entropy-va -Wl,--image-base,0x140000000
+            DFLAGS += -Wl,--high-entropy-va -Wl,--image-base,0x180000000
          endif
          # '--no-insert-timestamp' has a bug failing to properly
          # reset timestamp in many (apparently random) cases as
@@ -70,11 +88,20 @@ ifneq ($(HB_COMPILER_VER),)
    endif
 endif
 
+# Enable this, once better than a no-op
+#ifeq ($(filter $(HB_COMPILER_VER),0209 0304),)
+#   CFLAGS += -D_FORTIFY_SOURCE=2
+#endif
+
 ifneq ($(HB_BUILD_WARN),no)
    CFLAGS += -W -Wall
-   # CFLAGS += -Wextra -Wformat-security -D_FORTIFY_SOURCE=2
+   # CFLAGS += -Wextra -Wformat-security
+#  ifeq ($(filter $(HB_COMPILER_VER),0209 0304 0400 0401),)
+#     # https://gcc.gnu.org/gcc-4.2/changes.html
+#     CFLAGS += -Wstrict-overflow=4
+#  endif
    ifeq ($(filter $(HB_COMPILER_VER),0209 0304 0400 0401 0402 0403 0404 0405 0406 0407 0408 0409 0501 0502 0503),)
-      CFLAGS += -Wmisleading-indentation
+      CFLAGS += -Wlogical-op -Wduplicated-cond -Wshift-negative-value -Wnull-dereference -Wunused-variable
    endif
 else
    CFLAGS += -Wmissing-braces -Wreturn-type -Wformat
@@ -159,7 +186,7 @@ AR_RULE = $(create_library)
 DY := $(CC)
 DFLAGS += -shared $(LIBPATHS)
 DY_OUT := $(LD_OUT)
-DLIBS := $(foreach lib,$(HB_USER_LIBS) $(LIBS) $(3RDLIBS) $(SYSLIBS),-l$(lib))
+DLIBS := $(foreach lib,$(HB_USER_LIBS) $(LIBS) $(3RDLIBS_DYN) $(SYSLIBS),-l$(lib))
 
 # NOTE: The empty line directly before 'endef' HAVE TO exist!
 define dynlib_object
@@ -169,7 +196,7 @@ endef
 define create_dynlib
    $(if $(wildcard __dyn__.tmp),@$(RM) __dyn__.tmp,)
    $(foreach file,$^,$(dynlib_object))
-   $(DY) $(DFLAGS) $(HB_USER_DFLAGS) $(DY_OUT)$(DYN_DIR)/$@ __dyn__.tmp $(DLIBS) -Wl,--out-implib,$(IMP_FILE),--output-def,$(DYN_DIR)/$(basename $@).def $(DYSTRIP)
+   $(DY) $(DFLAGS) $(HB_USER_DFLAGS) $(DY_OUT)$(DYN_DIR)/$@ __dyn__.tmp $(DEF_FILE) $(DLIBS) -Wl,--out-implib,$(IMP_FILE),--output-def,$(DYN_DIR)/$(basename $@).def -Wl,--major-image-version,$(HB_VER_MAJOR) -Wl,--minor-image-version,$(HB_VER_MINOR) $(DYSTRIP)
 endef
 
 DY_RULE = $(create_dynlib)

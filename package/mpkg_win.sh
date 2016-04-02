@@ -7,13 +7,16 @@
 
 cd "$(dirname "$0")" || exit
 
-# - Requires Git for Windows or busybox (untested) to run on Windows
-# - Adjust target dir, MinGW dirs, set HB_DIR_UPX, HB_DIR_7Z, HB_DIR_MINGW,
+# - Requires MSYS2 or Git for Windows to run on Windows
+# - Requires 7z in PATH
+# - Adjust target dir, MinGW dirs,
+#   set HB_DIR_UPX, HB_DIR_7Z, HB_DIR_MINGW, HB_DIR_MINGW_32, HB_DIR_MINGW_64
 #   create required packages beforehand.
-# - Run this from vanilla official source tree only.
-# - Requires BCC in PATH or HB_DIR_BCC_IMPLIB (only when including BCC build).
-# - Requires GNU sed, touch and OpenSSL tools in PATH
 # - Optional HB_SFX_7Z envvar pointed to 7z SFX module
+# - Run this from vanilla official source tree only.
+
+# TOFIX: hbmk2.exe invocations break cross-builds.
+#        A native hbmk2 copy would need to be called instead.
 
 echo "! Self: $0"
 
@@ -31,18 +34,20 @@ readonly HB_RT_DEF=C:/hb
 
 HB_RT="$(echo "${HB_RT}" | sed 's|\\|/|g')"
 HB_DIR_MINGW="$(echo "${HB_DIR_MINGW}" | sed 's|\\|/|g')"
+HB_DIR_MINGW_32="$(echo "${HB_DIR_MINGW_32}" | sed 's|\\|/|g')"
+HB_DIR_MINGW_64="$(echo "${HB_DIR_MINGW_64}" | sed 's|\\|/|g')"
 
 HB_DR="hb${HB_VS}/"
 HB_ABSROOT="${HB_RT}/${HB_DR}"
 
 _BRANCH="${APPVEYOR_REPO_BRANCH}${TRAVIS_BRANCH}${GIT_BRANCH}"
-_SCRIPT="$(realpath "$(pwd)/mpkg.hb")"
-_ROOT="$(realpath "$(pwd)/..")"
+[ -n "${_BRANCH}" ] || _BRANCH="$(git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')"
+_SCRIPT="$(realpath 'mpkg.hb')"
+_ROOT="$(realpath '..')"
 
 echo "! Branch: '${_BRANCH}'"
 
-# Hack for Git for Windows. Windows system paths may override
-# standard tools.
+# Hack for Git for Windows. Windows system paths may override standard tools.
 case "$(uname)" in
    *_NT*) alias find=/usr/bin/find;;
 esac
@@ -52,16 +57,16 @@ if [ -z "${HB_BASE}" ] ; then
    # and 64-bit if it's the only one available.
    if [ -d "../pkg/win/mingw/harbour-${HB_VF}-win-mingw" ] ; then
       # MinGW 32-bit base system
-      LIB_TARGET='32'
+      _lib_target='32'
    elif [ -d "../pkg/win/mingw64/harbour-${HB_VF}-win-mingw64" ] ; then
       # MinGW 64-bit base system
-      LIB_TARGET='64'
+      _lib_target='64'
    fi
 else
-   LIB_TARGET="${HB_BASE}"
+   _lib_target="${HB_BASE}"
 fi
 
-echo "! Creating ${LIB_TARGET}-bit hosted package"
+echo "! Creating ${_lib_target}-bit hosted package"
 
 # Assemble package from per-target builds
 
@@ -86,12 +91,12 @@ if ls       ../pkg/wce/mingwarm/harbour-${HB_VF}-wce-mingwarm/bin/*.dll > /dev/n
    cp -f -p ../pkg/wce/mingwarm/harbour-${HB_VF}-wce-mingwarm/bin/*.dll "${HB_ABSROOT}bin/"
 fi
 
-if [ "${LIB_TARGET}" = '32' ] ; then
+if [ "${_lib_target}" = '32' ] ; then
    if ls       ../pkg/win/mingw64/harbour-${HB_VF}-win-mingw64/bin/*.dll > /dev/null 2>&1 ; then
       cp -f -p ../pkg/win/mingw64/harbour-${HB_VF}-win-mingw64/bin/*.dll "${HB_ABSROOT}bin/"
    fi
    ( cd "../pkg/win/mingw/harbour-${HB_VF}-win-mingw" && cp -f -p -R ./* "${HB_ABSROOT}" )
-elif [ "${LIB_TARGET}" = '64' ] ; then
+elif [ "${_lib_target}" = '64' ] ; then
    if ls       ../pkg/win/mingw/harbour-${HB_VF}-win-mingw/bin/*.dll > /dev/null 2>&1 ; then
       cp -f -p ../pkg/win/mingw/harbour-${HB_VF}-win-mingw/bin/*.dll "${HB_ABSROOT}bin/"
    fi
@@ -118,28 +123,12 @@ for dir in \
    fi
 done
 
-# Create special implibs for Borland (requires BCC in PATH)
-# NOTE: Using intermediate .def files, because direct .dll to .lib conversion
-#       is buggy in BCC55 and BCC58 (no other versions tested), leaving off
-#       leading underscore from certain ("random") symbols, resulting in
-#       unresolved externals, when trying to use it. [vszakats]
-if [ -d "${HB_ABSROOT}lib/win/bcc" ] ; then
-   for file in ${HB_ABSROOT}bin/*-${HB_VS}.dll ; do
-      bfile="$(basename "${file}")"
-      "${HB_DIR_BCC_IMPLIB}impdef.exe" -a "${HB_ABSROOT}lib/win/bcc/${bfile}-bcc.defraw" "${file}"
-      sed -f "s/LIBRARY     ${bfile}.DLL/LIBRARY     \"${bfile}.dll\"/Ig" < "${HB_ABSROOT}lib/win/bcc/${bfile}-bcc.defraw" > "${HB_ABSROOT}lib/win/bcc/${bfile}-bcc.def"
-      "${HB_DIR_BCC_IMPLIB}implib.exe" -c -a "${HB_ABSROOT}lib/win/bcc/${bfile}-bcc.lib" "${HB_ABSROOT}lib/win/bcc/${bfile}-bcc.def"
-      touch -c "${HB_ABSROOT}lib/win/bcc/${bfile}-bcc.lib" -r "${HB_ABSROOT}README.md"
-      rm -f "${HB_ABSROOT}lib/win/bcc/${bfile}-bcc.defraw" "${HB_ABSROOT}lib/win/bcc/${bfile}-bcc.def"
-   done
-fi
-
 # Workaround for ld --no-insert-timestamp bug that exist as of
 # binutils 2.25, when the PE build timestamp field is often
 # filled with random bytes instead of zeroes. -s option is not
 # fixing this, 'strip' randomly fails either, so we're
 # patching manually. Do this while only Harbour built binaries are
-# copied into the bin directory to not modify 3rd party binaries.
+# present in the bin directory to not modify 3rd party binaries.
 cp -f -p "${HB_ABSROOT}bin/hbmk2.exe" "${HB_ABSROOT}bin/hbmk2-temp.exe"
 "${HB_ABSROOT}bin/hbmk2-temp.exe" "${_SCRIPT}" pe "${_ROOT}" "${HB_ABSROOT}bin/*.exe"
 "${HB_ABSROOT}bin/hbmk2-temp.exe" "${_SCRIPT}" pe "${_ROOT}" "${HB_ABSROOT}bin/*.dll"
@@ -149,17 +138,18 @@ rm -f "${HB_ABSROOT}bin/hbmk2-temp.exe"
 # won't remove internal timestamps from generated implibs.
 # Slow. Requires binutils 2.23 (maybe 2.24/2.25).
 # Short synonym '-D' is not recognized as of binutils 2.25.
-for files in \
-   "${HB_ABSROOT}lib/win/mingw/*-*.*" \
-   "${HB_ABSROOT}lib/win/mingw64/*-*.*" \
-   "${HB_ABSROOT}lib/win/mingw/*_dll*.*" \
-   "${HB_ABSROOT}lib/win/mingw64/*_dll*.*" \
-   "${HB_ABSROOT}lib/win/msvc/*.lib" \
-   "${HB_ABSROOT}lib/win/msvc64/*.lib" ; do
-   # shellcheck disable=SC2086
-   if ls ${files} > /dev/null 2>&1 ; then
-      "${HB_DIR_MINGW}/bin/strip" -p --enable-deterministic-archives -g "${files}"
-   fi
+for _cpu in '' '64' ; do
+   [ "${_cpu}" != '64' ] && _mingw_dir="${HB_DIR_MINGW_32}"
+   [ "${_cpu}"  = '64' ] && _mingw_dir="${HB_DIR_MINGW_64}"
+   for files in \
+      "${HB_ABSROOT}lib/win/mingw${_cpu}/*-*.*" \
+      "${HB_ABSROOT}lib/win/mingw${_cpu}/*_dll*.*" \
+      "${HB_ABSROOT}lib/win/msvc${_cpu}/*.lib" ; do
+      # shellcheck disable=SC2086
+      if ls ${files} > /dev/null 2>&1 ; then
+         "${_mingw_dir}/bin/strip" -p --enable-deterministic-archives -g "${files}"
+      fi
+   done
 done
 
 # Copy upx
@@ -172,7 +162,7 @@ fi
 # Copy 7z
 
 if [ -n "${HB_DIR_7Z}" ] ; then
-   if [ "${LIB_TARGET}" = '64' ] ; then
+   if [ "${_lib_target}" = '64' ] ; then
       cp -f -p "${HB_DIR_7Z}x64/7za.exe" "${HB_ABSROOT}bin/"
    else
       cp -f -p "${HB_DIR_7Z}7za.exe"     "${HB_ABSROOT}bin/"
@@ -182,7 +172,7 @@ fi
 
 # Copy curl
 
-if [ "${LIB_TARGET}" = '64' ] ; then
+if [ "${_lib_target}" = '64' ] ; then
    HB_DIR_CURL="${HB_DIR_CURL_64}"
 else
    HB_DIR_CURL="${HB_DIR_CURL_32}"
@@ -240,20 +230,24 @@ fi
 # Pick the ones from a multi-target MinGW distro
 # that match the bitness of our base target.
 _MINGW_DLL_DIR="${HB_DIR_MINGW}/bin"
-[ "${LIB_TARGET}" = '32' ] && [ -d "${HB_DIR_MINGW}/x86_64-w64-mingw32/lib32" ] && _MINGW_DLL_DIR="${HB_DIR_MINGW}/x86_64-w64-mingw32/lib32"
-[ "${LIB_TARGET}" = '64' ] && [ -d "${HB_DIR_MINGW}/i686-w64-mingw32/lib64"   ] && _MINGW_DLL_DIR="${HB_DIR_MINGW}/i686-w64-mingw32/lib64"
+if [ -d "${_MINGW_DLL_DIR}" ] ; then
 
-# shellcheck disable=SC2086
-if ls       ${_MINGW_DLL_DIR}/libgcc_s_*.dll > /dev/null 2>&1 ; then
-   cp -f -p ${_MINGW_DLL_DIR}/libgcc_s_*.dll "${HB_ABSROOT}bin/"
-fi
-# shellcheck disable=SC2086
-if ls       ${_MINGW_DLL_DIR}/mingwm*.dll > /dev/null 2>&1 ; then
-   cp -f -p ${_MINGW_DLL_DIR}/mingwm*.dll "${HB_ABSROOT}bin/"
-fi
-# shellcheck disable=SC2086
-if ls       ${_MINGW_DLL_DIR}/libwinpthread-*.dll > /dev/null 2>&1 ; then
-   cp -f -p ${_MINGW_DLL_DIR}/libwinpthread-*.dll "${HB_ABSROOT}bin/"
+   [ "${_lib_target}" = '32' ] && [ -d "${HB_DIR_MINGW}/x86_64-w64-mingw32/lib32" ] && _MINGW_DLL_DIR="${HB_DIR_MINGW}/x86_64-w64-mingw32/lib32"
+   [ "${_lib_target}" = '64' ] && [ -d "${HB_DIR_MINGW}/i686-w64-mingw32/lib64"   ] && _MINGW_DLL_DIR="${HB_DIR_MINGW}/i686-w64-mingw32/lib64"
+
+   # shellcheck disable=SC2086
+   if ls       ${_MINGW_DLL_DIR}/libgcc_s_*.dll > /dev/null 2>&1 ; then
+      cp -f -p ${_MINGW_DLL_DIR}/libgcc_s_*.dll "${HB_ABSROOT}bin/"
+   fi
+   # shellcheck disable=SC2086
+   if ls       ${_MINGW_DLL_DIR}/libwinpthread-*.dll > /dev/null 2>&1 ; then
+      cp -f -p ${_MINGW_DLL_DIR}/libwinpthread-*.dll "${HB_ABSROOT}bin/"
+   fi
+   # Not present anymore in newer (~2013-) mingw distros
+   # shellcheck disable=SC2086
+   if ls       ${_MINGW_DLL_DIR}/mingwm*.dll > /dev/null 2>&1 ; then
+      cp -f -p ${_MINGW_DLL_DIR}/mingwm*.dll "${HB_ABSROOT}bin/"
+   fi
 fi
 
 # Copy getmingw.hb with some burn-in
@@ -265,14 +259,14 @@ cp -f -p 'getsrc.hb' "${HB_ABSROOT}bin/"
 
 # Burn build information into RELNOTES.txt
 
-_HB_VER="${HB_VF}"
+_hb_ver="${HB_VF}"
 if [ "${HB_VF}" != "${HB_VF_DEF}" ] ; then
-   _HB_VER="${HB_VF_DEF} ${_HB_VER}"
+   _hb_ver="${HB_VF_DEF} ${_hb_ver}"
 fi
 
-VCS_ID="$(git rev-parse --short HEAD)"
-sed -e "s/_VCS_ID_/${VCS_ID}/g" \
-    -e "s/_HB_VERSION_/${_HB_VER}/g" 'RELNOTES.txt' > "${HB_ABSROOT}RELNOTES.txt"
+_vcs_id="$(git rev-parse --short HEAD)"
+sed -e "s/_VCS_ID_/${_vcs_id}/g" \
+    -e "s/_HB_VERSION_/${_hb_ver}/g" 'RELNOTES.txt' > "${HB_ABSROOT}RELNOTES.txt"
 touch -c "${HB_ABSROOT}RELNOTES.txt" -r "${HB_ABSROOT}README.md"
 
 # Create tag update JSON request
@@ -292,6 +286,12 @@ echo "{\"sha\":\"$(git rev-parse --verify HEAD)\",\"force\":true}" > "${_ROOT}/g
    find . -type d | grep -Eo '\./[a-z]+?/[a-z0-9]+?$' | cut -c 3-
 ) >> "${HB_ABSROOT}BUILD.txt"
 touch -c "${HB_ABSROOT}BUILD.txt" -r "${HB_ABSROOT}README.md"
+
+# Copy optional text files containing compiler details
+
+if ls       ../BUILD*.txt > /dev/null 2>&1 ; then
+   cp -f -p ../BUILD*.txt "${HB_ABSROOT}"
+fi
 
 # Convert EOLs
 
@@ -327,14 +327,14 @@ cd "${HB_RT}" || exit
    echo 'addons/*.txt'
 ) >> "${_ROOT}/_hbfiles"
 
-_PKGNAME="${_ROOT}/harbour-${HB_VF}-win.7z"
+_pkgname="${_ROOT}/harbour-${HB_VF}-win.7z"
 
-rm -f "${_PKGNAME}"
+rm -f "${_pkgname}"
 (
    cd "${HB_DR}" || exit
    bin/hbmk2.exe "${_SCRIPT}" ts "${_ROOT}"
    # NOTE: add -stl option after updating to 15.12 or upper
-   "${HB_DIR_7Z}7za" a -r -mx "${_PKGNAME}" "@${_ROOT}/_hbfiles" > /dev/null
+   7z a -bd -r -mx "${_pkgname}" "@${_ROOT}/_hbfiles" > /dev/null
 )
 
 if [ -f "${HB_SFX_7Z}" ] ; then
@@ -361,27 +361,27 @@ RunProgram="nowait:notepad.exe \"%%T\\\\RELNOTES.txt\""
 ;!@InstallEnd@!
 EOF
 
-   cat "${HB_SFX_7Z}" _7zconf "${_PKGNAME}" > "${_PKGNAME}.exe"
+   cat "${HB_SFX_7Z}" _7zconf "${_pkgname}" > "${_pkgname}.exe"
 
-   rm "${_PKGNAME}"
+   rm "${_pkgname}"
 
-   _PKGNAME="${_PKGNAME}.exe"
+   _pkgname="${_pkgname}.exe"
 fi
 
 rm "${_ROOT}/_hbfiles"
 
-touch -c "${_PKGNAME}" -r "${HB_ABSROOT}README.md"
+touch -c "${_pkgname}" -r "${HB_ABSROOT}README.md"
 
 # <filename>: <size> bytes <YYYY-MM-DD> <HH:MM>
 case "$(uname)" in
-   *BSD|Darwin) stat -f '%N: %z bytes %Sm' -t '%Y-%m-%d %H:%M' "${_PKGNAME}";;
-   *)           stat -c '%n: %s bytes %y' "${_PKGNAME}";;
+   *BSD|Darwin) stat -f '%N: %z bytes %Sm' -t '%Y-%m-%d %H:%M' "${_pkgname}";;
+   *)           stat -c '%n: %s bytes %y' "${_pkgname}";;
 esac
-openssl dgst -sha256 "${_PKGNAME}"
+openssl dgst -sha256 "${_pkgname}"
 
 cd - || exit
 
-if [ "${_BRANCH}" = 'lto' ] ; then
+if [ "${_BRANCH#*lto*}" != "${_BRANCH}" ] ; then
    (
       # https://pushover.net/api
       set +x
@@ -398,7 +398,7 @@ if [ "${_BRANCH}" = 'lto' ] ; then
    )
 fi
 
-if [ "${_BRANCH}" = 'master' ] ; then
+if [ "${_BRANCH#*master*}" != "${_BRANCH}" ] ; then
    (
       set +x
       curl -sS \
@@ -409,16 +409,16 @@ if [ "${_BRANCH}" = 'master' ] ; then
 fi
 
 # https://www.virustotal.com/en/documentation/public-api/#scanning-files
-if [ "$(wc -c < "${_PKGNAME}")" -lt 32000000 ]; then
+if [ "$(wc -c < "${_pkgname}")" -lt 32000000 ]; then
    (
       set +x
       out="$(curl -sS \
          -X POST https://www.virustotal.com/vtapi/v2/file/scan \
          --form-string "apikey=${VIRUSTOTAL_APIKEY}" \
-         --form "file=@${_PKGNAME}")"
+         --form "file=@${_pkgname}")"
       echo "${out}"
-      echo "VirusTotal URL for '${_PKGNAME}':"
-      echo "$(echo "${out}" | grep -o 'https://[a-zA-Z0-9./]*')"
+      echo "VirusTotal URL for '${_pkgname}':"
+      echo "${out}" | grep -o 'https://[a-zA-Z0-9./]*'
    )
 else
    echo "! File too large for VirusTotal Public API. Upload skipped."

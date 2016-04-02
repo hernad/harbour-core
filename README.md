@@ -450,7 +450,7 @@ See contrib-specific dependencies and build notes in the projects'
         $ brew cask install xquartz
 
 
-## Linux (.deb based distros: Debian, Ubuntu)
+## Linux (.deb based distros: Debian, *buntu)
 
 You will need these base packages to build/package/test/use Harbour:
 
@@ -1498,7 +1498,7 @@ Supported shells per host platforms:
 
      * MinGW/MinGW-64 [win, \*nix, free, open-source]
         * <http://mingw-w64.org/>, <https://duckduckgo.com/?q=mingw-w64> (recommended, look for niXman builds)
-          * Dual-target for x86-64 and x86 hosts (select non-native target with `HB_CPU=x86` or `HB_CPU=x86_64`):
+          * Dual-target (or _multilib_) for x86-64 and x86 hosts (select non-native target with `HB_CPU=x86` or `HB_CPU=x86_64`):
             * 32-bit hosted, posix, sjlj
             * 64-bit hosted, posix, sjlj
           * x86:
