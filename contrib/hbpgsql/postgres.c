@@ -238,6 +238,7 @@ HB_FUNC( PQCONNECTDB )
       hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
 
+
 /* NOTE: Deprecated */
 HB_FUNC( PQSETDBLOGIN )
 {
@@ -259,6 +260,18 @@ HB_FUNC( PQRESET )
    else
       hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
+
+HB_FUNC( PQFINISH )
+{
+   PGconn * conn = hb_PGconn_par( 1 );
+
+   if( conn )
+      PQfinish( conn );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+}
+
+
 
 HB_FUNC( PQPROTOCOLVERSION )
 {
