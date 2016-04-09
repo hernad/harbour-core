@@ -1,3 +1,9 @@
+harbour (3.4.0-8) unstable; urgency=medium
+
+  * PQfinish 
+
+ -- Ernad Husremovic <hernad@bring.out.ba>  Sat, 09 Apr 2016 09:24:03 +0000
+
 harbour (3.4.0-7) unstable; urgency=medium
 
   * my test changes
