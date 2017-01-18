@@ -6,5 +6,6 @@ headers=postgres.ch
 
 libs=${_HB_DYNPREF}${hb_name}${_HB_DYNSUFF}
 
-libs=pq
+{unix}libs=pq
+{!unix}libs=libpq
 {darwin}libpaths=/usr/local/opt/postgresql/lib
