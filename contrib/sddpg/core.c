@@ -536,6 +536,11 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
    HB_BOOL   bError;
    HB_SIZE   ulLen;
 
+   char * pszDst;
+   HB_SIZE nDst;
+   PHB_CODEPAGE cdpIn;
+   PHB_CODEPAGE cdpOut;
+
    bError = HB_FALSE;
    uiIndex--;
    pField = pArea->area.lpFields + uiIndex;
@@ -557,12 +562,17 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
    switch( pField->uiType )
    {
       case HB_FT_STRING:
-         hb_itemPutCL( pItem, pValue, ulLen );
-         break;
-
       case HB_FT_MEMO:
-         hb_itemPutCL( pItem, pValue, ulLen );
-         hb_itemSetCMemo( pItem );
+         cdpIn = hb_cdpFindExt( "UTF8" );
+         cdpOut = hb_cdpFindExt( hb_cdpID() );
+         nDst = hb_cdpTransLen( pValue, ulLen, 0, cdpIn, cdpOut);
+         pszDst = (char *) hb_xgrab( nDst + 1);
+         hb_cdpTransTo( pValue, ulLen + 1, pszDst, nDst + 1, cdpIn, cdpOut);
+         hb_itemPutCL( pItem, pszDst, nDst );
+
+         if ( pField->uiType == HB_FT_MEMO )
+             hb_itemSetCMemo( pItem );
+
          break;
 
       case HB_FT_INTEGER:

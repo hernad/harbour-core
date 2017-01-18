@@ -238,6 +238,7 @@ static int hb_mixKeyCompare( PMIXTAG pTag, PMIXKEY pKey1, PMIXKEY pKey2, unsigne
 {
    unsigned int uiSize;
    int          i;
+   PHB_CODEPAGE cdp = hb_cdpFindExt( hb_cdpID() );
 
    if( ! pKey1->notnul || ! pKey2->notnul )
       return ( int ) pKey1->notnul - ( int ) pKey2->notnul;
@@ -245,8 +246,11 @@ static int hb_mixKeyCompare( PMIXTAG pTag, PMIXKEY pKey1, PMIXKEY pKey2, unsigne
    i      = 0;
    uiSize = pTag->uiKeyLen > uiLen ? uiLen : pTag->uiKeyLen;
 
-   if( pTag->pCodepage )
-      i = hb_cdpcmp( ( const char * ) pKey1->val, ( HB_SIZE ) uiSize, ( const char * ) pKey2->val, ( HB_SIZE ) uiSize, pTag->pCodepage, 0 );
+   //if( pTag->pCodepage )
+      //i = hb_cdpcmp( ( const char * ) pKey1->val, ( HB_SIZE ) uiSize, ( const char * ) pKey2->val, ( HB_SIZE ) uiSize, pTag->pCodepage, 0 );
+
+   if( cdp )
+      i = hb_cdpcmp( ( const char * ) pKey1->val, ( HB_SIZE ) uiSize, ( const char * ) pKey2->val, ( HB_SIZE ) uiSize, cdp, 0 );
    else if( uiSize > 0 )
       i = memcmp( pKey1->val, pKey2->val, uiSize );
 
