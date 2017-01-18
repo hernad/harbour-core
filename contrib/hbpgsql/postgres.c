@@ -645,11 +645,11 @@ HB_FUNC( PQSSLINUSE )
    PGconn * conn = hb_PGconn_par( 1 );
 
    if( conn )
-#if PG_VERSION_NUM >= 90100
-      hb_retl( PQsslInUse( conn ) ? HB_TRUE : HB_FALSE );
-#else
+//#if PG_VERSION_NUM >= 90100
+//      hb_retl( PQsslInUse( conn ) ? HB_TRUE : HB_FALSE );
+//#else
       hb_ret();
-#endif
+//#endif
    else
       hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
@@ -659,11 +659,11 @@ HB_FUNC( PQSSLATTRIBUTE )
    PGconn * conn = hb_PGconn_par( 1 );
 
    if( conn )
-#if PG_VERSION_NUM >= 90100
-      hb_retc( PQsslAttribute( conn, hb_parcx( 2 ) ) );
-#else
+//#if PG_VERSION_NUM >= 90100
+//      hb_retc( PQsslAttribute( conn, hb_parcx( 2 ) ) );
+//#else
       hb_retc_null();
-#endif
+//#endif
    else
       hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
