@@ -90,6 +90,15 @@
    #include <sys/types.h>
    #include <sys/wait.h>
    #include <sys/time.h>
+   #if ! defined( HB_HAS_POLL ) && ! defined( HB_NO_POLL ) && \
+         defined( _POSIX_C_SOURCE ) && _POSIX_C_SOURCE >= 200112L
+      /* use poll() instead of select() to avoid FD_SETSIZE (1024 in Linux)
+         file handle limit */
+      #define HB_HAS_POLL
+   #endif
+   #if defined( HB_HAS_POLL )
+      #include <poll.h>
+   #endif
 #endif
 #if ! defined( HB_OS_WIN )
 #  include <errno.h>
@@ -381,20 +390,18 @@ static void fs_win_set_drive( int iDrive )
 
 static HANDLE DosToWinHandle( HB_FHANDLE fHandle )
 {
-   if( fHandle == ( HB_FHANDLE ) FS_ERROR )
-      return NULL;
-
-   else if( fHandle == ( HB_FHANDLE ) HB_STDIN_HANDLE )
-      return GetStdHandle( STD_INPUT_HANDLE );
-
-   else if( fHandle == ( HB_FHANDLE ) HB_STDOUT_HANDLE )
-      return GetStdHandle( STD_OUTPUT_HANDLE );
-
-   else if( fHandle == ( HB_FHANDLE ) HB_STDERR_HANDLE )
-      return GetStdHandle( STD_ERROR_HANDLE );
-
-   else
-      return ( HANDLE ) fHandle;
+   switch( fHandle )
+   {
+      case ( HB_FHANDLE ) FS_ERROR:
+         return NULL;
+      case ( HB_FHANDLE ) HB_STDIN_HANDLE:
+         return GetStdHandle( STD_INPUT_HANDLE );
+      case ( HB_FHANDLE ) HB_STDOUT_HANDLE:
+         return GetStdHandle( STD_OUTPUT_HANDLE );
+      case ( HB_FHANDLE ) HB_STDERR_HANDLE:
+         return GetStdHandle( STD_ERROR_HANDLE );
+   }
+   return ( HANDLE ) fHandle;
 }
 
 static void convert_open_flags( HB_BOOL fCreate, HB_FATTR nAttr, HB_USHORT uiFlags,
@@ -737,7 +744,20 @@ HB_FHANDLE hb_fsPOpen( const char * pszFileName, const char * pszMode )
          {
             if( pid != 0 )
             {
-               if( fRead )
+               int iResult, iStatus = 0;
+
+               HB_FAILURE_RETRY( iResult, waitpid( pid, &iStatus, 0 ) );
+
+               iResult = iResult == pid &&
+                         WIFEXITED( iStatus ) &&
+                         WEXITSTATUS( iStatus ) == 0 ? 0 : -1;
+
+               if( iResult != 0 )
+               {
+                  hb_fsClose( hPipeHandle[ 0 ] );
+                  hb_fsClose( hPipeHandle[ 1 ] );
+               }
+               else if( fRead )
                {
                   hb_fsClose( hPipeHandle[ 1 ] );
                   hFileHandle = hPipeHandle[ 0 ];
@@ -752,11 +772,7 @@ HB_FHANDLE hb_fsPOpen( const char * pszFileName, const char * pszMode )
             {
                HB_FHANDLE hNullHandle;
                int iMaxFD, iResult;
-               const char * argv[ 4 ];
-               argv[ 0 ] = "sh";
-               argv[ 1 ] = "-c";
-               argv[ 2 ] = pszFileName;
-               argv[ 3 ] = 0;
+
                HB_FAILURE_RETRY( hNullHandle, open( "/dev/null", O_RDWR ) );
                if( fRead )
                {
@@ -777,23 +793,37 @@ HB_FHANDLE hb_fsPOpen( const char * pszFileName, const char * pszMode )
                   iMaxFD = 1024;
                for( hNullHandle = 3; hNullHandle < iMaxFD; ++hNullHandle )
                   hb_fsClose( hNullHandle );
-               if( setuid( getuid() ) == -1 ) {}
-               if( setgid( getgid() ) == -1 ) {}
+
+               pid = fork();
+               if( pid == 0 )
+               {
+                  const char * argv[ 4 ];
+
+                  argv[ 0 ] = "sh";
+                  argv[ 1 ] = "-c";
+                  argv[ 2 ] = pszFileName;
+                  argv[ 3 ] = 0;
+
+                  if( setuid( getuid() ) == -1 ) {}
+                  if( setgid( getgid() ) == -1 ) {}
 #if defined( __WATCOMC__ )
-               HB_FAILURE_RETRY( iResult, execv( "/bin/sh", argv ) );
+                  HB_FAILURE_RETRY( iResult, execv( "/bin/sh", argv ) );
 #else
-               HB_FAILURE_RETRY( iResult, execv( "/bin/sh", ( char ** ) HB_UNCONST( argv ) ) );
+                  HB_FAILURE_RETRY( iResult, execv( "/bin/sh", ( char ** ) HB_UNCONST( argv ) ) );
 #endif
-               exit( 1 );
+               }
+               exit( pid > 0 ? 0 : 1 );
             }
          }
          else
          {
-            hb_fsClose( hPipeHandle[ 0 ] );
-            hb_fsClose( hPipeHandle[ 1 ] );
+            hb_fsSetIOError( hFileHandle != FS_ERROR, 0 );
+            hb_fsCloseRaw( hPipeHandle[ 0 ] );
+            hb_fsCloseRaw( hPipeHandle[ 1 ] );
          }
       }
-      hb_fsSetIOError( hFileHandle != FS_ERROR, 0 );
+      else
+         hb_fsSetIOError( hFileHandle != FS_ERROR, 0 );
       hb_vmLock();
 
       if( pszTmp )
@@ -1115,15 +1145,62 @@ HB_SIZE hb_fsPipeIsData( HB_FHANDLE hPipeHandle, HB_SIZE nBufferSize,
 }
 #elif defined( HB_OS_UNIX ) && ! defined( HB_OS_SYMBIAN )
 {
+   int iResult;
+
+#if defined( HB_HAS_POLL )
+   HB_MAXUINT timer = nTimeOut <= 0 ? 0 : hb_dateMilliSeconds();
+   struct pollfd fds;
+
+   fds.fd = hPipeHandle;
+   fds.events = POLLIN;
+   fds.revents = 0;
+
+   for( ;; )
+   {
+      HB_BOOL fLast = nTimeOut >= 0 && nTimeOut <= 1000;
+      int tout = fLast ? ( int ) nTimeOut : 1000;
+      iResult = poll( &fds, 1, tout );
+      hb_fsSetIOError( iResult >= 0, 0 );
+      if( iResult > 0 && ( fds.revents & POLLIN ) == 0 )
+      {
+         if( ( fds.revents & ( POLLHUP | POLLNVAL | POLLERR ) ) != 0 )
+         {
+            iResult = -1;
+            break;
+         }
+         iResult = 0;
+      }
+      else if( iResult == -1 && hb_fsOsError() == ( HB_ERRCODE ) EINTR )
+      {
+         iResult = 0;
+         fLast = HB_FALSE;
+      }
+      if( iResult == 0 && ! fLast && hb_vmRequestQuery() == 0 )
+      {
+         if( nTimeOut < 0 )
+            continue;
+         else
+         {
+            HB_MAXUINT timecurr = hb_dateMilliSeconds();
+            if( timecurr > timer )
+            {
+               nTimeOut -= timecurr - timer;
+               if( nTimeOut > 0 )
+                  continue;
+            }
+         }
+      }
+      break;
+   }
+#else /* ! HB_HAS_POLL */
    struct timeval tv;
    fd_set rfds;
-   int iResult;
-#if ! defined( HB_HAS_SELECT_TIMER )
+#  if ! defined( HB_HAS_SELECT_TIMER )
    HB_MAXUINT timer = nTimeOut <= 0 ? 0 : hb_dateMilliSeconds();
-#else
+#  else
    tv.tv_sec = ( long ) nTimeOut / 1000;
    tv.tv_usec = ( long ) ( nTimeOut % 1000 ) * 1000;
-#endif
+#  endif
 
    for( ;; )
    {
@@ -1132,13 +1209,13 @@ HB_SIZE hb_fsPipeIsData( HB_FHANDLE hPipeHandle, HB_SIZE nBufferSize,
          tv.tv_sec = 1;
          tv.tv_usec = 0;
       }
-#if ! defined( HB_HAS_SELECT_TIMER )
+#  if ! defined( HB_HAS_SELECT_TIMER )
       else
       {
          tv.tv_sec = ( long ) nTimeOut / 1000;
          tv.tv_usec = ( long ) ( nTimeOut % 1000 ) * 1000;
       }
-#endif
+#  endif
 
       FD_ZERO( &rfds );
       FD_SET( hPipeHandle, &rfds );
@@ -1150,7 +1227,7 @@ HB_SIZE hb_fsPipeIsData( HB_FHANDLE hPipeHandle, HB_SIZE nBufferSize,
           hb_fsOsError() != ( HB_ERRCODE ) EINTR ||
           hb_vmRequestQuery() != 0 )
          break;
-#if ! defined( HB_HAS_SELECT_TIMER )
+#  if ! defined( HB_HAS_SELECT_TIMER )
       else if( nTimeOut > 0 )
       {
          HB_MAXUINT timecurr = hb_dateMilliSeconds();
@@ -1161,10 +1238,14 @@ HB_SIZE hb_fsPipeIsData( HB_FHANDLE hPipeHandle, HB_SIZE nBufferSize,
             timer = timecurr;
          }
       }
-#endif
+#  endif
    }
+#endif /* ! HB_HAS_POLL */
+
    if( iResult > 0 )
       nToRead = nBufferSize;
+   else if( iResult < 0 )
+      nToRead = ( HB_SIZE ) FS_ERROR;
 }
 #else
 {
@@ -1313,15 +1394,63 @@ HB_SIZE hb_fsPipeWrite( HB_FHANDLE hPipeHandle, const void * buffer, HB_SIZE nSi
 }
 #elif defined( HB_OS_UNIX ) && ! defined( HB_OS_SYMBIAN )
 {
+   int iResult;
+
+#if defined( HB_HAS_POLL )
+   HB_MAXUINT timer = nTimeOut <= 0 ? 0 : hb_dateMilliSeconds();
+   struct pollfd fds;
+
+   fds.fd = hPipeHandle;
+   fds.events = POLLOUT;
+   fds.revents = 0;
+
+   for( ;; )
+   {
+      HB_BOOL fLast = nTimeOut >= 0 && nTimeOut <= 1000;
+      int tout = fLast ? ( int ) nTimeOut : 1000;
+
+      iResult = poll( &fds, 1, tout );
+      hb_fsSetIOError( iResult >= 0, 0 );
+      if( iResult > 0 && ( fds.revents & POLLOUT ) == 0 )
+      {
+         if( ( fds.revents & ( POLLHUP | POLLNVAL | POLLERR ) ) != 0 )
+         {
+            iResult = -1;
+            break;
+         }
+         iResult = 0;
+      }
+      else if( iResult == -1 && hb_fsOsError() == ( HB_ERRCODE ) EINTR )
+      {
+         iResult = 0;
+         fLast = HB_FALSE;
+      }
+      if( iResult == 0 && ! fLast && hb_vmRequestQuery() == 0 )
+      {
+         if( nTimeOut < 0 )
+            continue;
+         else
+         {
+            HB_MAXUINT timecurr = hb_dateMilliSeconds();
+            if( timecurr > timer )
+            {
+               nTimeOut -= timecurr - timer;
+               if( nTimeOut > 0 )
+                  continue;
+            }
+         }
+      }
+      break;
+   }
+#else /* ! HB_HAS_POLL */
    struct timeval tv;
    fd_set wfds;
-   int iResult;
-#if ! defined( HB_HAS_SELECT_TIMER )
+#  if ! defined( HB_HAS_SELECT_TIMER )
    HB_MAXUINT timer = nTimeOut <= 0 ? 0 : hb_dateMilliSeconds();
-#else
+#  else
    tv.tv_sec = ( long ) nTimeOut / 1000;
    tv.tv_usec = ( long ) ( nTimeOut % 1000 ) * 1000;
-#endif
+#  endif
 
    for( ;; )
    {
@@ -1330,13 +1459,13 @@ HB_SIZE hb_fsPipeWrite( HB_FHANDLE hPipeHandle, const void * buffer, HB_SIZE nSi
          tv.tv_sec = 1;
          tv.tv_usec = 0;
       }
-#if ! defined( HB_HAS_SELECT_TIMER )
+#  if ! defined( HB_HAS_SELECT_TIMER )
       else
       {
          tv.tv_sec = ( long ) nTimeOut / 1000;
          tv.tv_usec = ( long ) ( nTimeOut % 1000 ) * 1000;
       }
-#endif
+#  endif
 
       FD_ZERO( &wfds );
       FD_SET( hPipeHandle, &wfds );
@@ -1348,7 +1477,7 @@ HB_SIZE hb_fsPipeWrite( HB_FHANDLE hPipeHandle, const void * buffer, HB_SIZE nSi
           hb_fsOsError() != ( HB_ERRCODE ) EINTR ||
           hb_vmRequestQuery() != 0 )
          break;
-#if ! defined( HB_HAS_SELECT_TIMER )
+#  if ! defined( HB_HAS_SELECT_TIMER )
       else if( nTimeOut > 0 )
       {
          HB_MAXUINT timecurr = hb_dateMilliSeconds();
@@ -1359,8 +1488,10 @@ HB_SIZE hb_fsPipeWrite( HB_FHANDLE hPipeHandle, const void * buffer, HB_SIZE nSi
             timer = timecurr;
          }
       }
-#endif
+#  endif
    }
+#endif /* ! HB_HAS_POLL */
+
    if( iResult > 0 )
    {
       int iFlags = -1;
@@ -1511,6 +1642,36 @@ HB_FHANDLE hb_fsOpenEx( const char * pszFileName, HB_USHORT uiFlags, HB_FATTR nA
 #endif
 
    return hFileHandle;
+}
+
+void hb_fsCloseRaw( HB_FHANDLE hFileHandle )
+{
+   HB_TRACE( HB_TR_DEBUG, ( "hb_fsCloseRaw(%p)", ( void * ) ( HB_PTRUINT ) hFileHandle ) );
+
+   hb_vmUnlock();
+#if defined( HB_OS_WIN )
+   CloseHandle( DosToWinHandle( hFileHandle ) );
+#elif defined( HB_OS_OS2 )
+   DosClose( hFileHandle );
+#else
+   {
+#  if defined( EINTR )
+      int ret;
+      /* ignoring EINTR in close() it's quite common bug when sockets or
+       * pipes are used. Without such protection it's not safe to use
+       * signals in user code.
+       */
+      do
+      {
+         ret = close( hFileHandle );
+      }
+      while( ret == -1 && errno == EINTR );
+#  else
+      close( hFileHandle );
+#  endif
+   }
+#endif
+   hb_vmLock();
 }
 
 void hb_fsClose( HB_FHANDLE hFileHandle )
@@ -3281,7 +3442,7 @@ HB_ULONG hb_fsSeek( HB_FHANDLE hFileHandle, HB_LONG lOffset, HB_USHORT uiFlags )
 
    hb_vmUnlock();
 #if defined( HB_OS_WIN )
-   /* This DOS hack creates 2GB file size limit, Druzus */
+   /* This DOS hack creates 2 GiB file size limit, Druzus */
    if( lOffset < 0 && nFlags == SEEK_SET )
    {
       ulPos = ( ULONG ) INVALID_SET_FILE_POINTER;
@@ -3303,7 +3464,7 @@ HB_ULONG hb_fsSeek( HB_FHANDLE hFileHandle, HB_LONG lOffset, HB_USHORT uiFlags )
    {
       APIRET ret;
 
-      /* This DOS hack creates 2GB file size limit, Druzus */
+      /* This DOS hack creates 2 GiB file size limit, Druzus */
       if( lOffset < 0 && nFlags == SEEK_SET )
          ret = 25; /* 'Seek Error' */
       else
@@ -3317,7 +3478,7 @@ HB_ULONG hb_fsSeek( HB_FHANDLE hFileHandle, HB_LONG lOffset, HB_USHORT uiFlags )
       }
    }
 #else
-   /* This DOS hack creates 2GB file size limit, Druzus */
+   /* This DOS hack creates 2 GiB file size limit, Druzus */
    if( lOffset < 0 && nFlags == SEEK_SET )
    {
       ulPos = ( HB_ULONG ) -1;
@@ -3331,7 +3492,7 @@ HB_ULONG hb_fsSeek( HB_FHANDLE hFileHandle, HB_LONG lOffset, HB_USHORT uiFlags )
       /* small trick to resolve problem with position reported for directories */
       if( ulPos == LONG_MAX && lOffset == 0 && nFlags == SEEK_END )
       {
-         /* we do not need to use fstat64() here on 32 bit platforms, [druzus] */
+         /* we do not need to use fstat64() here on 32-bit platforms, [druzus] */
          struct stat st;
 
          if( fstat( hFileHandle, &st ) == 0 )

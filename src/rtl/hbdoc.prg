@@ -145,9 +145,10 @@ STATIC PROCEDURE __hbdoc__read_langdir( aEntry, cDir, hMeta, aErrMsg )
    LOCAL aFile
    LOCAL nCount
 
+   hMeta[ "_LANG" ] := hb_FNameName( hb_DirSepDel( cDir ) )
+
    nCount := 0
    FOR EACH aFile IN hb_vfDirectory( cDir + hb_ps() + "*" + _HBDOC_SRC_EXT )
-      hMeta[ "_LANG" ] := aFile[ F_NAME ]
       __hbdoc__read_file( aEntry, cDir + hb_ps() + aFile[ F_NAME ], hMeta, aErrMsg )
       ++nCount
    NEXT
@@ -189,8 +190,8 @@ STATIC PROCEDURE __hbdoc__read_file( aEntry, cFileName, hMeta, aErrMsg )
 STATIC PROCEDURE __hbdoc__read_stream( aEntry, cFile, cFileName, hMeta, aErrMsg )
 
    LOCAL hEntry := NIL
-   LOCAL cLine
    LOCAL cSection
+   LOCAL cLine
    LOCAL tmp
    LOCAL nLine
    LOCAL nStartCol
@@ -209,6 +210,7 @@ STATIC PROCEDURE __hbdoc__read_stream( aEntry, cFile, cFileName, hMeta, aErrMsg 
             AAdd( aEntry, hEntry )
          ENDIF
          hEntry := { => }
+         cSection := NIL
          IF HB_ISHASH( hMeta )
             FOR EACH tmp IN hMeta
                hEntry[ tmp:__enumKey() ] := tmp
@@ -222,11 +224,12 @@ STATIC PROCEDURE __hbdoc__read_stream( aEntry, cFile, cFileName, hMeta, aErrMsg 
             AAdd( aEntry, hEntry )
          ENDIF
          hEntry := NIL
+         cSection := NIL
          EXIT
       OTHERWISE
          IF hEntry == NIL
             /* Ignore line outside entry. Don't warn, this is normal. */
-         ELSEIF hb_ULeft( LTrim( cLine ), 1 ) == "$" .AND. hb_URight( RTrim( cLine ), 1 ) == "$"
+         ELSEIF hb_ULeft( LTrim( cLine ), 1 ) == "$" .AND. hb_URight( RTrim( cLine ), 1 ) == "$" .AND. Len( AllTrim( cLine ) ) > 1
             cLine := AllTrim( cLine )
             cSection := hb_USubStr( cLine, 2, hb_ULen( cLine ) - 2 )
             IF Empty( cSection )
@@ -243,7 +246,7 @@ STATIC PROCEDURE __hbdoc__read_stream( aEntry, cFile, cFileName, hMeta, aErrMsg 
                   consecutive lines. [vszakats] */
                nStartCol := hb_ULen( cLine ) - hb_ULen( LTrim( cLine ) ) + 1
             ELSE
-               hEntry[ cSection ] += Chr( 13 ) + Chr( 10 )
+               hEntry[ cSection ] += Chr( 10 )
             ENDIF
             hEntry[ cSection ] += hb_USubStr( cLine, nStartCol )
          ELSEIF ! Empty( cLine )
@@ -266,21 +269,26 @@ FUNCTION __hbdoc_ToSource( aEntry )
    LOCAL cLine
    LOCAL cLineOut
 
+   LOCAL cEOL
+
    IF HB_ISARRAY( aEntry )
+      cEOL := Set( _SET_EOL )
       FOR EACH hEntry IN aEntry
-         cSource += hb_eol()
-         cSource += "/* $DOC$" + hb_eol()
+         IF ! HB_ISNULL( cSource )
+            cSource += cEOL
+         ENDIF
+         cSource += "/* $DOC$" + cEOL
          FOR EACH item IN hEntry
             IF HB_ISSTRING( item ) .AND. ! hb_LeftEq( item:__enumKey(), "_" )
-               cSource += "   $" + item:__enumKey() + "$" + hb_eol()
+               cSource += "   $" + item:__enumKey() + "$" + cEOL
                FOR EACH cLine IN hb_ATokens( item, .T. )
                   cLineOut := iif( HB_ISNULL( cLine ), "", Space( 4 ) + cLine )
-                  cSource += iif( Empty( cLineOut ), "", "  " + cLineOut ) + hb_eol()
+                  cSource += iif( Empty( cLineOut ), "", "  " + cLineOut ) + cEOL
                NEXT
             ENDIF
          NEXT
-         cSource += "   $END$" + hb_eol()
-         cSource += " */" + hb_eol()
+         cSource += "   $END$" + cEOL
+         cSource += " */" + cEOL
       NEXT
    ENDIF
 
@@ -317,7 +325,7 @@ FUNCTION __hbdoc_FilterOut( cFile )
                IF nEmpty < 2
                   cOK += cLine
                   IF ! cLine:__enumIsLast()
-                     cOK += hb_eol()
+                     cOK += Set( _SET_EOL )
                   ENDIF
                ENDIF
             ENDIF

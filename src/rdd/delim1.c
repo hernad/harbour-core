@@ -1406,10 +1406,12 @@ static HB_ERRCODE hb_delimCreate( DELIMAREAP pArea, LPDBOPENINFO pCreateInfo )
    pFileName = hb_fsFNameSplit( pCreateInfo->abName );
    if( hb_setGetDefExtension() && ! pFileName->szExtension )
    {
-      PHB_ITEM pItem = hb_itemPutC( NULL, NULL );
-      SELF_INFO( &pArea->area, DBI_TABLEEXT, pItem );
-      pFileName->szExtension = hb_itemGetCPtr( pItem );
-      hb_fsFNameMerge( szFileName, pFileName );
+      PHB_ITEM pItem = hb_itemNew( NULL );
+      if( SELF_INFO( &pArea->area, DBI_TABLEEXT, pItem ) == HB_SUCCESS )
+      {
+         pFileName->szExtension = hb_itemGetCPtr( pItem );
+         hb_fsFNameMerge( szFileName, pFileName );
+      }
       hb_itemRelease( pItem );
    }
    else
@@ -1422,7 +1424,7 @@ static HB_ERRCODE hb_delimCreate( DELIMAREAP pArea, LPDBOPENINFO pCreateInfo )
    do
    {
       pArea->pFile = hb_fileExtOpen( szFileName, NULL,
-                                     FO_READWRITE | FO_EXCLUSIVE | FXO_TRUNCATE |
+                                     FO_WRITE | FO_EXCLUSIVE | FXO_TRUNCATE |
                                      FXO_DEFAULTS | FXO_SHARELOCK | FXO_COPYNAME,
                                      NULL, pError );
       if( ! pArea->pFile )
@@ -1453,7 +1455,7 @@ static HB_ERRCODE hb_delimCreate( DELIMAREAP pArea, LPDBOPENINFO pCreateInfo )
    errCode = SUPER_CREATE( &pArea->area, pCreateInfo );
    if( errCode == HB_SUCCESS )
    {
-      PHB_ITEM pItem = hb_itemPutNI( NULL, 0 );
+      PHB_ITEM pItem = hb_itemNew( NULL );
 
       hb_delimInitArea( pArea, szFileName );
 
@@ -1510,10 +1512,12 @@ static HB_ERRCODE hb_delimOpen( DELIMAREAP pArea, LPDBOPENINFO pOpenInfo )
    /* Add default file name extension if necessary */
    if( hb_setGetDefExtension() && ! pFileName->szExtension )
    {
-      PHB_ITEM pFileExt = hb_itemPutC( NULL, NULL );
-      SELF_INFO( &pArea->area, DBI_TABLEEXT, pFileExt );
-      pFileName->szExtension = hb_itemGetCPtr( pFileExt );
-      hb_fsFNameMerge( szFileName, pFileName );
+      PHB_ITEM pFileExt = hb_itemNew( NULL );
+      if( SELF_INFO( &pArea->area, DBI_TABLEEXT, pFileExt ) == HB_SUCCESS )
+      {
+         pFileName->szExtension = hb_itemGetCPtr( pFileExt );
+         hb_fsFNameMerge( szFileName, pFileName );
+      }
       hb_itemRelease( pFileExt );
    }
    else
@@ -1649,11 +1653,14 @@ static HB_ERRCODE hb_delimRddInfo( LPRDDNODE pRDD, HB_USHORT uiIndex, HB_ULONG u
       case RDDI_SETHEADER:
       {
          LPDELIMDATA pData = DELIMNODE_DATA( pRDD );
-         int iMode = hb_itemGetNI( pItem );
-
-         hb_itemPutNI( pItem, pData->uiSetHeader );
-         if( iMode == 0 || iMode == 1 )
-            pData->uiSetHeader = ( HB_USHORT ) iMode;
+         HB_USHORT uiSetHeader = pData->uiSetHeader;
+         if( HB_IS_NUMERIC( pItem ) )
+         {
+            int iMode = hb_itemGetNI( pItem );
+            if( iMode == 0 || iMode == 1 )
+               pData->uiSetHeader = ( HB_USHORT ) iMode;
+         }
+         hb_itemPutNI( pItem, uiSetHeader );
          break;
       }
       default:

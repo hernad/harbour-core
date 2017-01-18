@@ -55,9 +55,9 @@
             Error E2451 openssl/applink.c 82: Undefined symbol '_lseek' in function OPENSSL_Applink
     */
    #include "io.h"
-   #define _setmode setmode
+   #define _setmode  setmode
    #undef _lseek
-   #define _lseek   lseek
+   #define _lseek    lseek
 #endif
 
 #include "hbapi.h"
@@ -71,6 +71,12 @@
 #endif
 
 #include "hbssl.h"
+
+typedef struct _HB_SSL
+{
+   SSL * ssl;
+   PHB_ITEM pCallbackArg;
+} HB_SSL, * PHB_SSL;
 
 #if defined( HB_OS_WIN ) && \
     defined( HB_CPU_X86 ) && \
@@ -194,15 +200,29 @@ HB_FUNC_TRANSLATE( SSLEAY_VERSION, OPENSSL_VERSION )
 HB_FUNC_TRANSLATE( SSLEAY, OPENSSL_VERSION_NUM )
 #endif
 
-static HB_GARBAGE_FUNC( SSL_release )
+static HB_GARBAGE_FUNC( PHB_SSL_release )
 {
-   void ** ph = ( void ** ) Cargo;
+   PHB_SSL * ph = ( PHB_SSL * ) Cargo;
 
    /* Check if pointer is not NULL to avoid multiple freeing */
    if( ph && *ph )
    {
+      PHB_SSL hb_ssl = *ph;
+
       /* Destroy the object */
-      SSL_free( ( SSL * ) *ph );
+      if( hb_ssl->ssl )
+      {
+         SSL_free( hb_ssl->ssl );
+         hb_ssl->ssl = NULL;
+      }
+
+      if( hb_ssl->pCallbackArg )
+      {
+         hb_itemRelease( hb_ssl->pCallbackArg );
+         hb_ssl->pCallbackArg = NULL;
+      }
+
+      hb_xfree( hb_ssl );
 
       /* set pointer to NULL just in case */
       *ph = NULL;
@@ -211,27 +231,36 @@ static HB_GARBAGE_FUNC( SSL_release )
 
 static const HB_GC_FUNCS s_gcSSL_funcs =
 {
-   SSL_release,
+   PHB_SSL_release,
    hb_gcDummyMark
 };
 
-void * hb_SSL_is( int iParam )
+HB_BOOL hb_SSL_is( int iParam )
 {
-   return hb_parptrGC( &s_gcSSL_funcs, iParam );
+   void ** ph = ( void ** ) hb_parptrGC( &s_gcSSL_funcs, iParam );
+
+   return ph && *ph && ( ( PHB_SSL ) *ph )->ssl;
+}
+
+static PHB_SSL hb_SSL_par_raw( int iParam )
+{
+   void ** ph = ( void ** ) hb_parptrGC( &s_gcSSL_funcs, iParam );
+
+   return ph ? ( PHB_SSL ) *ph : NULL;
 }
 
 SSL * hb_SSL_par( int iParam )
 {
    void ** ph = ( void ** ) hb_parptrGC( &s_gcSSL_funcs, iParam );
 
-   return ph ? ( SSL * ) *ph : NULL;
+   return ph ? ( ( PHB_SSL ) *ph )->ssl : NULL;
 }
 
 SSL * hb_SSL_itemGet( PHB_ITEM pItem )
 {
    void ** ph = ( void ** ) hb_itemGetPtrGC( pItem, &s_gcSSL_funcs );
 
-   return ph ? ( SSL * ) *ph : NULL;
+   return ph ? ( ( PHB_SSL ) *ph )->ssl : NULL;
 }
 
 HB_FUNC( SSL_NEW )
@@ -242,11 +271,13 @@ HB_FUNC( SSL_NEW )
 
       if( ctx )
       {
-         void ** ph = ( void ** ) hb_gcAllocate( sizeof( SSL * ), &s_gcSSL_funcs );
+         PHB_SSL * ph = ( PHB_SSL * ) hb_gcAllocate( sizeof( PHB_SSL ), &s_gcSSL_funcs );
 
-         SSL * ssl = SSL_new( ctx );
+         PHB_SSL hb_ssl = ( PHB_SSL ) hb_xgrabz( sizeof( HB_SSL ) );
 
-         *ph = ssl;
+         hb_ssl->ssl = SSL_new( ctx );
+
+         *ph = hb_ssl;
 
          hb_retptrGC( ph );
       }
@@ -263,11 +294,13 @@ HB_FUNC( SSL_DUP )
 
       if( ssl_par )
       {
-         void ** ph = ( void ** ) hb_gcAllocate( sizeof( SSL * ), &s_gcSSL_funcs );
+         PHB_SSL * ph = ( PHB_SSL * ) hb_gcAllocate( sizeof( PHB_SSL ), &s_gcSSL_funcs );
 
-         SSL * ssl = SSL_dup( ssl_par );
+         PHB_SSL hb_ssl = ( PHB_SSL ) hb_xgrabz( sizeof( HB_SSL ) );
 
-         *ph = ssl;
+         hb_ssl->ssl = SSL_dup( ssl_par );
+
+         *ph = hb_ssl;
 
          hb_retptrGC( ph );
       }
@@ -302,18 +335,9 @@ HB_FUNC( SSL_CLEAR )
       hb_errRT_BASE( EG_ARG, 2010, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
 
-HB_FUNC( SSL_STATE )
-{
-   if( hb_SSL_is( 1 ) )
-   {
-      SSL * ssl = hb_SSL_par( 1 );
-
-      if( ssl )
-         hb_retni( SSL_state( ssl ) );
-   }
-   else
-      hb_errRT_BASE( EG_ARG, 2010, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
-}
+#if defined( HB_LEGACY_LEVEL5 )
+HB_FUNC_TRANSLATE( SSL_STATE, SSL_GET_STATE )
+#endif
 
 HB_FUNC( SSL_PENDING )
 {
@@ -709,14 +733,14 @@ HB_FUNC( SSL_GET_SSL_METHOD )
 #endif
          int n;
 
-         if(      p == TLSv1_method()         ) n = HB_SSL_CTX_NEW_METHOD_TLSV1;
-         else if( p == TLSv1_server_method()  ) n = HB_SSL_CTX_NEW_METHOD_TLSV1_SERVER;
-         else if( p == TLSv1_client_method()  ) n = HB_SSL_CTX_NEW_METHOD_TLSV1_CLIENT;
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-         else if( p == TLS_method()           ) n = HB_SSL_CTX_NEW_METHOD_TLS;
+         if(      p == TLS_method()           ) n = HB_SSL_CTX_NEW_METHOD_TLS;
          else if( p == TLS_server_method()    ) n = HB_SSL_CTX_NEW_METHOD_TLS_SERVER;
          else if( p == TLS_client_method()    ) n = HB_SSL_CTX_NEW_METHOD_TLS_CLIENT;
 #else
+         if(      p == TLSv1_method()         ) n = HB_SSL_CTX_NEW_METHOD_TLSV1;
+         else if( p == TLSv1_server_method()  ) n = HB_SSL_CTX_NEW_METHOD_TLSV1_SERVER;
+         else if( p == TLSv1_client_method()  ) n = HB_SSL_CTX_NEW_METHOD_TLSV1_CLIENT;
          else if( p == SSLv23_method()        ) n = HB_SSL_CTX_NEW_METHOD_TLS;
          else if( p == SSLv23_server_method() ) n = HB_SSL_CTX_NEW_METHOD_TLS_SERVER;
          else if( p == SSLv23_client_method() ) n = HB_SSL_CTX_NEW_METHOD_TLS_CLIENT;
@@ -1483,7 +1507,7 @@ HB_FUNC( SSL_GET_CIPHERS )
             int      tmp;
 
             for( tmp = 0; tmp < len; tmp++ )
-               hb_arraySetPtr( pArray, tmp + 1, sk_SSL_CIPHER_value( stack, tmp ) );
+               hb_arraySetPtr( pArray, tmp + 1, HB_UNCONST( sk_SSL_CIPHER_value( stack, tmp ) ) );
 
             hb_itemReturnRelease( pArray );
          }
@@ -1637,26 +1661,28 @@ HB_FUNC( SSL_SET_MSG_CALLBACK )
 {
    if( hb_SSL_is( 1 ) )
    {
-      SSL * ssl = hb_SSL_par( 1 );
+      PHB_SSL hb_ssl = hb_SSL_par_raw( 1 );
 
-      if( ssl )
+      if( hb_ssl )
       {
 #if OPENSSL_VERSION_NUMBER >= 0x00907000L
          PHB_ITEM pCallback = hb_param( 2, HB_IT_EVALITEM );
 
+         if( hb_ssl->pCallbackArg )
+         {
+            SSL_set_msg_callback_arg( hb_ssl->ssl, NULL );
+            hb_itemRelease( hb_ssl->pCallbackArg );
+            hb_ssl->pCallbackArg = NULL;
+         }
+
          if( pCallback )
          {
-            PHB_ITEM pPassCallback = hb_itemNew( pCallback );
-            SSL_set_msg_callback_arg( ssl, pPassCallback );
-            SSL_set_msg_callback( ssl, hb_ssl_msg_callback );
+            hb_ssl->pCallbackArg = hb_itemNew( pCallback );
+            SSL_set_msg_callback_arg( hb_ssl->ssl, hb_ssl->pCallbackArg );
+            SSL_set_msg_callback( hb_ssl->ssl, hb_ssl_msg_callback );
          }
          else
-         {
-            /* NOTE: WARNING: Direct access to OpenSSL internals. [vszakats] */
-            hb_itemRelease( ( PHB_ITEM ) ssl->msg_callback_arg );
-            SSL_set_msg_callback_arg( ssl, NULL );
-            SSL_set_msg_callback( ssl, NULL );
-         }
+            SSL_set_msg_callback( hb_ssl->ssl, NULL );
 #endif
       }
    }
@@ -1664,29 +1690,30 @@ HB_FUNC( SSL_SET_MSG_CALLBACK )
       hb_errRT_BASE( EG_ARG, 2010, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
 
-/*
+#if 0
 
-   void         SSL_set_psk_client_callback(SSL *ssl, unsigned int (*callback)(SSL *ssl, const char *hint, char *identity, unsigned int max_identity_len, unsigned char *psk, unsigned int max_psk_len));
-   void         SSL_set_psk_server_callback(SSL *ssl, unsigned int (*callback)(SSL *ssl, const char *identity, unsigned char *psk, int max_psk_len));
+void         SSL_set_psk_client_callback( SSL * ssl, unsigned int ( * callback )( SSL * ssl, const char * hint, char * identity, unsigned int max_identity_len, unsigned char * psk, unsigned int max_psk_len ) );
+void         SSL_set_psk_server_callback( SSL * ssl, unsigned int ( * callback )( SSL * ssl, const char * identity, unsigned char * psk, int max_psk_len ) );
 
-   EVP_PKEY *   SSL_get_privatekey(SSL *ssl);
+EVP_PKEY *   SSL_get_privatekey( SSL * ssl );
 
-   STACK *      SSL_get_peer_cert_chain(const SSL *ssl);
-   int          SSL_use_RSAPrivateKey(SSL *ssl, RSA *rsa);
-   void         SSL_set_app_data(SSL *ssl, char *arg);
-   int          SSL_set_ex_data(SSL *ssl, int idx, char *arg);
-   char *       SSL_get_app_data(SSL *ssl);
-   char *       SSL_get_ex_data( ssl, int );
-   int          SSL_add_dir_cert_subjects_to_stack(STACK *stack, const char *dir);
-   int          SSL_add_file_cert_subjects_to_stack(STACK *stack, const char *file);
-   STACK *      SSL_dup_CA_list(STACK *sk);
-   SSL_CTX *    SSL_get_SSL_CTX(const SSL *ssl);
-   int          SSL_get_ex_data_X509_STORE_CTX_idx(void);
-   int          SSL_get_ex_new_index(long argl, char *argp, int (*new_func);(void), int (*dup_func)(void), void (*free_func)(void))
-   void (*SSL_get_info_callback(const SSL *ssl);)()
-   SSL_SESSION *SSL_get_session(const SSL *ssl);
-   int (*SSL_get_verify_callback(const SSL *ssl))(int,X509_STORE_CTX *)
-   void         SSL_set_client_CA_list(SSL *ssl, STACK *list);
-   void         SSL_set_info_callback(SSL *ssl, void (*cb);(void))
-   void         SSL_set_verify(SSL *ssl, int mode, int (*callback);(void))
- */
+STACK *      SSL_get_peer_cert_chain( const SSL * ssl );
+int          SSL_use_RSAPrivateKey( SSL * ssl, RSA * rsa );
+void         SSL_set_app_data( SSL * ssl, char * arg );
+int          SSL_set_ex_data( SSL * ssl, int idx, char * arg );
+char *       SSL_get_app_data( SSL * ssl );
+char *       SSL_get_ex_data( ssl, int );
+int          SSL_add_dir_cert_subjects_to_stack( STACK * stack, const char * dir );
+int          SSL_add_file_cert_subjects_to_stack( STACK * stack, const char * file );
+STACK *      SSL_dup_CA_list( STACK * sk );
+SSL_CTX *    SSL_get_SSL_CTX( const SSL * ssl );
+int          SSL_get_ex_data_X509_STORE_CTX_idx( void );
+int          SSL_get_ex_new_index( long argl, char * argp, int ( *new_func ); ( void ), int ( * dup_func )( void ), void ( * free_func )( void ) )
+void( *SSL_get_info_callback( const SSL * ssl ); )()
+SSL_SESSION * SSL_get_session( const SSL * ssl );
+int( *SSL_get_verify_callback( const SSL * ssl ) )( int, X509_STORE_CTX * )
+void         SSL_set_client_CA_list( SSL * ssl, STACK * list );
+void         SSL_set_info_callback( SSL * ssl, void ( *cb ); ( void ) )
+void         SSL_set_verify( SSL * ssl, int mode, int ( *callback ); ( void ) )
+
+#endif

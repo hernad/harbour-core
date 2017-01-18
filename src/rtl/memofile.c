@@ -48,7 +48,7 @@
 #include "hbapiitm.h"
 #include "hbapifs.h"
 
-/* NOTE: CA-Cl*pper has 64K (65516 bytes exactly) limit on read, in Harbour
+/* NOTE: CA-Cl*pper has ~64 KiB (65516 bytes exactly) limit on read, in Harbour
          this limit is extended, so we are not *strictly* compatible here.
          [vszakats] */
 
@@ -97,7 +97,7 @@ static HB_BOOL hb_memowrit( HB_BOOL bHandleEOF )
    if( pszFileName && pString )
    {
       PHB_FILE pFile = hb_fileExtOpen( pszFileName, NULL,
-                                       FO_READWRITE | FO_EXCLUSIVE | FO_PRIVATE |
+                                       FO_WRITE | FO_EXCLUSIVE | FO_PRIVATE |
                                        FXO_TRUNCATE | FXO_SHARELOCK,
                                        NULL, NULL );
 

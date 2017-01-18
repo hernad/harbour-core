@@ -78,9 +78,9 @@ static const HB_GC_FUNCS s_gcEVP_ENCODE_CTX_funcs =
    hb_gcDummyMark
 };
 
-static void * hb_EVP_ENCODE_CTX_is( int iParam )
+static HB_BOOL hb_EVP_ENCODE_CTX_is( int iParam )
 {
-   return hb_parptrGC( &s_gcEVP_ENCODE_CTX_funcs, iParam );
+   return hb_parptrGC( &s_gcEVP_ENCODE_CTX_funcs, iParam ) != NULL;
 }
 
 static EVP_ENCODE_CTX * hb_EVP_ENCODE_CTX_par( int iParam )
@@ -134,12 +134,24 @@ HB_FUNC( EVP_ENCODEUPDATE )
       {
          int size = 512;
          unsigned char * buffer = ( unsigned char * ) hb_xgrab( size + 1 );
+         int result;
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+    ! defined( LIBRESSL_VERSION_NUMBER )
+         result = EVP_EncodeUpdate( ctx,
+                           buffer,
+                           &size,
+                           ( HB_SSL_CONST unsigned char * ) hb_parcx( 3 ),
+                           ( int ) hb_parclen( 3 ) );
+#else
          EVP_EncodeUpdate( ctx,
                            buffer,
                            &size,
                            ( HB_SSL_CONST unsigned char * ) hb_parcx( 3 ),
                            ( int ) hb_parclen( 3 ) );
+         result = 1;  /* Success */
+#endif
+         hb_retni( result );
 
          if( size > 0 )
          {

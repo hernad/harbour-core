@@ -1,7 +1,6 @@
 1. Download original sources of SuperLib 3.5:
-      <http://www.the-oasis.net/files/library/supfree.zip>
-   or
-      <https://web.archive.org/web/20071108113537/http://www.the-oasis.net/files/library/supfree.zip>
+
+   <https://harbour.github.io/the-oasis/files/library/supfree.zip>
 
    sha256: `48114a59c8a9ebf51749f74e31dac39e12403180ae2920afb9f93d82794a8fc6`
 
@@ -19,13 +18,13 @@
 
 4. Apply supplied patch to the source using GNU Patch:
 
-   `patch -lNi superlib.dif`
+   `patch -lNi superlib.diff`
 
 5. Build it:
 
    `hbmk2 superlib.hbp`
 
-6. You're done.
+6. Done.
 
 7. Finally, to build an application with SuperLib, use:
 

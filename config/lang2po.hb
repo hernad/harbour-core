@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA (or visit
- * their web site at https://www.gnu.org/).
+ * their website at https://www.gnu.org/).
  *
  */
 
@@ -27,6 +27,7 @@
 #pragma -ko+
 
 #include "hblang.ch"
+#include "hbver.ch"
 
 PROCEDURE Main_lang2po()
 
@@ -106,7 +107,7 @@ STATIC FUNCTION Meta()
 
    hMeta := { => }
    hMeta[ "Project-Id-Version:"        ] := "core-lang"
-   hMeta[ "Report-Msgid-Bugs-To:"      ] := "https://github.com/vszakats/harbour-core/issues"
+   hMeta[ "Report-Msgid-Bugs-To:"      ] := hb_Version( HB_VERSION_URL_BASE ) + "issues"
    hMeta[ "POT-Creation-Date:"         ] := cISO_TimeStamp
    hMeta[ "PO-Revision-Date:"          ] := cISO_TimeStamp
    hMeta[ "Last-Translator:"           ] := "foo bar <foo.bar@example.org>"
@@ -130,7 +131,7 @@ STATIC FUNCTION ISO_TimeStamp()
    LOCAL nOffset := hb_UTCOffset()
 
    RETURN hb_StrFormat( "%1$s%2$s%3$02d%4$02d", ;
-      hb_TToC( hb_DateTime(), "yyyy-mm-dd", "HH:MM" ), ;
+      hb_TToC( hb_DateTime(), "yyyy-mm-dd", "hh:mm" ), ;
       iif( nOffset < 0, "-", "+" ), ;
       Int( Abs( nOffset ) / 3600 ), ;
       Int( Abs( nOffset ) % 3600 / 60 ) )

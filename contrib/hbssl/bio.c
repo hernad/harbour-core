@@ -81,11 +81,11 @@ BIO * hb_BIO_par( int iParam )
    return ph ? ( BIO * ) *ph : NULL;
 }
 
-void * hb_BIO_is( int iParam )
+HB_BOOL hb_BIO_is( int iParam )
 {
    void ** ph = ( void ** ) hb_parptrGC( &s_gcBIOFuncs, iParam );
 
-   return ph ? *ph : NULL;
+   return ph && *ph;
 }
 
 static void hb_BIO_ret( BIO * bio )
@@ -99,14 +99,22 @@ static void hb_BIO_ret( BIO * bio )
 
 /* */
 
-static int hb_BIO_METHOD_is( int iParam )
+static HB_BOOL hb_BIO_METHOD_is( int iParam )
 {
    return HB_ISCHAR( iParam );
 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+static const BIO_METHOD * hb_BIO_METHOD_par( int iParam )
+#else
 static BIO_METHOD * hb_BIO_METHOD_par( int iParam )
+#endif
 {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+   const BIO_METHOD * p;
+#else
    BIO_METHOD * p;
+#endif
 
    switch( hb_parni( iParam ) )
    {
@@ -184,15 +192,22 @@ HB_FUNC( BIO_NEW )
       hb_errRT_BASE( EG_ARG, 2010, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
 
+#if defined( HB_LEGACY_LEVEL5 )
 HB_FUNC( BIO_SET )
 {
    BIO * bio = hb_BIO_par( 1 );
 
    if( bio && hb_BIO_METHOD_is( 2 ) )
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || \
+    defined( LIBRESSL_VERSION_NUMBER )
       hb_retni( BIO_set( bio, hb_BIO_METHOD_par( 2 ) ) );
+#else
+      hb_retni( 0 );
+#endif
    else
       hb_errRT_BASE( EG_ARG, 2010, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
+#endif
 
 HB_FUNC( BIO_CLEAR_FLAGS )
 {

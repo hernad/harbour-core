@@ -2,6 +2,8 @@ ROOT := ../../../
 
 include $(TOP)$(ROOT)config/global.mk
 
+LIBNAME := hbpcre
+
 HB_BUILD_WARN := no
 HB_BUILD_MODE := c
 
@@ -27,8 +29,6 @@ C_SOURCES := \
    pcrevutf.c \
    pcrexcls.c \
 
-LIBNAME := hbpcre
-
 ifneq ($(HB_HAS_PCRE_LOCAL),)
 
    HB_CFLAGS += -DSUPPORT_UTF -DSUPPORT_UCP
@@ -41,9 +41,9 @@ ifneq ($(HB_HAS_PCRE_LOCAL),)
       endif
    endif
 
-#   ifneq ($(filter $(HB_COMPILER),mingw mingw64 msvc mvc64)$(filter $(HB_PLATFORM),darwin linux),)
-#      HB_CFLAGS += -DSUPPORT_JIT
-#   endif
+#  ifneq ($(filter $(HB_COMPILER),mingw mingw64 msvc mvc64)$(filter $(HB_PLATFORM),darwin linux),)
+#     HB_CFLAGS += -DSUPPORT_JIT
+#  endif
 
    HB_CFLAGS += -DHAVE_CONFIG_H
 
@@ -55,6 +55,12 @@ ifneq ($(HB_HAS_PCRE_LOCAL),)
          endif
       else
          HB_CFLAGS += -xbuiltin=%none
+      endif
+   endif
+
+   ifneq ($(filter $(HB_COMPILER),msvc msvc64 msvcia64 msvcarm),)
+      ifeq ($(filter $(HB_COMPILER_VER),1200 1300 1310 1400 1500 1600),)
+         HB_CFLAGS += -sdl-
       endif
    endif
 
@@ -70,8 +76,8 @@ else
 endif
 
 # ORIGIN http://pcre.org/
-# URL    https://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.38.tar.bz2
-# DIFF   pcre.dif
+# URL    https://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.40.tar.bz2
+# DIFF   pcre.diff
 #
 # MAP    LICENCE                           LICENSE.txt
 # MAP    config.h.generic                  config.h

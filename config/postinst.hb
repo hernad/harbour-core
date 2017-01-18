@@ -20,7 +20,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA (or visit
- * their web site at https://www.gnu.org/).
+ * their website at https://www.gnu.org/).
  *
  */
 
@@ -108,7 +108,7 @@ PROCEDURE Main( ... )
                NEXT
 
                mk_hb_vfCopyFile( "LICENSE.txt", tmp + hb_ps(), .T.,, .T. )
-               mk_hb_vfCopyFile( "CONTRIBUTING.md", tmp + hb_ps(), .T.,, .T. )
+               mk_hb_vfCopyFile( ".github/CONTRIBUTING.md", tmp + hb_ps(), .T.,, .T. )
                mk_hb_vfCopyFile( "README.md", tmp + hb_ps(), .T.,, .T. )
             ELSE
                OutStd( hb_StrFormat( "! Error: Cannot create directory '%1$s'", tmp ) + hb_eol() )
@@ -274,7 +274,7 @@ PROCEDURE Main( ... )
             ELSEIF Empty( query_stdout( "tar --version" ) )
                cBin_Tar := ""
             ELSEIF "bsdtar" $ query_stdout( "tar --version" )
-               /* tar is mapped to bsdtar starting OS X 10.6 */
+               /* tar is mapped to bsdtar starting macOS 10.6 */
                lGNU_Tar := .F.
             ENDIF
 
@@ -326,7 +326,7 @@ PROCEDURE Main( ... )
                      hb_MemoRead( cTar_Path ) )
 
                   hb_vfAttrGet( tmp, @nAttr )
-                  hb_vfAttrSet( tmp, hb_bitOr( nAttr, HB_FA_XOTH ) )
+                  hb_vfAttrSet( tmp, hb_bitOr( nAttr, HB_FA_XUSR, HB_FA_XGRP, HB_FA_XOTH ) )
                ENDIF
             ELSE
                OutStd( "! Error: Cannot find 'tar' tool" + hb_eol() )
@@ -541,7 +541,7 @@ STATIC PROCEDURE mk_hb_vfCopyFile( cSrc, cDst, lEOL, l644, lTS )
          hb_vfTimeSet( cDst, tDate )
       ENDIF
       IF hb_defaultValue( l644, .F. )
-         hb_vfAttrSet( cDst, hb_bitOr( HB_FA_RUSR, HB_FA_WUSR, HB_FA_RGRP, HB_FA_ROTH ) )
+         hb_vfAttrSet( cDst, hb_bitOr( HB_FA_WUSR, HB_FA_RUSR, HB_FA_RGRP, HB_FA_ROTH ) )
       ENDIF
 #if 0
       OutStd( hb_StrFormat( "! Copied: %1$s <= %2$s", cDst, cSrc ) + hb_eol() )

@@ -14,6 +14,12 @@
 -harden
 {HB_BUILD_PKG='yes'}-vcsts
 
+../package/harbour.hbc{hbdyn}
+
+# code signing
+"{win&HB_CODESIGN_KEY_PASS}-sign=${HB_CODESIGN_KEY}"
+"{win&HB_CODESIGN_KEY_PASS}-signpw=${HB_CODESIGN_KEY_PASS}"
+
 # disable .hbx updates unless requested
 {!(HB_REBUILD_EXTERN='yes')}-hbx-
 
@@ -25,7 +31,6 @@
 #{win&allmingw&HB_COMP_VER>'0401'}-cflag=-Wstrict-overflow=4
 
 {allwin}-winuni
-{allwin&HB_LIB3RD}-lunicows
 
 {HB_BUILD_DEBUG}-prgflag=-l-
 {HB_BUILD_DEBUG}-debug
@@ -63,14 +68,12 @@
 {hbdyn&!unix&!allwin}-o${hb_outputname}${hb_dynsuffix}
 
 # output dir (in sync with GNU Make)
-{hblib}-o../lib/${hb_plat}/${hb_comp}${hb_build}/
-{hbexe}-o../bin/${hb_plat}/${hb_comp}${hb_build}/
-{hbdyn}-o../bin/${hb_plat}/${hb_comp}${hb_build}/
+{hblib|(hbdyn&unix)}-o../lib/${hb_plat}/${hb_comp}${hb_build}/
+{hbexe|(hbdyn&!unix)}-o../bin/${hb_plat}/${hb_comp}${hb_build}/
 
 # workdir (in sync with GNU Make)
-{hblib}-workdir=../lib/${hb_plat}/${hb_comp}${hb_build}/${hb_work}/${hb_outputname}${hb_workdynsub}
-{hbexe}-workdir=../bin/${hb_plat}/${hb_comp}${hb_build}/${hb_work}/${hb_outputname}${hb_workdynsub}
-{hbdyn}-workdir=../bin/${hb_plat}/${hb_comp}${hb_build}/${hb_work}/${hb_outputname}${hb_workdynsub}
+{hblib|(hbdyn&unix)}-workdir=../lib/${hb_plat}/${hb_comp}${hb_build}/${hb_work}/${hb_outputname}${hb_workdynsub}
+{hbexe|(hbdyn&!unix)}-workdir=../bin/${hb_plat}/${hb_comp}${hb_build}/${hb_work}/${hb_outputname}${hb_workdynsub}
 
 # copy contrib-specific public files
 -instfile=contrib:${_HB_CONTRIB_SUBDIR}*.hb

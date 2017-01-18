@@ -10,16 +10,16 @@
 
    For CA-Cl*pper 5.2e sources:
 
-      `patch -lNi dbu52.dif`
+      `patch -lNi dbu52.diff`
 
    For CA-Cl*pper 5.3b sources:
 
-      `patch -lNi dbu53.dif`
+      `patch -lNi dbu53.diff`
 
 4. Build it:
 
    `hbmk2 dbu.hbp`
 
-5. You're done.
+5. Done.
 
 [vszakats]

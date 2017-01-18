@@ -1062,10 +1062,12 @@ static HB_ERRCODE hb_sdfCreate( SDFAREAP pArea, LPDBOPENINFO pCreateInfo )
    pFileName = hb_fsFNameSplit( pCreateInfo->abName );
    if( hb_setGetDefExtension() && ! pFileName->szExtension )
    {
-      PHB_ITEM pItem = hb_itemPutC( NULL, NULL );
-      SELF_INFO( &pArea->area, DBI_TABLEEXT, pItem );
-      pFileName->szExtension = hb_itemGetCPtr( pItem );
-      hb_fsFNameMerge( szFileName, pFileName );
+      PHB_ITEM pItem = hb_itemNew( NULL );
+      if( SELF_INFO( &pArea->area, DBI_TABLEEXT, pItem ) == HB_SUCCESS )
+      {
+         pFileName->szExtension = hb_itemGetCPtr( pItem );
+         hb_fsFNameMerge( szFileName, pFileName );
+      }
       hb_itemRelease( pItem );
    }
    else
@@ -1078,7 +1080,7 @@ static HB_ERRCODE hb_sdfCreate( SDFAREAP pArea, LPDBOPENINFO pCreateInfo )
    do
    {
       pArea->pFile = hb_fileExtOpen( szFileName, NULL,
-                                     FO_READWRITE | FO_EXCLUSIVE | FXO_TRUNCATE |
+                                     FO_WRITE | FO_EXCLUSIVE | FXO_TRUNCATE |
                                      FXO_DEFAULTS | FXO_SHARELOCK | FXO_COPYNAME,
                                      NULL, pError );
       if( ! pArea->pFile )
@@ -1156,10 +1158,12 @@ static HB_ERRCODE hb_sdfOpen( SDFAREAP pArea, LPDBOPENINFO pOpenInfo )
    /* Add default file name extension if necessary */
    if( hb_setGetDefExtension() && ! pFileName->szExtension )
    {
-      PHB_ITEM pFileExt = hb_itemPutC( NULL, NULL );
-      SELF_INFO( &pArea->area, DBI_TABLEEXT, pFileExt );
-      pFileName->szExtension = hb_itemGetCPtr( pFileExt );
-      hb_fsFNameMerge( szFileName, pFileName );
+      PHB_ITEM pFileExt = hb_itemNew( NULL );
+      if( SELF_INFO( &pArea->area, DBI_TABLEEXT, pFileExt ) == HB_SUCCESS )
+      {
+         pFileName->szExtension = hb_itemGetCPtr( pFileExt );
+         hb_fsFNameMerge( szFileName, pFileName );
+      }
       hb_itemRelease( pFileExt );
    }
    else

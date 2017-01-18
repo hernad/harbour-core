@@ -58,6 +58,16 @@
 #  include <sys/stat.h>
 #  include <fcntl.h>
 #  include <signal.h>
+#  include <errno.h>
+#  if ! defined( HB_HAS_POLL ) && ! defined( HB_NO_POLL ) && \
+      defined( _POSIX_C_SOURCE ) && _POSIX_C_SOURCE >= 200112L
+      /* use poll() instead of select() to avoid FD_SETSIZE (1024 in Linux)
+         file handle limit */
+#     define HB_HAS_POLL
+#  endif
+#  if defined( HB_HAS_POLL )
+#     include <poll.h>
+#  endif
 #elif defined( HB_OS_OS2 )
 #  define INCL_DOSERRORS
 #  define INCL_DOSPROCESS
@@ -90,6 +100,25 @@
 #  if defined( HB_OS_DOS ) || defined( HB_OS_WIN_CE )
 #    define HB_PROCESS_USEFILES
 #  endif
+#endif
+
+#if defined( HB_OS_UNIX ) && defined( EINTR )
+#  define HB_FAILURE_RETRY( ret, exp ) \
+   do \
+   { \
+      ( ret ) = ( exp ); \
+      hb_fsSetIOError( ( ret ) != -1, 0 ); \
+   } \
+   while( ( ret ) == -1 && hb_fsOsError() == ( HB_ERRCODE ) EINTR && \
+          hb_vmRequestQuery() == 0 )
+#else
+#  define HB_FAILURE_RETRY( ret, exp ) \
+   do \
+   { \
+      ( ret ) = ( exp ); \
+      hb_fsSetIOError( ( ret ) != -1, 0 ); \
+   } \
+   while( 0 )
 #endif
 
 #if defined( HB_OS_OS2 )
@@ -405,7 +434,7 @@ static int hb_fsProcessExec( const char * pszFileName,
       else if( pid != -1 )
       {
          int iStatus;
-         iResult = waitpid( pid, &iStatus, 0 );
+         HB_FAILURE_RETRY( iResult, waitpid( pid, &iStatus, 0 ) );
 #ifdef ERESTARTSYS
          if( iResult < 0 && errno != ERESTARTSYS )
 #else
@@ -417,31 +446,35 @@ static int hb_fsProcessExec( const char * pszFileName,
          else
             iResult = WIFEXITED( iStatus ) ? WEXITSTATUS( iStatus ) : 0;
       }
+      else
+         hb_fsSetIOError( HB_FALSE, 0 );
    }
-#elif defined( _MSC_VER ) || defined( __LCC__ ) || \
-    defined( __XCC__ ) || defined( __POCC__ )
-   iResult = _spawnvp( _P_WAIT, argv[ 0 ], argv );
-#elif defined( __MINGW32__ ) || defined( __WATCOMC__ )
-   iResult = spawnvp( P_WAIT, argv[ 0 ], ( const char * const * ) argv );
 #else
-   iResult = spawnvp( P_WAIT, argv[ 0 ], ( char * const * ) argv );
-#endif
+#  if defined( _MSC_VER ) || defined( __LCC__ ) || \
+      defined( __XCC__ ) || defined( __POCC__ )
+      iResult = _spawnvp( _P_WAIT, argv[ 0 ], argv );
+#  elif defined( __MINGW32__ ) || defined( __WATCOMC__ )
+      iResult = spawnvp( P_WAIT, argv[ 0 ], ( const char * const * ) argv );
+#  else
+      iResult = spawnvp( P_WAIT, argv[ 0 ], ( char * const * ) argv );
+#  endif
    hb_fsSetIOError( iResult >= 0, 0 );
+#endif
 
    if( iStdIn != FS_ERROR )
    {
       dup2( iStdIn,  0 );
-      close( iStdIn );
+      hb_fsCloseRaw( iStdIn );
    }
    if( iStdOut != FS_ERROR )
    {
       dup2( iStdOut, 1 );
-      close( iStdOut );
+      hb_fsCloseRaw( iStdOut );
    }
    if( iStdErr != FS_ERROR )
    {
       dup2( iStdErr, 2 );
-      close( iStdErr );
+      hb_fsCloseRaw( iStdErr );
    }
 
    hb_vmLock();
@@ -473,7 +506,6 @@ HB_FHANDLE hb_fsProcessOpen( const char * pszFileName,
               hPipeOut[ 2 ] = { FS_ERROR, FS_ERROR },
               hPipeErr[ 2 ] = { FS_ERROR, FS_ERROR };
    HB_FHANDLE hResult = FS_ERROR;
-   HB_ERRCODE errCode;
    HB_BOOL fError = HB_FALSE;
 
    HB_TRACE( HB_TR_DEBUG, ( "hb_fsProcessOpen(%s, %p, %p, %p, %d, %p)", pszFileName, phStdin, phStdout, phStderr, fDetach, pulPID ) );
@@ -922,25 +954,21 @@ HB_FHANDLE hb_fsProcessOpen( const char * pszFileName,
 #endif
    }
 
-   errCode = hb_fsError();
-
    if( hPipeIn[ 0 ] != FS_ERROR )
-      hb_fsClose( hPipeIn[ 0 ] );
+      hb_fsCloseRaw( hPipeIn[ 0 ] );
    if( hPipeIn[ 1 ] != FS_ERROR )
-      hb_fsClose( hPipeIn[ 1 ] );
+      hb_fsCloseRaw( hPipeIn[ 1 ] );
    if( hPipeOut[ 0 ] != FS_ERROR )
-      hb_fsClose( hPipeOut[ 0 ] );
+      hb_fsCloseRaw( hPipeOut[ 0 ] );
    if( hPipeOut[ 1 ] != FS_ERROR )
-      hb_fsClose( hPipeOut[ 1 ] );
+      hb_fsCloseRaw( hPipeOut[ 1 ] );
    if( phStdout != phStderr )
    {
       if( hPipeErr[ 0 ] != FS_ERROR )
-         hb_fsClose( hPipeErr[ 0 ] );
+         hb_fsCloseRaw( hPipeErr[ 0 ] );
       if( hPipeErr[ 1 ] != FS_ERROR )
-         hb_fsClose( hPipeErr[ 1 ] );
+         hb_fsCloseRaw( hPipeErr[ 1 ] );
    }
-
-   hb_fsSetError( errCode );
 
    return hResult;
 }
@@ -1004,8 +1032,7 @@ int hb_fsProcessValue( HB_FHANDLE hProcess, HB_BOOL fWait )
    if( pid > 0 )
    {
       hb_vmUnlock();
-      iRetStatus = waitpid( pid, &iStatus, fWait ? 0 : WNOHANG );
-      hb_fsSetIOError( iRetStatus >= 0, 0 );
+      HB_FAILURE_RETRY( iRetStatus, waitpid( pid, &iStatus, fWait ? 0 : WNOHANG ) );
 #ifdef ERESTARTSYS
       if( iRetStatus < 0 && hb_fsOsError() != ( HB_ERRCODE ) ERESTARTSYS )
 #else
@@ -1473,105 +1500,183 @@ int hb_fsProcessRun( const char * pszFileName,
 
       for( ;; )
       {
-         fd_set rfds, wfds, *prfds, *pwfds;
-         HB_FHANDLE fdMax;
-         int n;
+         HB_BOOL fStdout, fStderr, fStdin;
+         HB_SIZE nLen;
 
-         fdMax = 0;
-         prfds = pwfds = NULL;
-         if( hStdout != FS_ERROR || hStderr != FS_ERROR )
+#if defined( HB_HAS_POLL )
          {
-            FD_ZERO( &rfds );
+            struct pollfd fds[ 3 ];
+            nfds_t nfds = 0;
+
             if( hStdout != FS_ERROR )
             {
-               FD_SET( hStdout, &rfds );
-               if( hStdout > fdMax )
-                  fdMax = hStdout;
+               fds[ nfds ].fd = hStdout;
+               fds[ nfds ].events = POLLIN;
+               fds[ nfds++ ].revents = 0;
             }
             if( hStderr != FS_ERROR )
             {
-               FD_SET( hStderr, &rfds );
-               if( hStderr > fdMax )
-                  fdMax = hStderr;
+               fds[ nfds ].fd = hStderr;
+               fds[ nfds ].events = POLLIN;
+               fds[ nfds++ ].revents = 0;
             }
-            prfds = &rfds;
-         }
-         if( hStdin != FS_ERROR )
-         {
-            FD_ZERO( &wfds );
-            FD_SET( hStdin, &wfds );
-            if( hStdin > fdMax )
-               fdMax = hStdin;
-            pwfds = &wfds;
-         }
-         if( prfds == NULL && pwfds == NULL )
-            break;
-
-         n = select( fdMax + 1, prfds, pwfds, NULL, NULL );
-         if( n > 0 )
-         {
-            HB_SIZE ul;
-
-            if( hStdout != FS_ERROR && FD_ISSET( hStdout, &rfds ) )
+            if( hStdin != FS_ERROR )
             {
-               if( nOutBuf == nOutSize )
+               fds[ nfds ].fd = hStdin;
+               fds[ nfds ].events = POLLOUT;
+               fds[ nfds++ ].revents = 0;
+            }
+            if( nfds == 0 )
+               break;
+
+            iResult = poll( fds, nfds, -1 );
+            hb_fsSetIOError( iResult >= 0, 0 );
+            if( iResult == -1 && hb_fsOsError() == ( HB_ERRCODE ) EINTR &&
+                hb_vmRequestQuery() == 0 )
+               continue;
+            else if( iResult <= 0 )
+               break;
+
+            nfds = 0;
+            fStdout = fStderr = fStdin = HB_FALSE;
+            if( hStdout != FS_ERROR )
+            {
+               if( ( fds[ nfds ].revents & POLLIN ) != 0 )
+                  fStdout = HB_TRUE;
+               else if( ( fds[ nfds ].revents & ( POLLHUP | POLLNVAL | POLLERR ) ) != 0 )
                {
-                  if( nOutSize == 0 )
-                     nOutSize = HB_STD_BUFFER_SIZE;
-                  else
-                     nOutSize += nOutSize >> 1;
-                  pOutBuf = ( char * ) hb_xrealloc( pOutBuf, nOutSize + 1 );
-               }
-               ul = hb_fsReadLarge( hStdout, pOutBuf + nOutBuf, nOutSize - nOutBuf );
-               if( ul == 0 )
-               {
-                  /* zero bytes read after positive Select()
-                   * - writing process closed the pipe
-                   */
                   hb_fsClose( hStdout );
                   hStdout = FS_ERROR;
                }
-               else
-                  nOutBuf += ul;
+               nfds++;
             }
-
-            if( hStderr != FS_ERROR && FD_ISSET( hStderr, &rfds ) )
+            if( hStderr != FS_ERROR )
             {
-               if( nErrBuf == nErrSize )
+               if( ( fds[ nfds ].revents & POLLIN ) != 0 )
+                  fStderr = HB_TRUE;
+               else if( ( fds[ nfds ].revents & ( POLLHUP | POLLNVAL | POLLERR ) ) != 0 )
                {
-                  if( nErrSize == 0 )
-                     nErrSize = HB_STD_BUFFER_SIZE;
-                  else
-                     nErrSize += nErrSize >> 1;
-                  pErrBuf = ( char * ) hb_xrealloc( pErrBuf, nErrSize + 1 );
-               }
-               ul = hb_fsReadLarge( hStderr, pErrBuf + nErrBuf, nErrSize - nErrBuf );
-               if( ul == 0 )
-               {
-                  /* zero bytes read after positive Select()
-                   * - writing process closed the pipe
-                   */
                   hb_fsClose( hStderr );
                   hStderr = FS_ERROR;
                }
-               else
-                  nErrBuf += ul;
+               nfds++;
             }
-
-            if( hStdin != FS_ERROR && FD_ISSET( hStdin, &wfds ) )
+            if( hStdin != FS_ERROR )
             {
-               ul = hb_fsWriteLarge( hStdin, pStdInBuf, nStdInLen );
-               pStdInBuf += ul;
-               nStdInLen -= ul;
-               if( nStdInLen == 0 )
+               if( ( fds[ nfds ].revents & POLLOUT ) != 0 )
+                  fStdin = HB_TRUE;
+               else if( ( fds[ nfds ].revents & ( POLLHUP | POLLNVAL | POLLERR ) ) != 0 )
                {
                   hb_fsClose( hStdin );
-                  hStdin = FS_ERROR;
+                  hStderr = FS_ERROR;
                }
             }
          }
-         else
-            break;
+#else /* ! HB_HAS_POLL */
+         {
+            fd_set rfds, wfds, *prfds, *pwfds;
+            HB_FHANDLE fdMax;
+
+            fdMax = 0;
+            prfds = pwfds = NULL;
+            if( hStdout != FS_ERROR || hStderr != FS_ERROR )
+            {
+               FD_ZERO( &rfds );
+               if( hStdout != FS_ERROR )
+               {
+                  FD_SET( hStdout, &rfds );
+                  if( hStdout > fdMax )
+                     fdMax = hStdout;
+               }
+               if( hStderr != FS_ERROR )
+               {
+                  FD_SET( hStderr, &rfds );
+                  if( hStderr > fdMax )
+                     fdMax = hStderr;
+               }
+               prfds = &rfds;
+            }
+            if( hStdin != FS_ERROR )
+            {
+               FD_ZERO( &wfds );
+               FD_SET( hStdin, &wfds );
+               if( hStdin > fdMax )
+                  fdMax = hStdin;
+               pwfds = &wfds;
+            }
+            if( prfds == NULL && pwfds == NULL )
+               break;
+
+            iResult = select( fdMax + 1, prfds, pwfds, NULL, NULL );
+            hb_fsSetIOError( iResult >= 0, 0 );
+            if( iResult == -1 && hb_fsOsError() != ( HB_ERRCODE ) EINTR &&
+                hb_vmRequestQuery() == 0 )
+               continue;
+            else if( iResult <= 0 )
+               break;
+            fStdout = hStdout != FS_ERROR && FD_ISSET( hStdout, &rfds );
+            fStderr = hStderr != FS_ERROR && FD_ISSET( hStderr, &rfds );
+            fStdin = hStdin != FS_ERROR && FD_ISSET( hStdin, &wfds );
+         }
+#endif /* ! HB_HAS_POLL */
+
+         if( fStdout )
+         {
+            if( nOutBuf == nOutSize )
+            {
+               if( nOutSize == 0 )
+                  nOutSize = HB_STD_BUFFER_SIZE;
+               else
+                  nOutSize += nOutSize >> 1;
+               pOutBuf = ( char * ) hb_xrealloc( pOutBuf, nOutSize + 1 );
+            }
+            nLen = hb_fsReadLarge( hStdout, pOutBuf + nOutBuf, nOutSize - nOutBuf );
+            if( nLen == 0 )
+            {
+               /* zero bytes read after positive Select()
+                * - writing process closed the pipe
+                */
+               hb_fsClose( hStdout );
+               hStdout = FS_ERROR;
+            }
+            else
+               nOutBuf += nLen;
+         }
+
+         if( fStderr )
+         {
+            if( nErrBuf == nErrSize )
+            {
+               if( nErrSize == 0 )
+                  nErrSize = HB_STD_BUFFER_SIZE;
+               else
+                  nErrSize += nErrSize >> 1;
+               pErrBuf = ( char * ) hb_xrealloc( pErrBuf, nErrSize + 1 );
+            }
+            nLen = hb_fsReadLarge( hStderr, pErrBuf + nErrBuf, nErrSize - nErrBuf );
+            if( nLen == 0 )
+            {
+               /* zero bytes read after positive Select()
+                * - writing process closed the pipe
+                */
+               hb_fsClose( hStderr );
+               hStderr = FS_ERROR;
+            }
+            else
+               nErrBuf += nLen;
+         }
+
+         if( fStdin )
+         {
+            nLen = hb_fsWriteLarge( hStdin, pStdInBuf, nStdInLen );
+            pStdInBuf += nLen;
+            nStdInLen -= nLen;
+            if( nStdInLen == 0 )
+            {
+               hb_fsClose( hStdin );
+               hStdin = FS_ERROR;
+            }
+         }
       }
 
       if( hStdin != FS_ERROR )

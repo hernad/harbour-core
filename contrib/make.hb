@@ -2,7 +2,7 @@
 /*
  * Package build orchestrator script
  *
- * Copyright 2010-2014 Viktor Szakats (vszakats.net/harbour)
+ * Copyright 2010-2016 Viktor Szakats (vszakats.net/harbour)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA (or visit
- * their web site at https://www.gnu.org/).
+ * their website at https://www.gnu.org/).
  *
  */
 
@@ -454,7 +454,7 @@ STATIC PROCEDURE build_projects( nAction, hProjectList, hProjectReqList, cOption
                IF "|" + hProjectList[ cProject ][ "cPlatform" ] + "|" $ "|win|dos|os2|"
                   cDynSuffix := "_dll"
                ELSE
-                  cDynSuffix := hb_libExt()
+                  cDynSuffix := ""
                ENDIF
                call_hbmk2( cProjectPath, iif( lPrimary .OR. lContainer, iif( lContainer, cOptions, cOptions + cOptionsUser ), " -inc" ), cDynSuffix )
             ENDIF
@@ -483,7 +483,7 @@ STATIC PROCEDURE build_projects( nAction, hProjectList, hProjectReqList, cOption
 STATIC PROCEDURE call_hbmk2_hbinfo( cProjectPath, hProject )
 
    LOCAL cStdOut
-   LOCAL tmp, tmp1
+   LOCAL tmp, tmp1, tmp2
    LOCAL hInfo
 
    LOCAL nErrorLevel
@@ -513,12 +513,23 @@ STATIC PROCEDURE call_hbmk2_hbinfo( cProjectPath, hProject )
                LOOP
             ENDIF
 #endif
+            /* Convert .hbc reference to an .hbp one */
             tmp1 := hb_FNameExtSet( hb_DirSepToOS( LTrim( tmp ) ), ".hbp" )
+            /* Calculate its full path */
+            tmp2 := hb_PathNormalize( hb_PathJoin( hb_DirSepToOS( hb_cwd() ), tmp1 ) )
+            /* Rebase its full path onto the contrib root */
             tmp1 := hb_PathNormalize( hb_PathRelativize( ;
                hb_PathNormalize( hb_PathJoin( hb_DirSepToOS( hb_cwd() ), hb_DirSepToOS( hb_DirBase() ) ) ), ;
-               hb_PathNormalize( hb_PathJoin( hb_DirSepToOS( hb_cwd() ), tmp1 ) ) ) )
-            AAdd( hProject[ "aDept" ], { "nDepth" => Len( tmp ) - Len( LTrim( tmp ) ), ;
-               "cFileName_HBP" => StrTran( tmp1, "\", "/" ) } )
+               tmp2 ) )
+
+            /* Do not add any .hbc reference that resides outside the
+               'contrib' directory tree. This case can be detected by
+               verifying if the full path remained unchanged after
+               rebasing to contrib root. */
+            IF !( tmp1 == tmp2 )
+               AAdd( hProject[ "aDept" ], { "nDepth" => Len( tmp ) - Len( LTrim( tmp ) ), ;
+                  "cFileName_HBP" => StrTran( tmp1, "\", "/" ) } )
+            ENDIF
          ENDIF
       NEXT
    ELSE
@@ -544,17 +555,20 @@ STATIC FUNCTION call_hbmk2( cProjectPath, cOptionsPre, cDynSuffix, cStdErr, cStd
    hb_SetEnv( "HARBOURCMD" )
    hb_SetEnv( "CLIPPER" )
    hb_SetEnv( "CLIPPERCMD" )
+   hb_SetEnv( "_HB_DYNSUFF" )
 
    IF cDynSuffix != NIL
-      hb_SetEnv( "_HB_DYNSUFF", cDynSuffix )  /* Request dll version of Harbour contrib dependencies (the implibs) to be linked (experimental) */
+      IF ! HB_ISNULL( cDynSuffix )
+         /* Request dll version of Harbour contrib dependencies (the implibs) to
+            be linked, on non-*nix platforms (experimental) */
+         hb_SetEnv( "_HB_DYNSUFF", cDynSuffix )
+      ENDIF
 
       cOptionsPre += " -hbdyn"
 
       IF hb_vfExists( hb_FNameExtSet( cProjectPath, ".hbc" ) )
          cOptionsLibDyn += " " + hb_FNameExtSet( cProjectPath, ".hbc" )
       ENDIF
-   ELSE
-      hb_SetEnv( "_HB_DYNSUFF" )
    ENDIF
 
    hb_SetEnv( "_HB_CONTRIB_SUBDIR", hb_FNameDir( cProjectPath ) )

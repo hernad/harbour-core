@@ -51,6 +51,11 @@ substpat := !@!@
 
 .PHONY: all clean install
 
+# Try to instruct tools to output English messages to help debugging
+export LC_ALL := C
+export LC_MESSAGES := C
+export LANG := C
+
 _make_ver_min := 3.81
 _make_ver_ok := $(filter $(_make_ver_min),$(firstword $(sort $(MAKE_VERSION) $(_make_ver_min))))
 ifeq ($(_make_ver_ok),)
@@ -126,10 +131,13 @@ ifeq ($(HB_INIT_DONE),)
       endif
       # 'clean' and 'install' are required when building a release package
       ifeq ($(filter clean,$(HB_MAKECMDGOALS)),)
-         export HB_BUILD_PKG := no
+         $(warning ! Warning: HB_BUILD_PKG=yes set, please make sure that a 'make clean' was done before the build.)
       else
       ifeq ($(filter install,$(HB_MAKECMDGOALS)),)
-         export HB_BUILD_PKG := no
+         # Let 'clean' be called without 'install'
+         ifeq ($(filter clean,$(HB_MAKECMDGOALS)),)
+            export HB_BUILD_PKG := no
+         endif
       else
       ifneq ($(ROOT),./)
          export HB_BUILD_PKG := no
@@ -160,7 +168,10 @@ ifeq ($(HB_INIT_DONE),)
       # 'install' is required to create import libraries
       ifeq ($(filter install,$(HB_MAKECMDGOALS)),)
          export HB_INSTALL_IMPLIB := no
-         $(warning ! Warning: HB_INSTALL_IMPLIB option has an effect only if 'install' is requested.)
+         # Stay silent on 'make clean'
+         ifeq ($(filter clean,$(HB_MAKECMDGOALS)),)
+            $(warning ! Warning: HB_INSTALL_IMPLIB option has an effect only if 'install' is requested.)
+         endif
       endif
    endif
 
@@ -900,11 +911,17 @@ ifeq ($(HB_COMPILER_VER),)
          HB_COMP_PATH_VER_DET := $(HB_CCPREFIX)clang$(HB_CCSUFFIX)
       endif
       _C_VER := $(shell "$(HB_COMP_PATH_VER_DET)" -v 2>&1)
-      ifneq ($(findstring 3.8,$(_C_VER)),)
-         HB_COMPILER_VER := 0308
+      ifneq ($(findstring 3.9,$(_C_VER)),)
+         HB_COMPILER_VER := 0309
+      else
+      ifneq ($(findstring 8.0,$(_C_VER)),)
+         HB_COMPILER_VER := 0309
       else
       ifneq ($(findstring 7.3,$(_C_VER)),)
-         HB_COMPILER_VER := 0307
+         HB_COMPILER_VER := 0308
+      else
+      ifneq ($(findstring 3.8,$(_C_VER)),)
+         HB_COMPILER_VER := 0308
       else
       ifneq ($(findstring 7.0,$(_C_VER)),)
          HB_COMPILER_VER := 0307
@@ -925,12 +942,26 @@ ifeq ($(HB_COMPILER_VER),)
       endif
       endif
       endif
+      endif
+      endif
    else
    ifneq ($(filter $(HB_COMPILER),gcc gccarm gccomf mingw mingw64 mingwarm djgpp),)
       ifeq ($(HB_COMP_PATH_VER_DET),)
          HB_COMP_PATH_VER_DET := $(HB_CCPREFIX)gcc$(HB_CCSUFFIX)
       endif
       _C_VER := $(shell "$(HB_COMP_PATH_VER_DET)" -v 2>&1)
+      ifneq ($(findstring version 6.3.,$(_C_VER)),)
+         HB_COMPILER_VER := 0603
+      else
+      ifneq ($(findstring version 6.2.,$(_C_VER)),)
+         HB_COMPILER_VER := 0602
+      else
+      ifneq ($(findstring version 6.1.,$(_C_VER)),)
+         HB_COMPILER_VER := 0601
+      else
+      ifneq ($(findstring version 5.4.,$(_C_VER)),)
+         HB_COMPILER_VER := 0504
+      else
       ifneq ($(findstring version 5.3.,$(_C_VER)),)
          HB_COMPILER_VER := 0503
       else
@@ -972,9 +1003,16 @@ ifeq ($(HB_COMPILER_VER),)
       endif
       endif
       endif
+      endif
+      endif
+      endif
+      endif
    else
    ifneq ($(filter $(HB_COMPILER),msvc msvc64 msvcia64 msvcarm),)
       _C_VER := $(shell "$(HB_COMP_PATH)" 2>&1)
+      ifneq ($(findstring Version 20.,$(_C_VER)),)
+         HB_COMPILER_VER := 2000
+      else
       ifneq ($(findstring Version 19.,$(_C_VER)),)
          HB_COMPILER_VER := 1900
       else
@@ -997,6 +1035,7 @@ ifeq ($(HB_COMPILER_VER),)
          HB_COMPILER_VER := 1300
       else
          HB_COMPILER_VER := 1200
+      endif
       endif
       endif
       endif
@@ -1042,7 +1081,7 @@ ifneq ($(HB_CC_DET),)
 
       ifeq ($(wildcard $(HB_CCPATH)$(HB_CCPREFIX)gcc$(HB_HOST_BIN_EXT)),)
          ifeq ($(HB_CCPATH),)
-            ifeq ($(call find_in_path $(HB_CCPREFIX)gcc),)
+            ifeq ($(call find_in_path,$(HB_CCPREFIX)gcc),)
                HB_CCPREFIX :=
             endif
          else
@@ -1079,7 +1118,7 @@ ifneq ($(HB_CC_DET),)
 
       ifeq ($(wildcard $(HB_CCPATH)$(HB_CCPREFIX)gcc$(HB_HOST_BIN_EXT)),)
          ifeq ($(HB_CCPATH),)
-            ifeq ($(call find_in_path $(HB_CCPREFIX)gcc),)
+            ifeq ($(call find_in_path,$(HB_CCPREFIX)gcc),)
                HB_CCPREFIX :=
             endif
          else
@@ -1482,6 +1521,9 @@ ifeq ($(HB_HOST_PKGM),)
       ifneq ($(wildcard /opt/local/bin/port),)
          HB_HOST_PKGM += macports
       endif
+      ifneq ($(wildcard /nix),)
+         HB_HOST_PKGM += nix
+      endif
       ifneq ($(wildcard /sw/bin/fink),)
          HB_HOST_PKGM += fink
       endif
@@ -1500,6 +1542,9 @@ ifeq ($(HB_HOST_PKGM),)
       endif
       endif
       endif
+      ifneq ($(wildcard /nix),)
+         HB_HOST_PKGM += nix
+      endif
    else
    ifeq ($(HB_PLATFORM),bsd)
       ifneq ($(wildcard /etc/pkg),)
@@ -1511,14 +1556,8 @@ ifeq ($(HB_HOST_PKGM),)
    ifeq ($(HB_PLATFORM),sunos)
       HB_HOST_PKGM += pkg
    else
-   ifeq ($(HB_PLATFORM),win)
-      ifneq ($(wildcard /etc/pacman.conf),)
-         HB_HOST_PKGM += pacman
-      endif
-   else
    ifeq ($(HB_PLATFORM),cygwin)
       HB_HOST_PKGM += cygwin
-   endif
    endif
    endif
    endif
@@ -1861,6 +1900,7 @@ ifeq ($(HB_INIT_DONE),)
          endif
          $(shell $(_cmd) > $(TOP)$(ROOT)include$(DIRSEP)_repover.txt)
          $(shell git rev-list $(shell git rev-parse --abbrev-ref HEAD) --count >> $(TOP)$(ROOT)include$(DIRSEP)_repover.txt)
+         $(shell git ls-remote --get-url >> $(TOP)$(ROOT)include$(DIRSEP)_repover.txt)
       else
          $(info ! WARNING: Git not found in PATH. Version information might not be accurate.)
       endif

@@ -65,8 +65,8 @@
  * DIFF
  *   Takes one argument, the file name of the diff file containing local changes
  *   needed by Harbour. In `rediff' mode, this parameter is optional; if not
- *   specified, defaults to `$(component).dif'.
- *   Example: for PCRE2, it is `pcre2.dif'.
+ *   specified, defaults to `$(component).diff'.
+ *   Example: for PCRE2, it is `pcre2.diff'.
  *
  * MAP
  *   Takes one or two arguments, specifying the correspondence of the file names
@@ -128,7 +128,7 @@
  * after Harbour-specific modifications have been made to the component's
  * source. In order to help with the initial diff creation, 3rdpatch will proceed
  * even if no `DIFF' is specified amongst the metadata, and defaults to
- * creating a diff named `$(component).dif').
+ * creating a diff named `$(component).diff').
  *
  * If no differences between the original and the Harbour trees were found,
  * a possibly pre-existing diff file is removed. Following this change up
@@ -287,6 +287,7 @@ PROCEDURE Main( ... )
    LOCAL cRoot := NIL
    LOCAL hFile
    LOCAL nStatus
+   LOCAL nAttr, tmp
 
    LOCAL hRegexTake1Line := hb_regexComp( "^#[[:blank:]]*(ORIGIN|VER|URL|DIFF)[[:blank:]]+(.+?)[[:blank:]]*$" )
    LOCAL hRegexTake2Line := hb_regexComp( "^#[[:blank:]]*(MAP)[[:blank:]]+(.+?)[[:blank:]]+(.+?)[[:blank:]]*$" )
@@ -441,7 +442,7 @@ PROCEDURE Main( ... )
 
    IF lRediff .AND. cDiffFile == NIL
       OutStd( "Requested rediff mode with no existing local diff, attempting to create one." + hb_eol() )
-      cDiffFile := cThisComponent + ".dif"
+      cDiffFile := cThisComponent + ".diff"
    ENDIF
 
    IF ! FetchAndExtract( cArchiveURL )
@@ -474,7 +475,7 @@ PROCEDURE Main( ... )
          s_nErrors++
       ELSE
          /* Create the `pristine tree' */
-         hb_vfCopyFile( ;
+         ts_hb_vfCopyFile( ;
             CombinePath( s_cSourceRoot, aOneMap[ FN_ORIG ] ), ;
             CombinePath( s_cTempDir, cThisComponent + ".orig", aOneMap[ FN_HB ] ) )
 
@@ -485,17 +486,20 @@ PROCEDURE Main( ... )
           * otherwise, duplicate the pristine tree */
 
          IF lRediff
-            hb_vfCopyFile( ;
+            ts_hb_vfCopyFile( ;
                aOneMap[ FN_HB ], ;
                CombinePath( s_cTempDir, cThisComponent, aOneMap[ FN_HB ] ) )
 
          ELSE
             /* Copy it to `our tree' */
-            hb_vfCopyFile( ;
+            ts_hb_vfCopyFile( ;
                CombinePath( s_cTempDir, cThisComponent + ".orig", aOneMap[ FN_HB ] ), ;
-               CombinePath( s_cTempDir, cThisComponent, aOneMap[ FN_HB ] ) )
-         ENDIF
+               tmp := CombinePath( s_cTempDir, cThisComponent, aOneMap[ FN_HB ] ) )
 
+            /* Remove exec attribute */
+            hb_vfAttrGet( tmp, @nAttr )
+            hb_vfAttrSet( tmp, hb_bitAnd( nAttr, hb_bitNot( hb_bitOr( HB_FA_XUSR, HB_FA_XGRP, HB_FA_XOTH ) ) ) )
+         ENDIF
       ENDIF
    NEXT
 
@@ -521,7 +525,7 @@ PROCEDURE Main( ... )
 
       DirChange( s_cTempDir )
       TRACE( "Running " + cCommand )
-      nStatus := hb_processRun( cCommand, , @cDiffText, @cStdErr, .F. )
+      nStatus := utc_hb_processRun( cCommand, , @cDiffText, @cStdErr, .F. )
       hb_cwd( cCWD )
 
       IF nStatus != 0 .AND. nStatus != 1
@@ -543,7 +547,6 @@ PROCEDURE Main( ... )
          hb_MemoWrit( cDiffFile, cDiffText )
          OutStd( hb_StrFormat( "Local changes saved to `%1$s'; you may need to adjust `DIFF'.", cDiffFile ) + hb_eol() )
       ENDIF
-
    ENDIF
 
    /* Only copy files back to the live tree if no errors were encountered */
@@ -551,13 +554,13 @@ PROCEDURE Main( ... )
       IF ! lRediff
          /* Only copy the complete new tree back if not in Rediff mode */
          FOR EACH aOneMap IN s_aChangeMap
-            hb_vfCopyFile( CombinePath( s_cTempDir, cThisComponent, aOneMap[ FN_HB ] ), aOneMap[ FN_HB ] )
+            ts_hb_vfCopyFile( CombinePath( s_cTempDir, cThisComponent, aOneMap[ FN_HB ] ), aOneMap[ FN_HB ] )
          NEXT
       ENDIF
 
       IF cDiffFile != NIL
          /* Copy the diff back to the live tree */
-         hb_vfCopyFile( CombinePath( s_cTempDir, cDiffFile ), cDiffFile )
+         ts_hb_vfCopyFile( CombinePath( s_cTempDir, cDiffFile ), cDiffFile )
          /* Convert path separators */
          DOSToUnixPathSep( cDiffFile )
       ENDIF
@@ -573,6 +576,26 @@ PROCEDURE Main( ... )
    OutStd( hb_StrFormat( "The temporary directory `%1$s' has not been removed.", s_cTempDir ) + hb_eol() )
 
    RETURN
+
+STATIC FUNCTION ts_hb_vfCopyFile( cSrc, cDst )
+
+   LOCAL tDate
+
+   RETURN ;
+      hb_vfCopyFile( cSrc, cDst ) != F_ERROR .AND. ;
+      hb_vfTimeGet( cSrc, @tDate ) .AND. ;
+      hb_vfTimeSet( cDst, tDate )
+
+STATIC FUNCTION utc_hb_processRun( ... )
+
+   LOCAL cTZ := GetEnv( "TZ" )
+   LOCAL retval
+
+   hb_SetEnv( "TZ", "UTC" )
+   retval := hb_processRun( ... )
+   hb_SetEnv( "TZ", cTZ )
+
+   RETURN retval
 
 /* Utility functions */
 
@@ -847,6 +870,7 @@ STATIC FUNCTION hb_FileTran( cFileName )
    LOCAL aChange
    LOCAL cChangeFrom
    LOCAL cChangeTo
+   LOCAL tDate
 
    cFileContent := hb_MemoRead( cFileName )
 
@@ -872,10 +896,13 @@ STATIC FUNCTION hb_FileTran( cFileName )
       cTransformedContent := StrTran( cTransformedContent, ;
          "<" + cChangeFrom + ">", ;
          "<" + cChangeTo + ">" )
-
    NEXT
 
-   RETURN hb_MemoWrit( cFileName, cTransformedContent )
+   hb_vfTimeGet( cFileName, @tDate )
+
+   RETURN ;
+      hb_MemoWrit( cFileName, cTransformedContent ) .AND. ;
+      hb_vfTimeSet( cFileName, tDate )
 
 STATIC FUNCTION FNameEscape( cFileName )
 

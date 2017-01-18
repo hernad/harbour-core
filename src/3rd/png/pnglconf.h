@@ -1,8 +1,8 @@
-/* libpng 1.6.21 STANDARD API DEFINITION */
+/* libpng 1.6.28 STANDARD API DEFINITION */
 
 /* pnglibconf.h - library build configuration */
 
-/* Libpng version 1.6.21 - January 15, 2016 */
+/* Libpng version 1.6.28 - January 5, 2017 */
 
 /* Copyright (c) 1998-2015 Glenn Randers-Pehrson */
 
@@ -109,6 +109,9 @@
 #define PNG_SIMPLIFIED_READ_SUPPORTED
 #define PNG_SIMPLIFIED_WRITE_AFIRST_SUPPORTED
 #define PNG_SIMPLIFIED_WRITE_BGR_SUPPORTED
+#ifndef PNG_NO_STDIO
+#define PNG_SIMPLIFIED_WRITE_STDIO_SUPPORTED
+#endif
 #define PNG_SIMPLIFIED_WRITE_SUPPORTED
 #ifndef PNG_NO_STDIO
 #define PNG_STDIO_SUPPORTED

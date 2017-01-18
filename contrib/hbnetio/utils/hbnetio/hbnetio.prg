@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA (or visit
- * their web site at https://www.gnu.org/).
+ * their website at https://www.gnu.org/).
  *
  */
 
@@ -830,7 +830,7 @@ STATIC PROCEDURE HB_Logo()
 
    OutStd( ;
       "Harbour NETIO Server " + HBRawVersion() + hb_eol() + ;
-      "Copyright (c) 2009-2016, Przemyslaw Czerpak, Viktor Szakats" + hb_eol() + ;
+      "Copyright (c) 2009-2017, Przemyslaw Czerpak, Viktor Szakats" + hb_eol() + ;
       hb_Version( HB_VERSION_URL_BASE ) + hb_eol() + ;
       hb_eol() )
 

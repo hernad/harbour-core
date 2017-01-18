@@ -69,11 +69,12 @@
 /* There is also two compatibility define you can use */
 /* HB_CLS_NOTOBJECT which IF DEFINED, disable the auto inherit of HBObject */
 /* (which in fact also disable the classy compatibility :new(...) => :Init(...) */
-/* HB_CLS_NOAUTOINIT which disable the (VO like) AutoInit for Logical and Numeric */
-/* when not specifically initiated */
+/* HB_CLS_NOAUTOINIT which disable the (VO like) AutoInit for Logical, Numeric, */
+/* Date and Timestamp when not specifically initiated */
 /* These two are disabled by default */
 /* So Each class _inherit_ of HBObject by default and */
-/*    Each type logical or numerical is initiated to .F. and 0 by default */
+/*    Each logical, numeric, date and timestamp typed variable is initiated to */
+/*    .F., 0, CToD( "" ) and t"00:00" by default */
 
 /* #define HB_CLS_NOTOBJECT       */ /* Should be included in some compatibility include files as needed */
 /* #define HB_CLS_NOAUTOINIT      */ /* Idem */
@@ -518,10 +519,12 @@ DECLARE HBClass ;
 /* VO SYNTAX */
 #ifdef HB_CLS_VO
 
-#xtranslate  ( <!name!>{ [<p,...>] }        =>  ( <name>():New( <p> )
-#xtranslate  , <!name!>{ [<p,...>] }        =>  , <name>():New( <p> )
-#xtranslate  = <!name!>{ [<p,...>] }        =>  = <name>():New( <p> )
-#xtranslate := <!name!>{ [<p,...>] }        => := <name>():New( <p> )
+#ifdef HB_VO_CONSTRUCTOR
+   #xtranslate  ( <!name!>{ [<p,...>] }        =>  ( <name>():New( <p> )
+   #xtranslate  , <!name!>{ [<p,...>] }        =>  , <name>():New( <p> )
+   #xtranslate  = <!name!>{ [<p,...>] }        =>  = <name>():New( <p> )
+   #xtranslate := <!name!>{ [<p,...>] }        => := <name>():New( <p> )
+#endif /* HB_VO_CONSTRUCTOR */
 
 #xcommand EXPORT <!DataName1!> [, <!DataNameN!>] [ <tp: TYPE, AS> <type> ] [ <as: ASSIGN, INIT> <uValue> ] [<ro: READONLY, RO>] [<persistent: PERSISTENT, PROPERTY>] => ;
    _HB_MEMBER {[ AS <type>] <DataName1> [, <DataNameN>] } ;;

@@ -8,12 +8,12 @@
 
 3. Apply supplied patch to the source using GNU Patch:
 
-   `patch -lNi rl.dif`
+   `patch -lNi rl.diff`
 
 4. Build it:
 
    `hbmk2 rl.hbp`
 
-5. You're done.
+5. Done.
 
 [vszakats]

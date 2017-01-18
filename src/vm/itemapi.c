@@ -209,6 +209,18 @@ PHB_ITEM hb_itemArrayPut( PHB_ITEM pArray, HB_SIZE nIndex, PHB_ITEM pItem )
    return pArray;
 }
 
+PHB_ITEM hb_itemPutNil( PHB_ITEM pItem )
+{
+   HB_TRACE( HB_TR_DEBUG, ( "hb_itemPutNil(%p)", pItem ) );
+
+   if( pItem )
+      hb_itemSetNil( pItem );
+   else
+      pItem = hb_itemNew( NULL );
+
+   return pItem;
+}
+
 PHB_ITEM hb_itemPutC( PHB_ITEM pItem, const char * szText )
 {
    HB_SIZE nLen, nAlloc;
@@ -2039,7 +2051,7 @@ PHB_ITEM hb_itemReSizeString( PHB_ITEM pItem, HB_SIZE nSize )
    {
       HB_SIZE nAlloc = nSize + 1 +
                 ( pItem->item.asString.allocated <= nSize ? nSize : 0 );
-      pItem->item.asString.value = ( char* )
+      pItem->item.asString.value = ( char * )
                      hb_xRefResize( pItem->item.asString.value,
                                     pItem->item.asString.length,
                                     nAlloc, &pItem->item.asString.allocated );
@@ -2841,16 +2853,20 @@ char * hb_itemString( PHB_ITEM pItem, HB_SIZE * nLen, HB_BOOL * bFreeReq )
          break;
 
       case HB_IT_SYMBOL:
+      {
+         PHB_SYMB pSymbol = hb_itemGetSymbol( pItem );
+         const char * szName = pSymbol ? pSymbol->szName : "?";
+
          *bFreeReq = HB_TRUE;
-         *nLen = strlen( hb_itemGetSymbol( pItem )->szName ) + 3;
+         *nLen = strlen( szName ) + 3;
          buffer = ( char * ) hb_xgrab( *nLen + 1 );
          buffer[ 0 ] = '@';
-         memcpy( buffer + 1, hb_itemGetSymbol( pItem )->szName, *nLen - 3 );
+         memcpy( buffer + 1, szName, *nLen - 3 );
          buffer[ *nLen - 2 ] = '(';
          buffer[ *nLen - 1 ] = ')';
          buffer[ *nLen ] = '\0';
          break;
-
+      }
       case HB_IT_POINTER:
       {
          int size = ( sizeof( void * ) << 1 ) + 3; /* n bytes for address + 0x + \0 */

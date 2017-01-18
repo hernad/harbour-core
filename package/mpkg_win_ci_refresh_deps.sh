@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 
 # ---------------------------------------------------------------
-# Copyright 2016 Viktor Szakats (vszakats.net/harbour)
+# Copyright 2016-2017 Viktor Szakats (vszakats.net/harbour)
 # See LICENSE.txt for licensing terms.
 # ---------------------------------------------------------------
 
 # Extract dependency versions and their hashes from `harbour-deps` online build log
+# Requires: bash, curl, jq, awk
 
-f="$(curl -fsS 'https://ci.appveyor.com/api/projects/vsz/harbour-deps/branch/master')"
+jobid="$(curl -fsS 'https://ci.appveyor.com/api/projects/vsz/harbour-deps/branch/master' | jq -r '.build.jobs[0].jobId')"
 
-if [[ "${f}" =~ \"jobId\":\"([a-z0-9]+)\" ]] ; then
+if [ -n "${jobid}" ] ; then
 
-   f="$(curl -fsS "https://ci.appveyor.com/api/buildjobs/${BASH_REMATCH[1]}/log" | grep 'SHA256(')"
+   unset GREP_OPTIONS
+   f="$(curl -fsS "https://ci.appveyor.com/api/buildjobs/${jobid}/log" | grep 'SHA256(')"
 
    out=
 

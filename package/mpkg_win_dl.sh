@@ -7,15 +7,44 @@
 
 # - Requires '[PACKAGE]_VER' and '[PACKAGE]_HASH_[32|64]' envvars
 
-_BRANCH="${APPVEYOR_REPO_BRANCH}${TRAVIS_BRANCH}${GIT_BRANCH}"
+_BRANCH="${APPVEYOR_REPO_BRANCH}${TRAVIS_BRANCH}${CI_BUILD_REF_NAME}${GIT_BRANCH}"
+
+# Update/install MSYS2 pacman packages to fullfill dependencies
+
+# Dependencies of the default (full) list of contribs
+if [ "${_BRANCH#*prod*}" = "${_BRANCH}" ] ; then
+   pacman --noconfirm --noprogressbar -S --needed mingw-w64-{i686,x86_64}-{cairo,freeimage,gd,ghostscript,libmariadbclient,postgresql}
+#  pacman --noconfirm --noprogressbar -S --needed mingw-w64-{i686,x86_64}-qt5
+fi
+
+# Skip using this component for test purposes for now in favour
+# of creating more practical/usable snapshot binaries.
+# pacman --noconfirm --noprogressbar -S --needed mingw-w64-{i686,x86_64}-icu
+
+# Dependencies of 'prod' builds (we use our own builds instead for now)
+# pacman --noconfirm --noprogressbar -S --needed mingw-w64-{i686,x86_64}-{curl,openssl}
+
+# Dependencies of 'prod' builds (we use vendored sources instead for now)
+# pacman --noconfirm --noprogressbar -S --needed mingw-w64-{i686,x86_64}-{bzip2,expat,libharu,lzo2,sqlite3}
+
+# Dependencies of Harbour core (we use vendored sources instead for now)
+# pacman --noconfirm --noprogressbar -S --needed mingw-w64-{i686,x86_64}-{libpng,pcre,zlib}
+
+# Install packages manually
 
 set | grep '_VER='
 
 # Quit if any of the lines fail
 set -e
 
-alias curl='curl -fsS --connect-timeout 15'
-alias gpg='gpg --keyid-format LONG'
+alias curl='curl -fsS --connect-timeout 15 --retry 3'
+alias gpg='gpg --batch --keyid-format LONG'
+
+gpg_recv_keys() {
+   if ! gpg --keyserver hkps://pgp.mit.edu --recv-keys "$@" ; then
+      gpg --keyserver hkps://sks-keyservers.net --recv-keys "$@"
+   fi
+}
 
 gpg --version | grep gpg
 
@@ -24,31 +53,24 @@ gpg --version | grep gpg
 (
    set -x
 
-   curl -o pack.bin -L 'http://www.7-zip.org/a/7z1514-extra.7z'
-   openssl dgst -sha256 pack.bin | grep -q 4fb7b51e93cabbede23281eae0d024a63f485dc339c85e20c305f328a76e90c0
-   7z x -y -o7z pack.bin > /dev/null
+#  curl -o pack.bin -L --proto-redir =https 'https://github.com/upx/upx/releases/download/v3.92/upx392w.zip'
+#  openssl dgst -sha256 pack.bin | grep -q 041f9fe5c749a5491db1c902db16b55a6d343030103cb1add2fcc5bb63c6143d
+#  7z e -y -oupx pack.bin > /dev/null
 
-   curl -o pack.bin 'http://7zsfx.info/files/7zsd_extra_160_2712.7z'
-   openssl dgst -sha256 pack.bin | grep -q eadee3f1fb5a8e3d4cede8a8a4c2eec7687a3b3ee5856216fdb69f4124709605
-   7z x -y -o7zsfx pack.bin > /dev/null
-
-   curl -o pack.bin -L --proto-redir =https 'https://fossies.org/windows/misc/upx391w.zip'
-   openssl dgst -sha256 pack.bin | grep -q d7d4817f46d2616c209c46fb8bce44e4bec93ab5adef5e4dfc93ee879527be1b
-   7z e -y -oupx pack.bin > /dev/null
-
-   if [ "${_BRANCH#*msysmingw*}" = "${_BRANCH}" ] ; then
+   if [ "${_BRANCH#*extmingw*}" != "${_BRANCH}" ] ; then
       readonly mingwbase='https://downloads.sourceforge.net'; readonly option='-L'
-#     curl -o pack.bin "${option}" "${mingwbase}/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/5.3.0/threads-posix/dwarf/i686-5.3.0-release-posix-dwarf-rt_v4-rev0.7z"
-#     openssl dgst -sha256 pack.bin | grep -q 6e067b2917583e9c654b611263d5d5e8c3215b67d76d55fa3f5f484f16f0f0b6
-#     curl -o pack.bin "${option}" "${mingwbase}/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/5.3.0/threads-posix/seh/x86_64-5.3.0-release-posix-seh-rt_v4-rev0.7z"
-#     openssl dgst -sha256 pack.bin | grep -q 7f0e1f081d173b4a98bde3f9d1a90daf391219e6738f1f40120336b40545f090
-      curl -o pack.bin "${option}" "${mingwbase}/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/5.3.0/threads-posix/sjlj/x86_64-5.3.0-release-posix-sjlj-rt_v4-rev0.7z"
-      openssl dgst -sha256 pack.bin | grep -q ec28b6640ad4f183be7afcd6e9c5eabb24b89729ca3fec7618755555b5d70c19
+#     curl -o pack.bin "${option}" "${mingwbase}/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/6.3.0/threads-posix/sjlj/i686-6.3.0-release-posix-sjlj-rt_v5-rev1.7z"
+#     openssl dgst -sha256 pack.bin | grep -q ce5551a431661f3295a38fcc8563816a34e5cad867b3b35b1e802ef74e2c42f2
+      curl -o pack.bin "${option}" "${mingwbase}/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/6.3.0/threads-posix/sjlj/x86_64-6.3.0-release-posix-sjlj-rt_v5-rev1.7z"
+      openssl dgst -sha256 pack.bin | grep -q 10c40147b1781d0b915e96967becca99c6ffe2d56695a6830721051fe1b62b1f
+#     curl -o pack.bin "${option}" "${mingwbase}/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/6.3.0/threads-posix/dwarf/i686-6.3.0-release-posix-dwarf-rt_v5-rev1.7z"
+#     openssl dgst -sha256 pack.bin | grep -q 8f7381e8ed61c438d36d33ae2f514a7ca8065c44dcf6801847fd425f71a9ee1d
+#     curl -o pack.bin "${option}" "${mingwbase}/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/6.3.0/threads-posix/seh/x86_64-6.3.0-release-posix-seh-rt_v5-rev1.7z"
+#     openssl dgst -sha256 pack.bin | grep -q 2d0e72340ffa14916d4469db25c37889e477f8f1f49ba4f77155830ddc1dca89
       # Will unpack into "./mingw64"
       7z x -y pack.bin > /dev/null
    else
-      # Bad hack to avoid duplicate manifests being linked into slightly
-      # "off" binaries, that are in turn impossible to UPX.
+      # Bad hack to avoid duplicate manifests being linked into slightly "off" binaries.
       #    https://github.com/Alexpux/MSYS2-packages/issues/454
       #    https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69880
       for file in \
@@ -63,11 +85,11 @@ gpg --version | grep gpg
 # Dependencies for Windows builds
 
 # Bintray public key
-gpg --keyserver hkps://pgp.mit.edu --recv-keys 379CE192D401AB61
+gpg_recv_keys 8756C4F765C9AC3CB6B85D62379CE192D401AB61
 
 # Builder public key
-curl 'https://bintray.com/user/downloadSubjectPublicKey?username=vszakats' | \
-   gpg --import
+# curl 'https://bintray.com/user/downloadSubjectPublicKey?username=vszakats' \
+#    | gpg --import
 
 readonly base='https://bintray.com/artifact/download/vszakats/generic/'
 
@@ -85,7 +107,7 @@ for plat in '32' '64' ; do
          set -x
          curl -o pack.bin -L --proto-redir =https "${base}${name}-${ver}-win${plat}-mingw.7z"
          curl -o pack.sig -L --proto-redir =https "${base}${name}-${ver}-win${plat}-mingw.7z.asc"
-         gpg --verify pack.sig pack.bin
+         gpg --verify-options show-primary-uid-only --verify pack.sig pack.bin
          openssl dgst -sha256 pack.bin | grep -q "${hash}"
          7z x -y pack.bin > /dev/null
          mv "${name}-${ver}-win${plat}-mingw" "${name}-mingw${plat}"

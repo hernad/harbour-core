@@ -121,6 +121,7 @@ HB_EXTERN_BEGIN
 extern HB_EXPORT HB_BOOL    hb_fsChDir       ( const char * pszDirName ); /* change working directory */
 extern HB_EXPORT HB_ERRCODE hb_fsChDrv       ( int iDrive ); /* change working drive */
 extern HB_EXPORT void       hb_fsClose       ( HB_FHANDLE hFileHandle ); /* close a file */
+extern HB_EXPORT void       hb_fsCloseRaw    ( HB_FHANDLE hFileHandle ); /* close a file without setting hb_fsError() */
 extern HB_EXPORT void       hb_fsCommit      ( HB_FHANDLE hFileHandle ); /* commit updates of a file */
 extern HB_EXPORT HB_FHANDLE hb_fsCreate      ( const char * pszFileName, HB_FATTR ulAttr ); /* create a file */
 extern HB_EXPORT HB_FHANDLE hb_fsCreateEx    ( const char * pszFileName, HB_FATTR ulAttr, HB_USHORT uiFlags ); /* create a file, with specific open mode */
@@ -207,7 +208,7 @@ extern HB_EXPORT char *     hb_fsLinkRead    ( const char * pszFileName ); /* re
          ! defined( __WATCOMC__ ) && ! defined( HB_USE_BSDLOCKS )
        /* default usage of BSD locks in *BSD systems for emulating
         * MS-DOS/Windows DENY_* flags has been disabled because tests
-        * on FreeBSD 6.2 and OS X shows that this implementation
+        * on FreeBSD 6.2 and macOS shows that this implementation
         * can create self deadlock when used simultaneously with
         * POSIX locks - thanks to Phil and Lorenzo for locating the
         * problem and tests [druzus]
@@ -272,7 +273,7 @@ typedef struct
 } HB_FFIND, * PHB_FFIND;
 
 /* File Find API functions */
-extern HB_EXPORT PHB_FFIND hb_fsFindFirst( const char * pszFileName, HB_FATTR ulAttrMask );
+extern HB_EXPORT PHB_FFIND hb_fsFindFirst( const char * pszFileMask, HB_FATTR attrmask );
 extern HB_EXPORT HB_BOOL   hb_fsFindNext( PHB_FFIND ffind );
 extern HB_EXPORT void      hb_fsFindClose( PHB_FFIND ffind );
 

@@ -143,7 +143,7 @@ static char * set_string( PHB_ITEM pItem, char * szOldString )
    {
       if( szOldString )
          hb_xfree( szOldString );
-      /* Limit size of SET strings to 64K, truncating if source is longer */
+      /* Limit size of SET strings to 64 KiB, truncating if source is longer */
       szString = hb_strndup( hb_itemGetCPtr( pItem ), USHRT_MAX );
    }
    else
@@ -188,11 +188,39 @@ static const char * is_devicename( const char * szFileName )
    {
 #if defined( HB_OS_OS2 ) || defined( HB_OS_WIN ) || defined( HB_OS_DOS )
       const char * szDevices[] =
-            { "PRN", "CON", "LPT1", "LPT2", "LPT3",
+            { "NUL", "PRN", "CON",
+              "LPT1", "LPT2", "LPT3",
               "COM1", "COM2", "COM3", "COM4", "COM5",
               "COM6", "COM7", "COM8", "COM9" };
-      int iLen = ( int ) strlen( szFileName );
+      int iSkip = 0, iLen;
 
+      if( ( szFileName[ 0 ] == '\\' || szFileName[ 0 ] == '/' ) &&
+          ( szFileName[ 1 ] == '\\' || szFileName[ 1 ] == '/' ) )
+      {
+         if( szFileName[ 2 ] == '.' &&
+             ( szFileName[ 3 ] == '\\' || szFileName[ 3 ] == '/' ) )
+         {
+            iSkip = 4;
+            if( hb_strnicmp( szFileName + 4, "PIPE", 4 ) == 0 &&
+                ( szFileName[ 8 ] == '\\' || szFileName[ 8 ] == '/' ) )
+               return szFileName;
+         }
+         if( szFileName[ 2 ] != '\\' && szFileName[ 2 ] != '/' )
+         {
+            int iFrom, iTo;
+            for( iFrom = 2, iTo = 0; szFileName[ iFrom ]; ++iFrom )
+            {
+               if( szFileName[ iFrom ] == '\\' || szFileName[ iFrom ] == '/' )
+               {
+                  if( iTo++ )
+                     break;
+               }
+            }
+            if( iTo == 1 )
+               return szFileName;
+         }
+      }
+      iLen = ( int ) strlen( szFileName + iSkip );
       if( iLen >= 3 && iLen <= 4 )
       {
          int iFrom, iTo;
@@ -200,17 +228,17 @@ static const char * is_devicename( const char * szFileName )
          if( iLen == 3 )
          {
             iFrom = 0;
-            iTo = 0;
+            iTo = 3;
          }
          else
          {
-            iFrom = 2;
+            iFrom = 3;
             iTo = HB_SIZEOFARRAY( szDevices );
          }
          for( ; iFrom < iTo; ++iFrom )
          {
-            if( hb_stricmp( szFileName, szDevices[ iFrom ] ) == 0 )
-               return szDevices[ iFrom ];
+            if( hb_stricmp( szFileName + iSkip, szDevices[ iFrom ] ) == 0 )
+               return iSkip ? szFileName : szDevices[ iFrom ];
          }
       }
 #elif defined( HB_OS_UNIX )
@@ -282,6 +310,9 @@ static void open_handle( PHB_SET_STRUCT pSet, const char * file_name,
          {
             szFileName = hb_strdup( szDevice );
             def_ext = NULL;
+#if defined( HB_OS_WIN ) || defined( HB_OS_DOS )
+            fAppend = HB_TRUE;
+#endif
          }
          else
             szFileName = hb_strdup( file_name );
@@ -970,7 +1001,7 @@ PHB_ITEM hb_setGetItem( HB_set_enum set_specifier, PHB_ITEM pResult,
             if( HB_IS_NIL( pArg1 ) )
                pSet->HB_SET_HBOUTLOG = NULL;
             else
-               /* Limit size of SET strings to 64K, truncating if source is longer */
+               /* Limit size of SET strings to 64 KiB, truncating if source is longer */
                pSet->HB_SET_HBOUTLOG = hb_strndup( hb_itemGetCPtr( pArg1 ), USHRT_MAX );
             hb_xsetfilename( pSet->HB_SET_HBOUTLOG );
          }

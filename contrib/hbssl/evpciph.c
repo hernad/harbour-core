@@ -84,9 +84,9 @@ static const HB_GC_FUNCS s_gcEVP_CIPHER_CTX_funcs =
    hb_gcDummyMark
 };
 
-static void * hb_EVP_CIPHER_CTX_is( int iParam )
+static HB_BOOL hb_EVP_CIPHER_CTX_is( int iParam )
 {
-   return hb_parptrGC( &s_gcEVP_CIPHER_CTX_funcs, iParam );
+   return hb_parptrGC( &s_gcEVP_CIPHER_CTX_funcs, iParam ) != NULL;
 }
 
 static EVP_CIPHER_CTX * hb_EVP_CIPHER_CTX_par( int iParam )
@@ -96,7 +96,7 @@ static EVP_CIPHER_CTX * hb_EVP_CIPHER_CTX_par( int iParam )
    return ph ? ( EVP_CIPHER_CTX * ) *ph : NULL;
 }
 
-int hb_EVP_CIPHER_is( int iParam )
+HB_BOOL hb_EVP_CIPHER_is( int iParam )
 {
    return HB_ISCHAR( iParam ) || HB_ISNUM( iParam );
 }
@@ -402,7 +402,7 @@ HB_FUNC( EVP_CIPHER_MODE )
 #if OPENSSL_VERSION_NUMBER < 0x00906040L
    /* fix for typo in macro definition in openssl/evp.h */
    #undef EVP_CIPHER_mode
-   #define EVP_CIPHER_mode(e)  ((e)->flags & EVP_CIPH_MODE)
+   #define EVP_CIPHER_mode( e )  ( ( e )->flags & EVP_CIPH_MODE )
 #endif
    hb_retni( cipher ? EVP_CIPHER_mode( cipher ) : 0 );
 }
@@ -513,7 +513,7 @@ HB_FUNC( EVP_CIPHER_CTX_CTRL )
          /* NOTE: 4th param doesn't have a 'const' qualifier. This is a setter
                   function, so even if we do a copy, what sort of allocation
                   routine to use? [vszakats] */
-         hb_retni( EVP_CIPHER_CTX_ctrl( ctx, hb_parni( 2 ), hb_parni( 3 ), ( void * ) hb_parc( 4 ) ) );
+         hb_retni( EVP_CIPHER_CTX_ctrl( ctx, hb_parni( 2 ), hb_parni( 3 ), ( void * ) HB_UNCONST( hb_parc( 4 ) ) ) );
    }
    else
       hb_errRT_BASE( EG_ARG, 2010, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
@@ -1177,10 +1177,9 @@ HB_FUNC( EVP_OPENFINAL )
 
 #if 0
 
-#define EVP_CIPHER_CTX_get_app_data( e )     ( ( e )->app_data )
-#define EVP_CIPHER_CTX_set_app_data( e, d )  ( ( e )->app_data = ( char * ) ( d ) )
-
-int EVP_CIPHER_param_to_asn1( EVP_CIPHER_CTX * c, ASN1_TYPE * type );
-int EVP_CIPHER_asn1_to_param( EVP_CIPHER_CTX * c, ASN1_TYPE * type );
+void * EVP_CIPHER_CTX_get_app_data( const EVP_CIPHER_CTX * ctx );
+void EVP_CIPHER_CTX_set_app_data( EVP_CIPHER_CTX * ctx, void * data );
+int EVP_CIPHER_param_to_asn1( EVP_CIPHER_CTX * ctx, ASN1_TYPE * type );
+int EVP_CIPHER_asn1_to_param( EVP_CIPHER_CTX * ctx, ASN1_TYPE * type );
 
 #endif

@@ -72,7 +72,7 @@
    wanted to reduce memory overhead in used algorithm for finding the
    longest match? The SIX was written for 16-bit DOS and the memory
    consumption was important though it should not be too much. They
-   documented ~9KB increasing the ring buffer size should be linear to
+   documented ~9 KiB increasing the ring buffer size should be linear to
    other used (helper) structures.
    The next interesting thing is that it dynamically overwrites the ring
    buffer with stream data and does not use any separate look ahead buffers.
@@ -81,7 +81,7 @@
    Our algorithm has to make the same with the ring buffer to be compatible.
    UPDATE: Using smaller ring buffer without increasing the match pointer
    suggested me that it is possible that someone didn't understand it fully
-   and modified already existing algorithm. I spend a while on the Internet
+   and modified already existing algorithm. I spend a while on the internet
    looking for old LZSS implementations and I've found it. IMHO in 99%
    this code is used in SIX. This is lzss.c file written by Haruhiko Okumura
    with the following note in header:
@@ -620,7 +620,7 @@ HB_FUNC( SX_FCOMPRESS )
                                         FXO_DEFAULTS | FXO_SHARELOCK, NULL, NULL );
       if( pInput != NULL )
       {
-         PHB_FILE pOutput = hb_fileExtOpen( szDestin, NULL, FO_READWRITE |
+         PHB_FILE pOutput = hb_fileExtOpen( szDestin, NULL, FO_WRITE |
                                             FO_EXCLUSIVE | FXO_TRUNCATE |
                                             FXO_DEFAULTS | FXO_SHARELOCK, NULL, NULL );
          if( pOutput != NULL )
@@ -655,7 +655,7 @@ HB_FUNC( SX_FDECOMPRESS )
                                         FXO_DEFAULTS | FXO_SHARELOCK, NULL, NULL );
       if( pInput != NULL )
       {
-         PHB_FILE pOutput = hb_fileExtOpen( szDestin, NULL, FO_READWRITE |
+         PHB_FILE pOutput = hb_fileExtOpen( szDestin, NULL, FO_WRITE |
                                             FO_EXCLUSIVE | FXO_TRUNCATE |
                                             FXO_DEFAULTS | FXO_SHARELOCK, NULL, NULL );
          if( pOutput != NULL )

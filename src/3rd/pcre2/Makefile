@@ -2,6 +2,8 @@ ROOT := ../../../
 
 include $(TOP)$(ROOT)config/global.mk
 
+LIBNAME := hbpcre2
+
 HB_BUILD_WARN := no
 HB_BUILD_MODE := c
 
@@ -29,8 +31,6 @@ C_SOURCES := \
    p2ucd.c \
    p2validu.c \
    p2xclass.c \
-
-LIBNAME := hbpcre2
 
 ifneq ($(HB_HAS_PCRE2_LOCAL),)
 
@@ -73,8 +73,8 @@ else
 endif
 
 # ORIGIN http://pcre.org/
-# URL    https://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre2-10.21.tar.bz2
-# DIFF   pcre2.dif
+# URL    https://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre2-10.22.tar.bz2
+# DIFF   pcre2.diff
 #
 # MAP    LICENCE                               LICENSE.txt
 # MAP    src/config.h.generic                  config.h

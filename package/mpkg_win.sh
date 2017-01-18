@@ -10,9 +10,8 @@ cd "$(dirname "$0")" || exit
 # - Requires MSYS2 or Git for Windows to run on Windows
 # - Requires 7z in PATH
 # - Adjust target dir, MinGW dirs,
-#   set HB_DIR_UPX, HB_DIR_7Z, HB_DIR_MINGW, HB_DIR_MINGW_32, HB_DIR_MINGW_64
+#   set HB_DIR_UPX, HB_DIR_MINGW, HB_DIR_MINGW_32, HB_DIR_MINGW_64
 #   create required packages beforehand.
-# - Optional HB_SFX_7Z envvar pointed to 7z SFX module
 # - Run this from vanilla official source tree only.
 
 # TOFIX: hbmk2.exe invocations break cross-builds.
@@ -40,7 +39,7 @@ HB_DIR_MINGW_64="$(echo "${HB_DIR_MINGW_64}" | sed 's|\\|/|g')"
 HB_DR="hb${HB_VS}/"
 HB_ABSROOT="${HB_RT}/${HB_DR}"
 
-_BRANCH="${APPVEYOR_REPO_BRANCH}${TRAVIS_BRANCH}${GIT_BRANCH}"
+_BRANCH="${APPVEYOR_REPO_BRANCH}${TRAVIS_BRANCH}${CI_BUILD_REF_NAME}${GIT_BRANCH}"
 [ -n "${_BRANCH}" ] || _BRANCH="$(git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')"
 _SCRIPT="$(realpath 'mpkg.hb')"
 _ROOT="$(realpath '..')"
@@ -81,6 +80,12 @@ mkdir -p "${HB_ABSROOT}"
    cp -f -p --parents $(find 'extras' -type f -name '*')     "${HB_ABSROOT}"
    # shellcheck disable=SC2046
    cp -f -p --parents $(find 'tests'  -type f -name '*')     "${HB_ABSROOT}"
+
+   mkdir -p "${HB_ABSROOT}manual/"
+   if ls ./manual/html/* > /dev/null 2>&1 ; then
+      # shellcheck disable=SC2046
+      cp -f -p ./manual/html/* "${HB_ABSROOT}manual/"
+   fi
 )
 
 mkdir -p "${HB_ABSROOT}bin/"
@@ -127,11 +132,45 @@ done
 # binutils 2.25, when the PE build timestamp field is often
 # filled with random bytes instead of zeroes. -s option is not
 # fixing this, 'strip' randomly fails either, so we're
-# patching manually. Do this while only Harbour built binaries are
-# present in the bin directory to not modify 3rd party binaries.
+# patching manually.
 cp -f -p "${HB_ABSROOT}bin/hbmk2.exe" "${HB_ABSROOT}bin/hbmk2-temp.exe"
-"${HB_ABSROOT}bin/hbmk2-temp.exe" "${_SCRIPT}" pe "${_ROOT}" "${HB_ABSROOT}bin/*.exe"
-"${HB_ABSROOT}bin/hbmk2-temp.exe" "${_SCRIPT}" pe "${_ROOT}" "${HB_ABSROOT}bin/*.dll"
+# NOTE: do not forget to update the list of binary names created
+#       by the GNU Make process, in case it changes.
+for name in \
+   'harbour*.dll' \
+   'harbour.exe' \
+   'hbi18n.exe' \
+   'hbmk2.exe' \
+   'hbpp.exe' \
+   'hbspeed.exe' \
+   'hbtest.exe' ; do
+   for file in ${HB_ABSROOT}bin/${name} ; do
+
+      # Remove code signature first
+      if [ -f "${HB_CODESIGN_KEY}" ] ; then
+         # 'strip' would also work, but this is cleaner
+         osslsigncode remove-signature -in "${file}" -out "${file}-unsigned"
+         mv -f "${file}-unsigned" "${file}"
+      fi
+
+      # Remove embedded timestamps
+      "${HB_ABSROOT}bin/hbmk2-temp.exe" "${_SCRIPT}" pe "${_ROOT}" "${file}"
+
+      # Readd code signature
+      if [ -f "${HB_CODESIGN_KEY}" ] ; then
+         (
+            set +x
+            osslsigncode sign -h sha256 -in "${file}" -out "${file}-signed" \
+               -pkcs12 "${HB_CODESIGN_KEY}" -pass "${HB_CODESIGN_KEY_PASS}" \
+               -ts 'http://timestamp.digicert.com'
+            mv -f "${file}-signed" "${file}"
+         )
+      fi
+
+      # Set timestamp
+      touch -c -r "${HB_ABSROOT}README.md" "${file}"
+   done
+done
 rm -f "${HB_ABSROOT}bin/hbmk2-temp.exe"
 
 # Workaround for ld --no-insert-timestamp issue in that it
@@ -157,30 +196,6 @@ done
 if [ -n "${HB_DIR_UPX}" ] ; then
    cp -f -p "${HB_DIR_UPX}upx.exe" "${HB_ABSROOT}bin/"
    cp -f -p "${HB_DIR_UPX}LICENSE" "${HB_ABSROOT}LICENSE_upx.txt"
-fi
-
-# Copy 7z
-
-if [ -n "${HB_DIR_7Z}" ] ; then
-   if [ "${_lib_target}" = '64' ] ; then
-      cp -f -p "${HB_DIR_7Z}x64/7za.exe" "${HB_ABSROOT}bin/"
-   else
-      cp -f -p "${HB_DIR_7Z}7za.exe"     "${HB_ABSROOT}bin/"
-   fi
-   cp -f -p "${HB_DIR_7Z}License.txt" "${HB_ABSROOT}LICENSE_7z.txt"
-fi
-
-# Copy curl
-
-if [ "${_lib_target}" = '64' ] ; then
-   HB_DIR_CURL="${HB_DIR_CURL_64}"
-else
-   HB_DIR_CURL="${HB_DIR_CURL_32}"
-fi
-if [ -n "${HB_DIR_CURL}" ] ; then
-   cp -f -p "${HB_DIR_CURL}bin/curl.exe"           "${HB_ABSROOT}bin/"
-   cp -f -p "${HB_DIR_CURL}bin/curl-ca-bundle.crt" "${HB_ABSROOT}bin/"
-   cp -f -p "${HB_DIR_CURL}COPYING.txt"            "${HB_ABSROOT}LICENSE_curl.txt"
 fi
 
 # Copy 3rd party static libraries
@@ -219,7 +234,7 @@ fi
    cp -f -p --parents $(find 'src/3rd' -name '*.h') "${HB_ABSROOT}"
 )
 
-# TODO: This whole section should only be relevant
+# NOTE: This whole section should only be relevant
 #       if the distro is MinGW based. Much of it is
 #       useful only if MinGW _is_ actually bundled
 #       with the package, which is probably something
@@ -250,13 +265,6 @@ if [ -d "${_MINGW_DLL_DIR}" ] ; then
    fi
 fi
 
-# Copy getmingw.hb with some burn-in
-
-sed "s/_HB_VF_DEF_/${HB_VF_DEF}/g" 'getmingw.hb' > "${HB_ABSROOT}bin/getmingw.hb"
-touch -c "${HB_ABSROOT}bin/getmingw.hb" -r "${HB_ABSROOT}README.md"
-
-cp -f -p 'getsrc.hb' "${HB_ABSROOT}bin/"
-
 # Burn build information into RELNOTES.txt
 
 _hb_ver="${HB_VF}"
@@ -265,19 +273,23 @@ if [ "${HB_VF}" != "${HB_VF_DEF}" ] ; then
 fi
 
 _vcs_id="$(git rev-parse --short HEAD)"
-sed -e "s/_VCS_ID_/${_vcs_id}/g" \
-    -e "s/_HB_VERSION_/${_hb_ver}/g" 'RELNOTES.txt' > "${HB_ABSROOT}RELNOTES.txt"
-touch -c "${HB_ABSROOT}RELNOTES.txt" -r "${HB_ABSROOT}README.md"
+_vcs_url="$(git ls-remote --get-url | sed 's|.git$||')/"
+sed -e "s|_HB_VER_COMMIT_ID_|${_vcs_id}|g" \
+    -e "s|_HB_VER_ORIGIN_URL_|${_vcs_url}|g" \
+    -e "s|_HB_VERSION_|${_hb_ver}|g" 'RELNOTES.txt' > "${HB_ABSROOT}RELNOTES.txt"
+touch -c -r "${HB_ABSROOT}README.md" "${HB_ABSROOT}RELNOTES.txt"
 
 # Create tag update JSON request
 # https://developer.github.com/v3/git/refs/#update-a-reference
 
-echo "{\"sha\":\"$(git rev-parse --verify HEAD)\",\"force\":true}" > "${_ROOT}/git_tag_patch.json"
+jq -nc ".sha = \"$(git rev-parse --verify HEAD)\" | .force = true" > "${_ROOT}/git_tag_commit.json"
 
 # Register build information
 
 (
    "${HB_ABSROOT}bin/harbour" -build 2>&1 | grep -Ev '^(Version:|Platform:|Extra )'
+   echo "Source archive URL: ${_vcs_url}archive/${_vcs_id}.zip"
+   echo ---------------------------
    set | grep '_VER=' | grep -v '^_'
    echo ---------------------------
    set | grep -E '^(HB_USER_|HB_BUILD_|HB_WITH_|HB_STATIC_)' | grep -Ev '(HB_BUILD_POSTRUN=|HB_BUILD_PKG=)'
@@ -285,7 +297,7 @@ echo "{\"sha\":\"$(git rev-parse --verify HEAD)\",\"force\":true}" > "${_ROOT}/g
    cd "${HB_ABSROOT}lib" || exit
    find . -type d | grep -Eo '\./[a-z]+?/[a-z0-9]+?$' | cut -c 3-
 ) >> "${HB_ABSROOT}BUILD.txt"
-touch -c "${HB_ABSROOT}BUILD.txt" -r "${HB_ABSROOT}README.md"
+touch -c -r "${HB_ABSROOT}README.md" "${HB_ABSROOT}BUILD.txt"
 
 # Copy optional text files containing compiler details
 
@@ -293,17 +305,10 @@ if ls       ../BUILD*.txt > /dev/null 2>&1 ; then
    cp -f -p ../BUILD*.txt "${HB_ABSROOT}"
 fi
 
-# Convert EOLs
-
-"${HB_ABSROOT}bin/hbmk2.exe" "${_SCRIPT}" nl "${HB_ABSROOT}*.md"
-"${HB_ABSROOT}bin/hbmk2.exe" "${_SCRIPT}" nl "${HB_ABSROOT}*.txt"
-"${HB_ABSROOT}bin/hbmk2.exe" "${_SCRIPT}" nl "${HB_ABSROOT}addons/*.txt"
-"${HB_ABSROOT}bin/hbmk2.exe" "${_SCRIPT}" nl "${HB_ABSROOT}doc/*.txt"
-
 # Reset Windows attributes
 
 case "$(uname)" in
-   *_NT*) find "$(echo "${HB_ABSROOT}" | sed 's|/$||g')" -exec attrib +A -R {} \;
+   *_NT*) find "${HB_ABSROOT%/}" -exec attrib +A -R {} \;
 esac
 
 # Create installer/archive
@@ -320,14 +325,23 @@ cd "${HB_RT}" || exit
    echo 'include/*'
    echo 'lib/*'
    echo 'src/*'
-   echo 'doc/*'
-   echo 'contrib/*'
-   echo 'extras/*'
-   echo 'tests/*'
    echo 'addons/*.txt'
+   echo 'contrib/*'
+   echo 'doc/*'
+   echo 'extras/*'
+   echo 'manual/*'
+   echo 'tests/*'
 ) >> "${_ROOT}/_hbfiles"
 
-_pkgname="${_ROOT}/harbour-${HB_VF}-win.7z"
+_pkgdate=
+if [ "${_BRANCH#*prod*}" != "${_BRANCH}" ] ; then
+   case "$(uname)" in
+      *BSD|Darwin) _pkgdate="$(stat -f '-%Sm' -t '%Y%m%d-%H%M' "${HB_ABSROOT}README.md")";;
+      *)           _pkgdate="$(stat -c '%Y' "${HB_ABSROOT}README.md" | awk '{print "-" strftime("%Y%m%d-%H%M", $1)}')";;
+   esac
+fi
+
+_pkgname="${_ROOT}/harbour-${HB_VF}-win${_pkgdate}.7z"
 
 rm -f "${_pkgname}"
 (
@@ -337,40 +351,9 @@ rm -f "${_pkgname}"
    7z a -bd -r -mx "${_pkgname}" "@${_ROOT}/_hbfiles" > /dev/null
 )
 
-if [ -f "${HB_SFX_7Z}" ] ; then
-
-   cat << EOF > "_7zconf"
-;!@Install@!UTF-8!
-Title="Harbour ${HB_VF}"
-BeginPrompt="Do you want to install Harbour ${HB_VF}?"
-CancelPrompt="Do you want to cancel installation?"
-ExtractPathText="Select destination path"
-ExtractPathTitle="Harbour ${HB_VF}"
-ExtractTitle="Extracting"
-ExtractDialogText="Please wait..."
-ExtractCancelText="Abort"
-Progress="yes"
-GUIFlags="8+64+256+4096"
-GUIMode="1"
-OverwriteMode="0"
-InstallPath="C:\hb${HB_VS}"
-Shortcut="Du,{cmd.exe},{/k cd /d \"%%T\\\\bin\\\\\"},{},{},{Harbour Shell},{%%T\\\\bin\\\\},{%%T\\\\bin\\\\hbmk2.exe},{0}"
-RunProgram="nowait:notepad.exe \"%%T\\\\RELNOTES.txt\""
-;RunProgram="hbmk2.exe \"%%T\"\\\\install.hb"
-;Delete=""
-;!@InstallEnd@!
-EOF
-
-   cat "${HB_SFX_7Z}" _7zconf "${_pkgname}" > "${_pkgname}.exe"
-
-   rm "${_pkgname}"
-
-   _pkgname="${_pkgname}.exe"
-fi
-
 rm "${_ROOT}/_hbfiles"
 
-touch -c "${_pkgname}" -r "${HB_ABSROOT}README.md"
+touch -c -r "${HB_ABSROOT}README.md" "${_pkgname}"
 
 # <filename>: <size> bytes <YYYY-MM-DD> <HH:MM>
 case "$(uname)" in
@@ -381,10 +364,12 @@ openssl dgst -sha256 "${_pkgname}"
 
 cd - || exit
 
-if [ "${_BRANCH#*lto*}" != "${_BRANCH}" ] ; then
-   (
+(
+   set +x
+   if [ "${_BRANCH#*prod*}" != "${_BRANCH}" ] && \
+      [ -n "${PUSHOVER_USER}" ] && \
+      [ -n "${PUSHOVER_TOKEN}" ] ; then
       # https://pushover.net/api
-      set +x
       curl -sS \
          --form-string "user=${PUSHOVER_USER}" \
          --form-string "token=${PUSHOVER_TOKEN}" \
@@ -395,31 +380,28 @@ if [ "${_BRANCH#*lto*}" != "${_BRANCH}" ] ; then
          https://api.pushover.net/1/messages.json
       echo
       echo "! Push notification: Build ready."
-   )
-fi
+   fi
 
-if [ "${_BRANCH#*master*}" != "${_BRANCH}" ] ; then
-   (
-      set +x
+   if [ "${_BRANCH#*master*}" != "${_BRANCH}" ] && \
+      [ -n "${GITHUB_TOKEN}" ] ; then
       curl -sS \
          -H "Authorization: token ${GITHUB_TOKEN}" \
-         -X PATCH "https://api.github.com/repos/vszakats/harbour-core/git/refs/tags/v${HB_VF_DEF}" \
-         -d "@${_ROOT}/git_tag_patch.json"
-   )
-fi
+         -d "@${_ROOT}/git_tag_commit.json" \
+         -X PATCH "https://api.github.com/repos/vszakats/harbour-core/git/refs/tags/v${HB_VF_DEF}"
+   fi
 
-# https://www.virustotal.com/en/documentation/public-api/#scanning-files
-if [ "$(wc -c < "${_pkgname}")" -lt 32000000 ]; then
-   (
-      set +x
-      out="$(curl -sS \
-         -X POST https://www.virustotal.com/vtapi/v2/file/scan \
-         --form-string "apikey=${VIRUSTOTAL_APIKEY}" \
-         --form "file=@${_pkgname}")"
-      echo "${out}"
-      echo "VirusTotal URL for '${_pkgname}':"
-      echo "${out}" | grep -o 'https://[a-zA-Z0-9./]*'
-   )
-else
-   echo "! File too large for VirusTotal Public API. Upload skipped."
-fi
+   if [ -n "${VIRUSTOTAL_APIKEY}" ] ; then
+      # https://www.virustotal.com/en/documentation/public-api/#scanning-files
+      if [ "$(wc -c < "${_pkgname}")" -lt 32000000 ] ; then
+         out="$(curl -sS \
+            --form-string "apikey=${VIRUSTOTAL_APIKEY}" \
+            --form "file=@${_pkgname}" \
+            -X POST https://www.virustotal.com/vtapi/v2/file/scan)"
+         echo "${out}"
+         echo "VirusTotal URL for '${_pkgname}':"
+         echo "${out}" | jq '.permalink'
+      else
+         echo "! File too large for VirusTotal Public API. Upload skipped."
+      fi
+   fi
+)

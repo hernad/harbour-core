@@ -853,17 +853,17 @@ static HB_ERRCODE hb_waInfo( AREAP pArea, HB_USHORT uiIndex, PHB_ITEM pItem )
       {
          char szAlias[ HB_RDD_MAX_ALIAS_LEN + 1 ];
          if( SELF_ALIAS( pArea, szAlias ) != HB_SUCCESS )
-         {
             return HB_FAILURE;
-         }
          hb_itemPutC( pItem, szAlias );
          break;
       }
 
       case DBI_TABLEEXT:
+      {
+         LPRDDNODE pNode = SELF_RDDNODE( pArea );
          hb_itemClear( pItem );
-         return SELF_RDDINFO( SELF_RDDNODE( pArea ), RDDI_TABLEEXT, 0, pItem );
-
+         return pNode ? SELF_RDDINFO( pNode, RDDI_TABLEEXT, 0, pItem ) : HB_FAILURE;
+      }
       case DBI_SCOPEDRELATION:
       {
          int iRelNo = hb_itemGetNI( pItem );
@@ -1873,25 +1873,25 @@ static HB_ERRCODE hb_waRddInfo( LPRDDNODE pRDD, HB_USHORT uiIndex, HB_ULONG ulCo
 
       case RDDI_STRICTREAD:
          fResult = hb_setGetStrictRead();
-         if( hb_itemType( pItem ) == HB_IT_LOGICAL )
+         if( hb_itemType( pItem ) & HB_IT_LOGICAL )
             hb_setSetItem( HB_SET_STRICTREAD, pItem );
          hb_itemPutL( pItem, fResult );
          break;
       case RDDI_OPTIMIZE:
          fResult = hb_setGetOptimize();
-         if( hb_itemType( pItem ) == HB_IT_LOGICAL )
+         if( hb_itemType( pItem ) & HB_IT_LOGICAL )
             hb_setSetItem( HB_SET_OPTIMIZE, pItem );
          hb_itemPutL( pItem, fResult );
          break;
       case RDDI_FORCEOPT:
          fResult = hb_setGetForceOpt();
-         if( hb_itemType( pItem ) == HB_IT_LOGICAL )
+         if( hb_itemType( pItem ) & HB_IT_LOGICAL )
             hb_setSetItem( HB_SET_FORCEOPT, pItem );
          hb_itemPutL( pItem, fResult );
          break;
       case RDDI_AUTOOPEN:
          fResult = hb_setGetAutOpen();
-         if( hb_itemType( pItem ) == HB_IT_LOGICAL )
+         if( hb_itemType( pItem ) & HB_IT_LOGICAL )
             hb_setSetItem( HB_SET_AUTOPEN, pItem );
          hb_itemPutL( pItem, fResult );
          break;
@@ -1903,7 +1903,7 @@ static HB_ERRCODE hb_waRddInfo( LPRDDNODE pRDD, HB_USHORT uiIndex, HB_ULONG ulCo
          break;
       case RDDI_AUTOSHARE:
          fResult = hb_setGetAutoShare();
-         if( hb_itemType( pItem ) == HB_IT_LOGICAL )
+         if( hb_itemType( pItem ) & HB_IT_LOGICAL )
             hb_setSetItem( HB_SET_AUTOSHARE, pItem );
          hb_itemPutL( pItem, fResult );
          break;

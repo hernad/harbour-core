@@ -1197,7 +1197,7 @@ static int hb_gt_win_ReadKey( PHB_GT pGT, int iEventMask )
       {
 #if defined( UNICODE )
          /* Workaround for UNICOWS bug:
-               http://blogs.msdn.com/michkap/archive/2007/01/13/1460724.aspx
+               https://web.archive.org/web/blogs.msdn.com/michkap/archive/2007/01/13/1460724.aspx
             [vszakats] */
 
          if( s_fWin9x )
@@ -1210,10 +1210,10 @@ static int hb_gt_win_ReadKey( PHB_GT pGT, int iEventMask )
 #endif
 
          /* Read keyboard input */
-         ReadConsoleInput( s_HInput,          /* input buffer handle   */
-                           s_irBuffer,         /* buffer to read into   */
-                           INPUT_BUFFER_LEN,  /* size of read buffer   */
-                           &s_dwNumRead );     /* number of records read */
+         ReadConsoleInput( s_HInput,          /* input buffer handle    */
+                           s_irBuffer,        /* buffer to read into    */
+                           INPUT_BUFFER_LEN,  /* size of read buffer    */
+                           &s_dwNumRead );    /* number of records read */
          /* Set up to process the first input event */
          s_dwNumIndex = 0;
 
@@ -1541,6 +1541,126 @@ static int hb_gt_win_ReadKey( PHB_GT pGT, int iEventMask )
                   iKey = HB_K_MENU;
                   break;
 #endif
+               default:
+                  if( ( dwState & ( LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED |
+                                    LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED ) ) == LEFT_ALT_PRESSED )
+                  {
+                     switch( wScan )
+                     {
+                        case  2:
+                           iKey = '1';
+                           break;
+                        case  3:
+                           iKey = '2';
+                           break;
+                        case  4:
+                           iKey = '3';
+                           break;
+                        case  5:
+                           iKey = '4';
+                           break;
+                        case  6:
+                           iKey = '5';
+                           break;
+                        case  7:
+                           iKey = '6';
+                           break;
+                        case  8:
+                           iKey = '7';
+                           break;
+                        case  9:
+                           iKey = '8';
+                           break;
+                        case 10:
+                           iKey = '9';
+                           break;
+                        case 11:
+                           iKey = '0';
+                           break;
+                        case 13:
+                           iKey = '=';
+                           break;
+                        case 16:
+                           iKey = 'Q';
+                           break;
+                        case 17:
+                           iKey = 'W';
+                           break;
+                        case 18:
+                           iKey = 'E';
+                           break;
+                        case 19:
+                           iKey = 'R';
+                           break;
+                        case 20:
+                           iKey = 'T';
+                           break;
+                        case 21:
+                           iKey = 'Y';
+                           break;
+                        case 22:
+                           iKey = 'U';
+                           break;
+                        case 23:
+                           iKey = 'I';
+                           break;
+                        case 24:
+                           iKey = 'O';
+                           break;
+                        case 25:
+                           iKey = 'P';
+                           break;
+                        case 30:
+                           iKey = 'A';
+                           break;
+                        case 31:
+                           iKey = 'S';
+                           break;
+                        case 32:
+                           iKey = 'D';
+                           break;
+                        case 33:
+                           iKey = 'F';
+                           break;
+                        case 34:
+                           iKey = 'G';
+                           break;
+                        case 35:
+                           iKey = 'H';
+                           break;
+                        case 36:
+                           iKey = 'J';
+                           break;
+                        case 37:
+                           iKey = 'K';
+                           break;
+                        case 38:
+                           iKey = 'L';
+                           break;
+                        case 44:
+                           iKey = 'Z';
+                           break;
+                        case 45:
+                           iKey = 'X';
+                           break;
+                        case 46:
+                           iKey = 'C';
+                           break;
+                        case 47:
+                           iKey = 'V';
+                           break;
+                        case 48:
+                           iKey = 'B';
+                           break;
+                        case 49:
+                           iKey = 'N';
+                           break;
+                        case 50:
+                           iKey = 'M';
+                           break;
+                     }
+                  }
+                  break;
             }
          }
          else if( wVKey == VK_MENU && ( dwState & NUMLOCK_ON ) != 0 )
@@ -1569,6 +1689,18 @@ static int hb_gt_win_ReadKey( PHB_GT pGT, int iEventMask )
             if( u )
                iKey = HB_INKEY_NEW_UNICODEF( u, iFlags );
 #endif
+            else if( iChar < 127 && ( iFlags & ( HB_KF_CTRL | HB_KF_ALT ) ) )
+            {
+               if( iChar >= 32 &&
+                   ( ( ( iFlags & HB_KF_CTRL ) != 0 && ( iFlags & HB_KF_ALT ) != 0 ) ||
+                     ( dwState & ( LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED ) ) == RIGHT_ALT_PRESSED ) )
+               {
+                  iFlags &= ~( HB_KF_CTRL | HB_KF_ALT );
+                  iKey = HB_INKEY_NEW_CHARF( iChar, iFlags );
+               }
+               else
+                  iKey = HB_INKEY_NEW_KEY( iChar, iFlags );
+            }
             else
                iKey = HB_INKEY_NEW_CHARF( iChar, iFlags );
          }
