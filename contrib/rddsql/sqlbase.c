@@ -1068,7 +1068,7 @@ static HB_ERRCODE sqlbaseRddInfo( LPRDDNODE pRDD, HB_USHORT uiIndex, HB_ULONG ul
          hb_itemPutC( pItem, s_szQuery );
          return HB_SUCCESS;
 
-      case RDDI_INSERTID:
+      case RDDI_NEWID:
          hb_itemCopy( pItem, s_pItemNewID );
          return HB_SUCCESS;
 
