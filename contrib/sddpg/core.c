@@ -541,19 +541,25 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
    PHB_CODEPAGE cdpIn;
    PHB_CODEPAGE cdpOut;
 
+   HB_BOOL fDbl;
+   double dVal;
+   HB_MAXINT lVal;
+
    bError = HB_FALSE;
    uiIndex--;
    pField = pArea->area.lpFields + uiIndex;
 
    if( PQgetisnull( pSDDData->pResult, pArea->ulRecNo - 1, uiIndex ) )
    {
-      hb_itemClear( pItem );
+      //hb_itemClear( pItem );
       /* TOFIX: it breaks defined field type */
-      return HB_SUCCESS;
+      pValue = NULL;
+      //return HB_SUCCESS;
    }
-
-   pValue = PQgetvalue( pSDDData->pResult, pArea->ulRecNo - 1, uiIndex );
-   ulLen  = ( HB_SIZE ) PQgetlength( pSDDData->pResult, pArea->ulRecNo - 1, uiIndex );
+   else {
+       pValue = PQgetvalue( pSDDData->pResult, pArea->ulRecNo - 1, uiIndex );
+       ulLen  = ( HB_SIZE ) PQgetlength( pSDDData->pResult, pArea->ulRecNo - 1, uiIndex );
+   }
 
 #if 0
    HB_TRACE( HB_TR_ALWAYS, ( "fieldget recno=%d index=%d value=%s len=%d", dbFieldInfo.atomName, PQftype( pResult, ( int ) uiCount ), pArea->ulRecNo, uiIndex, pValue, ulLen ) );
@@ -563,12 +569,27 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
    {
       case HB_FT_STRING:
       case HB_FT_MEMO:
-         cdpIn = hb_cdpFindExt( "UTF8" );
-         cdpOut = hb_cdpFindExt( hb_cdpID() );
-         nDst = hb_cdpTransLen( pValue, ulLen, 0, cdpIn, cdpOut);
-         pszDst = (char *) hb_xgrab( nDst + 1);
-         hb_cdpTransTo( pValue, ulLen + 1, pszDst, nDst + 1, cdpIn, cdpOut);
-         hb_itemPutCL( pItem, pszDst, nDst );
+
+         if ( !pValue ) {
+            if ( pField->uiType == HB_FT_MEMO )
+                hb_itemPutC( pItem, NULL );
+            else {
+                char * pStr;
+                pStr = ( char * ) hb_xgrab( pField->uiLen + 1 );
+                memset( pStr, ' ', pField->uiLen  );
+                pStr[ pField->uiLen  ] = '\0';
+                hb_itemPutCL( pItem, pStr, pField->uiLen  );
+                hb_xfree( pStr );
+            }
+         }
+         else {
+            cdpIn = hb_cdpFindExt( "UTF8" );
+            cdpOut = hb_cdpFindExt( hb_cdpID() );
+            nDst = hb_cdpTransLen( pValue, ulLen, 0, cdpIn, cdpOut);
+            pszDst = (char *) hb_xgrab( nDst + 1);
+            hb_cdpTransTo( pValue, ulLen + 1, pszDst, nDst + 1, cdpIn, cdpOut);
+            hb_itemPutCL( pItem, pszDst, nDst );
+         }
 
          if ( pField->uiType == HB_FT_MEMO )
              hb_itemSetCMemo( pItem );
@@ -578,41 +599,52 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
       case HB_FT_INTEGER:
       case HB_FT_LONG:
       case HB_FT_DOUBLE:
-         if( pField->uiDec )
-            hb_itemPutNDLen( pItem, atof( pValue ),
-                             ( int ) pField->uiLen - ( ( int ) pField->uiDec + 1 ),
-                             ( int ) pField->uiDec );
-         else
-         if( pField->uiLen > 9 )
-            hb_itemPutNDLen( pItem, atof( pValue ),
-                             ( int ) pField->uiLen, ( int ) pField->uiDec );
-         else
-            hb_itemPutNLLen( pItem, atol( pValue ), ( int ) pField->uiLen );
-         break;
+
+          if ( !pValue )
+               hb_itemPutNDLen( pItem, (double) 0.0,
+                         ( int ) pField->uiLen - ( ( int ) pField->uiDec + 1 ),
+                         ( int ) pField->uiDec );
+           else {
+
+                fDbl = hb_strToNum( (const char *) pValue, &lVal,  &dVal);
+                hb_itemPutNDLen( pItem, fDbl ?  dVal : (double) lVal ,
+                                            ( int ) pField->uiLen - ( ( int ) pField->uiDec + 1 ),
+                                            ( int ) pField->uiDec );
+            }
+            break;
 
       case HB_FT_LOGICAL:
-         hb_itemPutL( pItem,
-            pValue[ 0 ] == 't' ||
-            pValue[ 0 ] == 'T' ||
-            pValue[ 0 ] == 'y' ||
-            pValue[ 0 ] == 'Y' ||
-            pValue[ 0 ] == '1' );
+
+        if ( !pValue )
+            hb_itemPutL( pItem, HB_FALSE );
+        else
+           hb_itemPutL( pItem,
+             pValue[ 0 ] == 't' ||
+             pValue[ 0 ] == 'T' ||
+             pValue[ 0 ] == 'y' ||
+             pValue[ 0 ] == 'Y' ||
+             pValue[ 0 ] == '1' );
+
          break;
 
       case HB_FT_DATE:
       {
          char szDate[ 9 ];
 
-         szDate[ 0 ] = pValue[ 0 ];
-         szDate[ 1 ] = pValue[ 1 ];
-         szDate[ 2 ] = pValue[ 2 ];
-         szDate[ 3 ] = pValue[ 3 ];
-         szDate[ 4 ] = pValue[ 5 ];
-         szDate[ 5 ] = pValue[ 6 ];
-         szDate[ 6 ] = pValue[ 8 ];
-         szDate[ 7 ] = pValue[ 9 ];
-         szDate[ 8 ] = '\0';
-         hb_itemPutDS( pItem, szDate );
+        if ( !pValue )
+            hb_itemPutDS( pItem, NULL );
+         else {
+            szDate[ 0 ] = pValue[ 0 ];
+            szDate[ 1 ] = pValue[ 1 ];
+            szDate[ 2 ] = pValue[ 2 ];
+            szDate[ 3 ] = pValue[ 3 ];
+            szDate[ 4 ] = pValue[ 5 ];
+            szDate[ 5 ] = pValue[ 6 ];
+            szDate[ 6 ] = pValue[ 8 ];
+            szDate[ 7 ] = pValue[ 9 ];
+            szDate[ 8 ] = '\0';
+            hb_itemPutDS( pItem, szDate );
+         }
          break;
       }
 
