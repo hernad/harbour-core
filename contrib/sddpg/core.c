@@ -570,7 +570,7 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
       case HB_FT_STRING:
       case HB_FT_MEMO:
 
-         if ( !pValue ) {
+         if ( !pValue ) { // empty value
             if ( pField->uiType == HB_FT_MEMO )
                 hb_itemPutC( pItem, NULL );
             else {
@@ -589,6 +589,7 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
             pszDst = (char *) hb_xgrab( nDst + 1);
             hb_cdpTransTo( pValue, ulLen + 1, pszDst, nDst + 1, cdpIn, cdpOut);
             hb_itemPutCL( pItem, pszDst, nDst );
+            hb_xfree( pszDst );
          }
 
          if ( pField->uiType == HB_FT_MEMO )
@@ -600,7 +601,7 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
       case HB_FT_LONG:
       case HB_FT_DOUBLE:
 
-          if ( !pValue )
+          if ( !pValue ) // empty
                hb_itemPutNDLen( pItem, (double) 0.0,
                          ( int ) pField->uiLen - ( ( int ) pField->uiDec + 1 ),
                          ( int ) pField->uiDec );
@@ -615,7 +616,7 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
 
       case HB_FT_LOGICAL:
 
-        if ( !pValue )
+        if ( !pValue ) // empty => .F.
             hb_itemPutL( pItem, HB_FALSE );
         else
            hb_itemPutL( pItem,
@@ -631,7 +632,7 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
       {
          char szDate[ 9 ];
 
-        if ( !pValue )
+        if ( !pValue ) // empty
             hb_itemPutDS( pItem, NULL );
          else {
             szDate[ 0 ] = pValue[ 0 ];
