@@ -1,13 +1,18 @@
+# build notes
+
+## build harbour package (hernad)
+
+     sudo apt-get install devscripts
 
 
-change log
------------
+## change log increment
 
     dch -iU -m
     apt-get purge harbour
     dpkg-buildpackage
 
 
+## Result
 
 <pre>
 Distribution: unstable
