@@ -22,6 +22,7 @@ sudo apt-get build-essential flex bison
 
 sudo apt install -y g++-multilib gcc-multilib libc6:i386 \
      libx11-dev:i386 libpcre3-dev:i386 libssl-dev:i386 libcurl4-openssl-dev:i386 \
+     libncurses5-dev:i386 \
      libncurses5:i386 libstdc++6:i386 lib32stdc++6  libpq-dev:i386 lib32z1
 
 PATH=$HB_ROOT/bin:$PATH
