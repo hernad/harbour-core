@@ -3,6 +3,9 @@
 #  - Ubuntu
 skip_non_tags: true
 
+# fetch repository as zip archive
+shallow_clone: true
+
 environment:
   # these variables are common to all jobs
   BUILD_OWNER: hernad
