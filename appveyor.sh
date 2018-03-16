@@ -28,15 +28,7 @@ PATH=$HB_ROOT/bin:$PATH
 
 echo $PATH
 
-export F18_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}
-scripts/update_f18_ver_ch.sh $F18_VER
-
-export LX_UBUNTU=1
-#source scripts/set_envars.sh
-
-export F18_POS=1
-export F18_RNAL=1
-hbmk2 -workdir=.h F18.hbp
+export HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}
 
 cp -av /usr/lib/i386-linux-gnu/libpq.so* .
 
@@ -50,4 +42,4 @@ set HB_WITH_PGSQL=%MINGW_INCLUDE%
 make
 make install
 
-zip harbour_${BUILD_ARTIFACT}_${APPVEYOR_REPO_TAG_NAME}.zip harbour
+zip harbour_${BUILD_ARTIFACT}_${HB_VER}.zip harbour
