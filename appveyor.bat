@@ -41,7 +41,7 @@ set HB_COMPILER=mingw
 set HB_INSTALL_PREFIX=C:\harbour 
 set MINGW_INCLUDE=c:\msys64\%MYS2_ARCH%\include 
 set HB_WITH_CURL=%MINGW_INCLUDE% 
-set HB_WITH_OPENSSL=%MINGW_INCLUDE% 
+set HB_WITH_SSL=%MINGW_INCLUDE% 
 set HB_WITH_PGSQL=%MINGW_INCLUDE%
 
 bash -xlc " HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}; make ; make install"
