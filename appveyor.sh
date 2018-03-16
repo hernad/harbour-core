@@ -1,12 +1,5 @@
 #!/bin/bash
 
-echo "hello world"
-
-#sudo apt install -y zip
-
-echo "artifakt: $BUILD_ARTIFACT tag: $APPVEYOR_REPO_TAG_NAME pwd: $(pwd)"
-
-gcc --version
 
 # https://redmine.bring.out.ba/issues/35387
 
