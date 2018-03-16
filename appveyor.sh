@@ -21,6 +21,8 @@ export HB_WITH_CURL=$HARBOUR_INCLUDE
 export HB_WITH_OPENSSL=$HARBOUR_INCLUDE
 export HB_WITH_PGSQL=$HARBOUR_INCLUDE
 
+export HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}
+
 sudo apt-get update -y
 sudo apt-get build-essential flex bison
 
@@ -33,7 +35,6 @@ PATH=$HB_ROOT/bin:$PATH
 
 echo $PATH
 
-export HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}
 
 cp -av /usr/lib/i386-linux-gnu/libpq.so* .
 
