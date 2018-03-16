@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# echo commands
+set -x
 
 # https://redmine.bring.out.ba/issues/35387
 
