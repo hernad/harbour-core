@@ -38,11 +38,20 @@ bash -xlc "set pwd"
 
 REM build hello.hbp
 
-bash -xlc "export HB_ARCHITECTURE=win HB_COMPILER=mingw HB_INSTALL_PREFIX=C:\\harbour MINGW_INCLUDE=c:\\msys64\\${MYS2_ARCH}\\include HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}; make ; make install"
+
+set HB_ARCHITECTURE=win 
+set HB_COMPILER=mingw 
+set HB_INSTALL_PREFIX=C:\\harbour 
+set MINGW_INCLUDE=c:\\msys64\\%MYS2_ARCH}%\\include 
+set HB_WITH_CURL=%MINGW_INCLUDE% 
+set HB_WITH_OPENSSL=%MINGW_INCLUDE% 
+set HB_WITH_PGSQL=%MINGW_INCLUDE%
+
+bash -xlc " HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}; make ; make install"
 
 
 REM postgresql dlls libpq.dll i kompanija
 REM bash -xlc "curl -LO https://dl.bintray.com/hernad/F18/postgresql_windows_x86_dlls.zip; unzip postgresql_windows_x86_dlls.zip"
 
-dir /s
+
 bash -xlc "zip harbour_${BUILD_ARTIFACT}_${APPVEYOR_REPO_TAG_NAME}.zip -r harbour"
