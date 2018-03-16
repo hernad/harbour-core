@@ -42,9 +42,6 @@ build_script:
 - sh: '${APPVEYOR_BUILD_FOLDER}/appveyor.sh'
 
 before_test:
-# https://help.appveyor.com/discussions/questions/2356-conditionally-enable-services
-#services:
-#  - postgresql96
 - ps: Start-Service postgresql-x64-9.6
 - cmd: SET PGUSER=postgres
 - cmd: SET PGPASSWORD=Password12!
@@ -95,7 +92,7 @@ deploy:
   name: bintray hernad ubuntu
   username: hernad
   subject: hernad
-  repo: F18
+  repo: harbour
   package: harbour-linux-x86
   version: '$(APPVEYOR_REPO_TAG_NAME)'
   api_key:
