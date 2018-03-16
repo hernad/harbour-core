@@ -42,7 +42,7 @@ configuration:
 build_script:
 - cmd: '%APPVEYOR_BUILD_FOLDER%\appveyor.bat'
 
-- sh: '${APPVEYOR_BUILD_FOLDER}/appveyor.sh'
+- sh: 'bash ${APPVEYOR_BUILD_FOLDER}/appveyor.sh'
 
 before_test:
 - ps: Start-Service postgresql-x64-9.6
