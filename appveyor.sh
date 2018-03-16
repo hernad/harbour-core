@@ -12,7 +12,7 @@ export HB_ROOT=$(pwd)/harbour
 export HB_USER_CFLAGS=-m32
 export HB_USER_DFLAGS='-m32 -L/usr/lib32'
 export HB_USER_LDFLAGS='-m32 -L/usr/lib32'
-
+export HB_INSTALL_PREFIX=$HB_ROOT
 
 export MINGW_INCLUDE=/usr/include
 export HB_WITH_CURL=$MINGW_INCLUDE HB_WITH_SSL=$MINGW_INCLUDE HB_WITH_PGSQL=$MINGW_INCLUDE
