@@ -36,13 +36,10 @@ rem Build/test scripting
 bash -xlc "set pwd"
 
 
-REM build hello.hbp
-
-
 set HB_ARCHITECTURE=win 
 set HB_COMPILER=mingw 
-set HB_INSTALL_PREFIX=C:\\harbour 
-set MINGW_INCLUDE=c:\\msys64\\%MYS2_ARCH}%\\include 
+set HB_INSTALL_PREFIX=C:\harbour 
+set MINGW_INCLUDE=c:\msys64\%MYS2_ARCH%\include 
 set HB_WITH_CURL=%MINGW_INCLUDE% 
 set HB_WITH_OPENSSL=%MINGW_INCLUDE% 
 set HB_WITH_PGSQL=%MINGW_INCLUDE%
