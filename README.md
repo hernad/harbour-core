@@ -1,4 +1,10 @@
-# Welcome to Harbour
+# CI / Binaries
+
+[![Build status](https://ci.appveyor.com/api/projects/status/e9mb4d2sxh4b1bd7?svg=true)](https://ci.appveyor.com/project/hernad/harbour-core)
+
+[bintray harbour repos]( https://dl.bintray.com/hernad/harbour)
+
+# Harbour
 
 Harbour is the open/free software implementation of a cross-platform,
 multi-threading, object-oriented, scriptable programming language, backwards
