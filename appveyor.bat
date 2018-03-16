@@ -36,7 +36,7 @@ rem Build/test scripting
 bash -xc "set pwd"
 
 REM 4x backslash to get '\' 
-bash -xc "export HB_ARCHITECTURE=win HB_COMPILER=mingw MINGW_INCLUDE=C:\\\\usr\\%MSYSTEM%\\\\include; export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_SSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_INSTALL_PREFIX=/c/projects/harbour-core/harbour HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}; make ; make install"
+bash -xc "export HB_ARCHITECTURE=win HB_COMPILER=mingw MINGW_INCLUDE=C:\\\\usr\\\\%MSYSTEM%\\\\include; export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_SSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_INSTALL_PREFIX=/c/projects/harbour-core/harbour HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}; make ; make install"
 
 
 REM postgresql dlls libpq.dll i kompanija
