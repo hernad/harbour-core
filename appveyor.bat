@@ -24,13 +24,13 @@ rem Install the relevant native dependencies
 REM bash -xlc "pacman --noconfirm -S --needed mingw-w64-%MSYS2_ARCH%-json-c"
 REM bash -xlc "pacman --noconfirm -S --needed mingw-w64-%MSYS2_ARCH%-glib2"
 REM bash -xlc "pacman --noconfirm -S --needed mingw-w64-%MSYS2_ARCH%-gobject-introspection"
-bash -xlc "pacman --noconfirm -S --needed mingw-w64-%MSYS2_ARCH%-postgresql"
+bash -xlc "pacman --noconfirm -S --needed mingw-w64-%MSYS2_ARCH%-postgresql mingw-w64-%MSYS2_ARCH%-icu mingw-w64-%MSYS2_ARCH%-curl mingw-w64-%MSYS2_ARCH%-openssl"
 
 
 rem Invoke subsequent bash in the build tree
-cd %APPVEYOR_BUILD_FOLDER%
-bash -xlc "cd /c ; curl -LO https://dl.bintray.com/hernad/windows/hbwin.tar.gz ; tar xf hbwin.tar.gz"
-set PATH=C:\hbwin\bin;%PATH%
+REM cd %APPVEYOR_BUILD_FOLDER%
+REM bash -xlc "cd /c ; curl -LO https://dl.bintray.com/hernad/windows/hbwin.tar.gz ; tar xf hbwin.tar.gz"
+REM set PATH=C:\hbwin\bin;%PATH%
 
 rem Build/test scripting
 bash -xlc "set pwd"
@@ -38,7 +38,7 @@ bash -xlc "set pwd"
 
 REM build hello.hbp
 
-bash -xlc "export HB_ARCHITECTURE=win; export HB_COMPILER=mingw; export HB_INSTALL=$(pwd)/harbour ;export HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}; make ; make install"
+bash -xlc "export HB_ARCHITECTURE=win HB_COMPILER=mingw HB_INSTALL_PREFIX=C:\\harbour MINGW_INCLUDE=c:\\msys64\\${MYS2_ARCH}\\include HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}; make ; make install"
 
 
 REM postgresql dlls libpq.dll i kompanija
