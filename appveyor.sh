@@ -41,4 +41,4 @@ cp -av /usr/lib/i386-linux-gnu/libpq.so* .
 make
 make install
 
-zip harbour_${BUILD_ARTIFACT}_${HB_VER}.zip harbour
+zip harbour_${BUILD_ARTIFACT}_${HB_VER}.zip -r harbour
