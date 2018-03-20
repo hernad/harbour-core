@@ -2,14 +2,14 @@ ROOT := ../../../
 
 include $(TOP)$(ROOT)config/global.mk
 
-LIBNAME := gttrm
+LIBNAME := gtele
 
 C_SOURCES := \
-   gttrm.c \
+   gtele.c \
 
 HB_SUPPORTED := yes
 ifeq ($(HB_PLATFORM),win)
-   HB_SUPPORTED := no
+   HB_SUPPORTED := yes
 endif
 ifeq ($(HB_PLATFORM),wce)
    HB_SUPPORTED := no
@@ -21,7 +21,7 @@ ifeq ($(HB_PLATFORM),os2)
    HB_SUPPORTED := no
 endif
 ifeq ($(HB_COMPILER),djgpp)
-   HB_SUPPORTED := yes
+   HB_SUPPORTED := no
 endif
 ifeq ($(HB_PLATFORM),vxworks)
    HB_SUPPORTED := no
