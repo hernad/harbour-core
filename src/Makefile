@@ -33,7 +33,8 @@ else
          src/rdd/usrrdd \
          src/rtl/gtcgi \
          src/rtl/gtpca \
-         src/rtl/gtstd
+         src/rtl/gtstd \
+         src/rtl/gtele
 
       ifeq ($(HB_PLATFORM),dos)
          DYNDIRLIST_BASE += src/rtl/gtdos
