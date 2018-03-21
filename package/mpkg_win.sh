@@ -22,7 +22,7 @@ echo "! Self: $0"
 readonly HB_VS_DEF=34
 readonly HB_VL_DEF=340
 readonly HB_VM_DEF=3.4
-readonly HB_VF_DEF=3.4.0dev
+readonly HB_VF_DEF=3.4.6
 readonly HB_RT_DEF=C:/hb
 
 [ -z "${HB_VS}" ] && HB_VS="${HB_VS_DEF}"
