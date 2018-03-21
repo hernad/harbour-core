@@ -1724,6 +1724,7 @@ SYSLIBS :=
 # Names of portable GT drivers
 HB_GT_LIBS := \
    gtpca \
+   gtcgi \
    gtstd \
 
 
