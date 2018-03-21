@@ -47,15 +47,12 @@ HB_DYN_LIBS := \
    hbhsx \
    hbusrrdd \
    gtcgi \
-   gtpca \
+   gtele \
    gtstd \
    gtwvt \
    gtgui \
    gtwin \
-   gtos2 \
-   gtdos \
    gttrm \
-   gtcrs \
    gtsln \
    gtxwc \
    $(_HB_VM) \

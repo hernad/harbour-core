@@ -4,7 +4,7 @@ BIN_EXT :=
 DYN_EXT := .so
 DYN_PREF := lib
 
-HB_GT_LIBS += gttrm
+HB_GT_LIBS += gtele gttrm
 
 ifneq ($(filter $(HB_BUILD_STRIP),all lib),)
    ARSTRIP = && strip -S $(LIB_DIR)/$@

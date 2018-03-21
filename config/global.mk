@@ -1723,17 +1723,10 @@ SYSLIBS :=
 
 # Names of portable GT drivers
 HB_GT_LIBS := \
-   gtcgi \
    gtpca \
    gtstd \
 
-# Add GTs if dependency is available
-ifneq ($(HB_HAS_CURSES),)
-   HB_GT_LIBS += gtcrs
-endif
-ifneq ($(HB_HAS_SLANG),)
-   HB_GT_LIBS += gtsln
-endif
+
 ifneq ($(HB_HAS_X11),)
    HB_GT_LIBS += gtxwc
 endif
@@ -1755,14 +1748,7 @@ else
    # Use short names in MS-DOS
    HB_VERSION := $(HB_VER_MAJOR)$(HB_VER_STATUS_SH)
    HB_PKGNAME := hb$(HB_VERSION)
-   # Ugly solution
-   ifeq ($(HB_COMPILER),djgpp)
-      HB_PKGNAME := $(HB_PKGNAME)dj
-   else
-      ifeq ($(HB_COMPILER),watcom)
-         HB_PKGNAME := $(HB_PKGNAME)wa
-      endif
-   endif
+
    HB_PKGNAMI := $(HB_PKGNAME)
 endif
 

@@ -19,17 +19,15 @@ HB_DYN_LIBS := \
    hbsix \
    hbhsx \
    hbusrrdd \
-   gtcgi \
-   gtpca \
    gtstd \
    gtwvt \
    gtgui \
    gtwin \
-   gtos2 \
    gtdos \
+   gtcgi \
+   gtele \
    gttrm \
    gtcrs \
-   gtsln \
    gtxwc \
    hbvm \
    hbvmmt \

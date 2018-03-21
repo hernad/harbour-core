@@ -296,15 +296,15 @@ PRG_SOURCES := \
 LIBNAME := hbrtl
 
 DIRS := \
-   gtcgi \
    gtcrs \
    gtdos \
    gtgui \
-   gtos2 \
    gtpca \
    gtsln \
    gtstd \
    gttrm \
+   gtcgi \
+   gtele \
    gtwin \
    gtwvt \
    gtxwc \

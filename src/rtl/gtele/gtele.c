@@ -67,7 +67,6 @@
 
 
 #if defined( HB_OS_UNIX )
-#  if defined( HB_HAS_TERMIOS )
 #     include <time.h>
 #     include <unistd.h>
 #     include <termios.h>
@@ -77,7 +76,6 @@
 #     include <sys/time.h>
 #     include <sys/types.h>
 #     include <sys/wait.h>
-#  endif
 #else
 #  if defined( HB_OS_WIN )
 #     include <windows.h>
@@ -338,10 +336,10 @@ typedef struct _HB_GTELE
    int        terminal_type;
    int        terminal_ext;
 
-#if defined( HB_OS_UNIX ) || defined( __DJGPP__ )
-   struct termios saved_TIO, curr_TIO;
-   HB_BOOL    fRestTTY;
-#endif
+//#if defined( HB_OS_UNIX )
+//   struct termios saved_TIO, curr_TIO;
+//   HB_BOOL    fRestTTY;
+//#endif
 
    double     dToneSeconds;
 
@@ -2337,10 +2335,10 @@ static HB_BOOL hb_trm_isUTF8( PHB_GTELE pTerm )
    if( szLang && strstr( szLang, "UTF-8" ) != NULL )
       return HB_TRUE;
 
-#ifdef IUTF8
-   if( ( pTerm->curr_TIO.c_iflag & IUTF8 ) != 0 )
-      return HB_TRUE;
-#endif
+//#ifdef IUTF8
+//   if( ( pTerm->curr_TIO.c_iflag & IUTF8 ) != 0 )
+//      return HB_TRUE;
+//#endif
 
    return HB_FALSE;
 }
@@ -3294,30 +3292,42 @@ static void hb_gt_ele_Init( PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFil
 #endif
       sigaction( SIGTTOU, &act, 0 );
 
-      tcgetattr( pTerm->hFilenoStdin, &pTerm->saved_TIO );
-      memcpy( &pTerm->curr_TIO, &pTerm->saved_TIO, sizeof( struct termios ) );
+     //hernad tcgetattr( pTerm->hFilenoStdin, &pTerm->saved_TIO );
+     //hernad memcpy( &pTerm->curr_TIO, &pTerm->saved_TIO, sizeof( struct termios ) );
+
       /* atexit( restore_input_mode ); */
+    
+    /* hernad
       pTerm->curr_TIO.c_lflag &= ~( ECHO | ECHONL | ICANON | ISIG | IEXTEN );
       pTerm->curr_TIO.c_lflag |= NOFLSH;
       pTerm->curr_TIO.c_cflag &= ~( CSIZE | PARENB );
       pTerm->curr_TIO.c_cflag |= CS8 | CREAD;
       pTerm->curr_TIO.c_iflag &= ~( IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON );
       pTerm->curr_TIO.c_oflag &= ~OPOST;
-      /* Enable LF->CR+LF translation */
-      pTerm->curr_TIO.c_oflag = ONLCR | OPOST;
+     */
 
-      memset( pTerm->curr_TIO.c_cc, 0, NCCS );
+      /* Enable LF->CR+LF translation */
+    
+    //hernad  pTerm->curr_TIO.c_oflag = ONLCR | OPOST;
+
+     //hernad memset( pTerm->curr_TIO.c_cc, 0, NCCS );
+
       /* workaround for bug in some Linux kernels (i.e. 3.13.0-64-generic
          *buntu) in which select() unconditionally accepts stdin for
          reading if c_cc[ VMIN ] = 0 [druzus] */
-      pTerm->curr_TIO.c_cc[ VMIN ] = 1;
+      
+      // hernad pTerm->curr_TIO.c_cc[ VMIN ] = 1;
+
+
       /* pTerm->curr_TIO.c_cc[ VMIN ] = 0; */
       /* pTerm->curr_TIO.c_cc[ VTIME ] = 0; */
-      tcsetattr( pTerm->hFilenoStdin, TCSAFLUSH, &pTerm->curr_TIO );
+
+      // hernad tcsetattr( pTerm->hFilenoStdin, TCSAFLUSH, &pTerm->curr_TIO );
       act.sa_handler = SIG_DFL;
 
       sigaction( SIGTTOU, &old, NULL );
-      pTerm->fRestTTY = s_fRestTTY;
+      
+      // hernad pTerm->fRestTTY = s_fRestTTY;
    }
    set_signals();
    if( ! hb_gt_ele_getSize( pTerm, &iRows, &iCols ) )
@@ -3383,10 +3393,13 @@ static void hb_gt_ele_Exit( PHB_GT pGT )
 
    if( pTerm )
    {
-#if defined( HB_OS_UNIX ) || defined( __DJGPP__ )
+/* hernad
+#if defined( HB_OS_UNIX )
       if( pTerm->fRestTTY )
          tcsetattr( pTerm->hFilenoStdin, TCSANOW, &pTerm->saved_TIO );
 #endif
+*/
+
       if( pTerm->nLineBufSize > 0 )
          hb_xfree( pTerm->pLineBuf );
       if( pTerm->iOutBufSize > 0 )
@@ -3555,10 +3568,12 @@ static HB_BOOL hb_gt_ele_Suspend( PHB_GT pGT )
    pTerm = HB_GTELE_GET( pGT );
    if( pTerm->mouse_type & MOUSE_XTERM )
       hb_gt_ele_termOut( pTerm, s_szMouseOff, strlen( s_szMouseOff ) );
-#if defined( HB_OS_UNIX ) || defined( __DJGPP__ )
+/* hernad
+#if defined( HB_OS_UNIX )
    if( pTerm->fRestTTY )
       tcsetattr( pTerm->hFilenoStdin, TCSANOW, &pTerm->saved_TIO );
 #endif
+*/
    /* Enable line wrap when cursor set after last column */
    pTerm->SetTermMode( pTerm, 1 );
    return HB_TRUE;
@@ -3572,10 +3587,13 @@ static HB_BOOL hb_gt_ele_Resume( PHB_GT pGT )
    HB_TRACE( HB_TR_DEBUG, ( "hb_gt_ele_Resume(%p)", pGT ) );
 
    pTerm = HB_GTELE_GET( pGT );
-#if defined( HB_OS_UNIX ) || defined( __DJGPP__ )
+
+/* hernad
+#if defined( HB_OS_UNIX )
    if( pTerm->fRestTTY )
       tcsetattr( pTerm->hFilenoStdin, TCSANOW, &pTerm->curr_TIO );
 #endif
+*/
    if( pTerm->mouse_type & MOUSE_XTERM )
       hb_gt_ele_termOut( pTerm, s_szMouseOn, strlen( s_szMouseOn ) );
 
