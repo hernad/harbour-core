@@ -1,6 +1,12 @@
 #include "hbtrace.ch"
 #include "hbgtinfo.ch"
 
+
+? "export HB_TR_LEVEL=DEBUG"
+? "export HB_TR_OUTPUT=trace.txt"
+? "export HB_USER_CFLAGS=-DHB_TR_LEVEL=5"
+inkey(0)
+
 //? hb_traceState(HB_TR_DEBUG)
 //inkey(0)
 //? hb_traceState()
