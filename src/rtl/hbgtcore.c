@@ -3674,14 +3674,10 @@ static char s_gtNameBuf[ HB_GT_NAME_MAX_ + 1 ];
 /* NOTE: Must be in sync with gtsys.c */
 #if defined( HB_GT_LIB )
    static const char * s_szNameDefault = HB_GT_DRVNAME( HB_GT_LIB );
-#elif defined( HB_OS_WIN_CE )
-   static const char * s_szNameDefault = "wvt";
 #elif defined( HB_OS_WIN )
    static const char * s_szNameDefault = "win";
 #elif defined( HB_OS_DOS )
    static const char * s_szNameDefault = "dos";
-#elif defined( HB_OS_OS2 )
-   static const char * s_szNameDefault = "os2";
 #elif defined( HB_OS_VXWORKS ) || defined( HB_OS_SYMBIAN )
    static const char * s_szNameDefault = "std";
 #elif defined( HB_OS_UNIX )
