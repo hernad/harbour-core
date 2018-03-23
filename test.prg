@@ -1,0 +1,32 @@
+#include "hbtrace.ch"
+#include "hbgtinfo.ch"
+
+//? hb_traceState(HB_TR_DEBUG)
+//inkey(0)
+//? hb_traceState()
+//inkey(0)
+
+cGet := "AB  "
+
+? hb_gtInfo( HB_GTI_DESKTOPROWS, 40 )
+? hb_gtInfo( HB_GTI_DESKTOPCOLS, 70 )
+inkey(0)
+
+hb_gtInfo( HB_GTI_WINTITLE, "TTTTTITLE XTERMJS" )
+
+CLEAR SCREEN
+Tone( 300, 2)
+SET BELL ON
+
+@ 10, 10 SAY "Hello" GET cGet
+
+READ
+
+? "cGet=", cGet
+
+
+//? hb_gtInfo( HB_GTI_DESKTOPROWS, 50 )
+//? hb_gtInfo( HB_GTI_DESKTOPCOLS, 120 )
+//inkey(0)
+
+
