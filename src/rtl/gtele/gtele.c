@@ -3106,7 +3106,7 @@ static const char *hb_gt_ele_Version(PHB_GT pGT, int iType)
       if (iType == 0)
             return HB_GT_DRVNAME(HB_GT_NAME);
 
-      return "Terminal: *nix native";
+      return "Terminal: electron desktop";
 }
 
 static HB_BOOL hb_gt_ele_Suspend(PHB_GT pGT)
