@@ -292,6 +292,10 @@ typedef struct _HB_GTELE
       HB_FHANDLE hFilenoStdin;
       HB_FHANDLE hFilenoStdout;
       HB_FHANDLE hFilenoStderr;
+      
+      int iMaxRows;  // set windows rows
+      int iMaxCols;  // cols
+
       int iRow;
       int iCol;
       int iWidth;
@@ -547,9 +551,12 @@ static int hb_gt_ele_getSize(PHB_GTELE pTerm, int *piRows, int *piCols)
                   *piRows = atoi(env);
       }
 
-      return *piRows > 0 && *piCols > 0;
+      
 */
-      return HB_TRUE;
+      *piRows = pTerm->iMaxRows;
+      *piCols = pTerm->iMaxCols;
+
+      return *piRows > 0 && *piCols > 0;
 }
 
 static void hb_gt_ele_termFlush(PHB_GTELE pTerm)
@@ -1453,18 +1460,24 @@ static HB_BOOL hb_gt_ele_XtermSetMode(PHB_GTELE pTerm, int *piRows, int *piCols)
 
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_XtermSetMode(%p,%d,%d)", pTerm, *piRows, *piCols));
 
+      pTerm->iMaxRows = *piRows;
+      pTerm->iMaxCols = *piCols;
+
       HB_GTSELF_GETSIZE(pTerm->pGT, &iHeight, &iWidth);
+
       hb_snprintf(escseq, sizeof(escseq), "\033[8;%d;%dt", *piRows, *piCols);
       hb_gt_ele_termOut(pTerm, escseq, strlen(escseq));
       hb_gt_ele_termFlush(pTerm);
 
+/*
 #if defined(HB_OS_UNIX)
-      /* dirty hack - wait for SIGWINCH */
+      // dirty hack - wait for SIGWINCH
       if (*piRows != iHeight || *piCols != iWidth)
             sleep(3);
       if (s_WinSizeChangeFlag)
             s_WinSizeChangeFlag = HB_FALSE;
 #endif
+*/
 
       //hb_gt_ele_getSize(pTerm, piRows, piCols);
 
@@ -3498,6 +3511,26 @@ static HB_BOOL hb_gt_ele_Info(PHB_GT pGT, int iType, PHB_GT_INFO pInfo)
       case HB_GTI_RESIZABLE:
             pInfo->pResult = hb_itemPutL(pInfo->pResult, HB_TRUE);
             break;
+
+
+      case HB_GTI_DESKTOPROWS:
+      {
+ 
+         pTerm->iMaxRows = hb_itemGetNI( pInfo->pNewVal);
+         pInfo->pResult = hb_itemPutNI( pInfo->pResult, pTerm->iMaxRows);
+         break;
+      }
+
+      case HB_GTI_DESKTOPCOLS:
+      {
+
+         pTerm->iMaxCols = hb_itemGetNI( pInfo->pNewVal);
+         pInfo->pResult = hb_itemPutNI( pInfo->pResult, pTerm->iMaxCols);
+
+         HB_GTSELF_RESIZE(pGT, pTerm->iMaxRows, pTerm->iMaxCols );     
+         break;
+      }
+
 
       case HB_GTI_CLOSABLE:
             pInfo->pResult = hb_itemPutL(pInfo->pResult, HB_TRUE);
