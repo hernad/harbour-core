@@ -52,3 +52,6 @@ ifneq ($(HB_LINKING_RTL),)
 endif
 
 SYSLIBS += m
+
+SYSLIBS += rembed
+SYSLIBPATHS += /usr/local/lib

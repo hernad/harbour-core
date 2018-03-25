@@ -17,9 +17,6 @@ endif
 ifeq ($(HB_PLATFORM),dos)
    HB_SUPPORTED := no
 endif
-ifeq ($(HB_PLATFORM),os2)
-   HB_SUPPORTED := no
-endif
 ifeq ($(HB_COMPILER),djgpp)
    HB_SUPPORTED := no
 endif

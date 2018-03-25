@@ -2813,6 +2813,8 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
 
       HB_GTLOCAL(pGT) = pTerm = (PHB_GTELE)hb_xgrabz(sizeof(HB_GTELE));
 
+      //process();
+
       pTerm->pGT = pGT;
       pTerm->hFilenoStdin = hFilenoStdin;
       pTerm->hFilenoStdout = hFilenoStdout;
