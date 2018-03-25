@@ -53,5 +53,3 @@ endif
 
 SYSLIBS += m
 
-SYSLIBS += rembed
-SYSLIBPATHS += /usr/local/lib
