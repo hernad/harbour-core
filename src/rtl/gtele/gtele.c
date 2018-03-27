@@ -84,6 +84,7 @@
 #endif
 #endif
 
+/*
 #if defined(HB_HAS_GPM)
 #include <gpm.h>
 #if defined(HB_OS_LINUX) && 0
@@ -94,6 +95,7 @@
 #define KG_ALT 3
 #endif
 #endif
+*/
 
 #ifndef O_ACCMODE
 #define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
@@ -117,7 +119,6 @@ static HB_GT_FUNCS SuperTable;
 //#define TERM_LINUX 2
 #define TERM_XTERM 3
 
-
 #define HB_GTELE_CLRSTD 0
 #define HB_GTELE_CLRX16 1
 #define HB_GTELE_CLR256 2
@@ -126,7 +127,7 @@ static HB_GT_FUNCS SuperTable;
 
 #define STDIN_BUFLEN 128
 
-#define ESC_DELAY 25
+#define ESC_DELAY 0 // vrijeme u kome se ceka ESC sekvenca
 
 #define IS_EVTFDSTAT(x) ((x) >= 0x01 && (x) <= 0x03)
 #define EVTFDSTAT_RUN 0x01
@@ -292,9 +293,9 @@ typedef struct _HB_GTELE
       HB_FHANDLE hFilenoStdin;
       HB_FHANDLE hFilenoStdout;
       HB_FHANDLE hFilenoStderr;
-      
-      int iMaxRows;  // set windows rows
-      int iMaxCols;  // cols
+
+      int iMaxRows; // set windows rows
+      int iMaxCols; // cols
 
       int iRow;
       int iCol;
@@ -302,17 +303,17 @@ typedef struct _HB_GTELE
       int iHeight;
       HB_SIZE nLineBufSize;
       char *pLineBuf;
-      int iCurrentSGR, iFgColor, iBgColor, iBold, iBlink, iACSC, iExtColor, iAM;
+      int iCurrentSGR /* current ansi attribute */, iFgColor, iBgColor, iBold, iBlink, iACSC, iExtColor, iAM;
       int iAttrMask;
       int iCursorStyle;
       HB_BOOL fAM;
 
-      HB_BOOL fOutTTY;
+      //HB_BOOL fOutTTY;
       HB_BOOL fStdinTTY;
       HB_BOOL fStdoutTTY;
       HB_BOOL fStderrTTY;
 
-      HB_BOOL fPosAnswer;
+      //HB_BOOL fPosAnswer;
 
       HB_BOOL fUTF8;
 
@@ -334,7 +335,7 @@ typedef struct _HB_GTELE
 
       char *szTitle;
 
-      int iOutBufSize;
+      int iOutBufSize; // out buffer size 16K / unicode 32K
       int iOutBufIndex;
       char *pOutBuf;
 
@@ -342,8 +343,8 @@ typedef struct _HB_GTELE
       int terminal_ext;
 
       //#if defined( HB_OS_UNIX )
-      //   struct termios saved_TIO, curr_TIO;
-      //   HB_BOOL    fRestTTY;
+      struct termios saved_TIO /* external environment termios */, curr_TIO;
+      //HB_BOOL fRestTTY;
       //#endif
 
       double dToneSeconds;
@@ -360,17 +361,17 @@ typedef struct _HB_GTELE
       int nTermMouseChars;
       unsigned char cTermMouseBuf[3];
       mouseEvent mLastEvt;
-#if defined(HB_HAS_GPM)
-      Gpm_Connect Conn;
-#endif
+      //#if defined(HB_HAS_GPM)
+      //      Gpm_Connect Conn;
+      //#endif
 
       unsigned char stdin_buf[STDIN_BUFLEN];
       int stdin_ptr_l;
       int stdin_ptr_r;
-      int stdin_inbuf;
+      int stdin_inbuf; // stdin position, max STDIN_BUFLEN
 
-      evtFD **event_fds;
-      int efds_size;
+      evtFD **event_fds; // matrica file deskriptora
+      int efds_size;     // broj input event file descriptora, ovo je bez veze; vazda je samo 1
       int efds_no;
 
       /* terminal functions */
@@ -378,12 +379,12 @@ typedef struct _HB_GTELE
       void (*Init)(HB_GTELE_PTR);
       void (*Exit)(HB_GTELE_PTR);
       void (*SetTermMode)(HB_GTELE_PTR, int);
-      HB_BOOL (*GetCursorPos)
+      HB_BOOL(*GetCursorPos)
       (HB_GTELE_PTR, int *, int *, const char *);
       void (*SetCursorPos)(HB_GTELE_PTR, int, int);
       void (*SetCursorStyle)(HB_GTELE_PTR, int);
       void (*SetAttributes)(HB_GTELE_PTR, int);
-      HB_BOOL (*SetMode)
+      HB_BOOL(*SetMode)
       (HB_GTELE_PTR, int *, int *);
       int (*GetAcsc)(HB_GTELE_PTR, unsigned char);
       void (*Tone)(HB_GTELE_PTR, double, double);
@@ -392,17 +393,23 @@ typedef struct _HB_GTELE
 } HB_TERM_STATE, HB_GTELE, *PHB_GTELE;
 
 /* static variables use by signal handler */
+/*
 #if defined(HB_OS_UNIX)
 static volatile HB_BOOL s_WinSizeChangeFlag = HB_FALSE;
 #endif
-#if defined(HB_OS_UNIX) && defined(SA_NOCLDSTOP)
-static volatile HB_BOOL s_fRestTTY = HB_FALSE;
-#endif
+*/
+
+//#if defined(HB_OS_UNIX) && defined(SA_NOCLDSTOP)
+//static volatile HB_BOOL s_fRestTTY = HB_FALSE;
+//#endif
 
 /* save old hilit tracking & enable mouse tracking */
-static const char *s_szMouseOn = "\033[?1001s\033[?1002h";
+static const char *s_szMouseOn = "\x1b[?1001s\x1b[?1002h";
+
+static const char *s_szInit = "\x1b[?25l\x1b[10;18H\x1b[?25h";
+
 /* disable mouse tracking & restore old hilit tracking */
-static const char *s_szMouseOff = "\033[?1002l\033[?1001r";
+static const char *s_szMouseOff = "\x1b[?1002l\x1b[?1001r";
 static const char s_szBell[] = {HB_CHAR_BEL, 0};
 
 /* conversion table for ANSI color indexes */
@@ -446,7 +453,7 @@ static int getClipKey(int nKey)
       return nRet;
 }
 
-/* SA_NOCLDSTOP in #if is a hack to detect POSIX compatible environment */
+/* SA_NOCLDSTOP in #if is a hack to detect POSIX compatible environment 
 #if defined(HB_OS_UNIX) && defined(SA_NOCLDSTOP)
 
 static void sig_handler(int iSigNo)
@@ -464,16 +471,16 @@ static void sig_handler(int iSigNo)
             s_WinSizeChangeFlag = HB_TRUE;
             break;
       case SIGINT:
-            /* s_InetrruptFlag = HB_TRUE; */
+            // s_InetrruptFlag = HB_TRUE;
             break;
       case SIGQUIT:
-            /* s_BreakFlag = HB_TRUE; */
+            // s_BreakFlag = HB_TRUE; 
             break;
       case SIGTSTP:
-            /* s_DebugFlag = HB_TRUE; */
+            // s_DebugFlag = HB_TRUE;
             break;
       case SIGTTOU:
-            s_fRestTTY = HB_FALSE;
+            //s_fRestTTY = HB_FALSE;
             break;
       }
       errno = e;
@@ -495,9 +502,9 @@ static void set_sig_handler(int iSig)
 
 static void set_signals(void)
 {
-      int i, sigs[] = {SIGINT, SIGQUIT, SIGTSTP, SIGWINCH /*, SIGCHLD */, 0};
+      int i, sigs[] = {SIGINT, SIGQUIT, SIGTSTP, SIGWINCH, 0};
 
-      /* Ignore SIGPIPEs so they don't kill us. */
+      // Ignore SIGPIPEs so they don't kill us.
       signal(SIGPIPE, SIG_IGN);
       for (i = 0; sigs[i]; ++i)
       {
@@ -506,6 +513,7 @@ static void set_signals(void)
 }
 
 #endif
+*/
 
 static int hb_gt_ele_getKbdState(PHB_GTELE pTerm)
 {
@@ -523,9 +531,8 @@ static int hb_gt_ele_getKbdState(PHB_GTELE pTerm)
 
 static int hb_gt_ele_getSize(PHB_GTELE pTerm, int *piRows, int *piCols)
 {
-      
 
-/*
+      /*
       *piRows = *piCols = 0;
 #if defined(HB_OS_UNIX) && defined(TIOCGWINSZ)
       if (pTerm->fOutTTY)
@@ -564,9 +571,11 @@ static void hb_gt_ele_termFlush(PHB_GTELE pTerm)
       if (pTerm->iOutBufIndex > 0)
       {
             hb_fsWriteLarge(pTerm->hFileno, pTerm->pOutBuf, pTerm->iOutBufIndex);
+            HB_TRACE(HB_TR_DEBUG, ("GTELE OUTPUT %s", pTerm->pOutBuf)); 
             pTerm->iOutBufIndex = 0;
       }
 }
+
 
 static void hb_gt_ele_termOut(PHB_GTELE pTerm, const char *pStr, int iLen)
 {
@@ -588,23 +597,26 @@ static void hb_gt_ele_termOut(PHB_GTELE pTerm, const char *pStr, int iLen)
       }
 }
 
-#ifndef HB_GT_UNICODE_BUF
+
+/*
+
+//#ifndef HB_GT_UNICODE_BUF
 static void hb_gt_ele_termOutTrans(PHB_GTELE pTerm, const char *pStr, int iLen, int iAttr)
 {
       if (pTerm->iOutBufSize)
       {
             PHB_CODEPAGE cdp = NULL;
 
-            if (pTerm->fUTF8)
-            {
-                  if ((iAttr & (HB_GTELE_ATTR_ACSC | HB_GTELE_ATTR_BOX)) &&
-                      pTerm->cdpBox)
-                        cdp = pTerm->cdpBox;
-                  else if (pTerm->cdpHost)
-                        cdp = pTerm->cdpHost;
-                  else
-                        cdp = hb_vmCDP();
-            }
+            //if (pTerm->fUTF8)
+            //{
+            if ((iAttr & (HB_GTELE_ATTR_ACSC | HB_GTELE_ATTR_BOX)) &&
+                pTerm->cdpBox)
+                  cdp = pTerm->cdpBox;
+            else if (pTerm->cdpHost)
+                  cdp = pTerm->cdpHost;
+            else
+                  cdp = hb_vmCDP();
+            //}
 
             if (cdp)
             {
@@ -618,6 +630,8 @@ static void hb_gt_ele_termOutTrans(PHB_GTELE pTerm, const char *pStr, int iLen, 
                         }
                         if (i > iLen)
                               i = iLen;
+                        
+                        HB_TRACE(HB_TR_DEBUG, ("GTELE OUTPUT %s", pStr));     
                         pTerm->iOutBufIndex += hb_cdpStrToUTF8Disp(cdp, pStr, i,
                                                                    pTerm->pOutBuf + pTerm->iOutBufIndex,
                                                                    pTerm->iOutBufSize - pTerm->iOutBufIndex);
@@ -631,7 +645,8 @@ static void hb_gt_ele_termOutTrans(PHB_GTELE pTerm, const char *pStr, int iLen, 
             }
       }
 }
-#endif
+//#endif
+*/
 
 /* ************************************************************************* */
 
@@ -648,6 +663,7 @@ static int add_efds(PHB_GTELE pTerm, int fd, int mode,
       if (eventFunc == NULL && mode != O_RDONLY)
             return -1;
 
+      /*
 #if defined(HB_OS_UNIX)
       {
             int fl;
@@ -660,7 +676,7 @@ static int add_efds(PHB_GTELE pTerm, int fd, int mode,
                   return -1;
       }
 #endif
-
+*/
       for (i = 0; i < pTerm->efds_no && !pefd; i++)
             if (pTerm->event_fds[i]->fd == fd)
                   pefd = pTerm->event_fds[i];
@@ -678,11 +694,11 @@ static int add_efds(PHB_GTELE pTerm, int fd, int mode,
             {
                   if (pTerm->event_fds == NULL)
                         pTerm->event_fds = (evtFD **)
-                            hb_xgrab((pTerm->efds_size += 10) * sizeof(evtFD *));
+                            hb_xgrab((pTerm->efds_size += 1) * sizeof(evtFD *));
                   else
                         pTerm->event_fds = (evtFD **)
                             hb_xrealloc(pTerm->event_fds,
-                                        (pTerm->efds_size += 10) * sizeof(evtFD *));
+                                        (pTerm->efds_size += 1) * sizeof(evtFD *));
             }
 
             pefd = (evtFD *)hb_xgrab(sizeof(evtFD));
@@ -697,6 +713,7 @@ static int add_efds(PHB_GTELE pTerm, int fd, int mode,
       return fd;
 }
 
+/*
 #if defined(HB_HAS_GPM)
 static void del_efds(PHB_GTELE pTerm, int fd)
 {
@@ -715,6 +732,7 @@ static void del_efds(PHB_GTELE pTerm, int fd)
       }
 }
 #endif
+*/
 
 static void del_all_efds(PHB_GTELE pTerm)
 {
@@ -901,6 +919,7 @@ static void set_tmevt(PHB_GTELE pTerm, unsigned char *cMBuf, mouseEvent *mEvt)
       /* printf( "\r\nmouse event: %02x, %02x, %02x\r\n", cMBuf[ 0 ], cMBuf[ 1 ], cMBuf[ 2 ] ); */
 }
 
+/*
 #if defined(HB_HAS_GPM)
 static int set_gpmevt(int fd, int mode, void *cargo)
 {
@@ -970,9 +989,11 @@ static void flush_gpmevt(PHB_GTELE pTerm)
       }
 }
 #endif
+*/
 
 static void disp_mousecursor(PHB_GTELE pTerm)
 {
+      /*
 #if defined(HB_HAS_GPM)
       if ((pTerm->mouse_type & MOUSE_GPM) && gpm_visiblepointer)
       {
@@ -980,19 +1001,19 @@ static void disp_mousecursor(PHB_GTELE pTerm)
                             gpm_consolefd);
       }
 #else
+*/
       HB_SYMBOL_UNUSED(pTerm);
-#endif
+      //#endif
 }
 
 static void mouse_init(PHB_GTELE pTerm)
 {
-     
-            hb_gt_ele_termOut(pTerm, s_szMouseOn, strlen(s_szMouseOn));
-            hb_gt_ele_termFlush(pTerm);
-            memset((void *)&pTerm->mLastEvt, 0, sizeof(pTerm->mLastEvt));
-            pTerm->mouse_type |= MOUSE_XTERM;
-            pTerm->mButtons = 3;
 
+      hb_gt_ele_termOut(pTerm, s_szMouseOn, strlen(s_szMouseOn));
+      hb_gt_ele_termFlush(pTerm);
+      memset((void *)&pTerm->mLastEvt, 0, sizeof(pTerm->mLastEvt));
+      pTerm->mouse_type = MOUSE_XTERM;
+      pTerm->mButtons = 3;
 }
 
 static void mouse_exit(PHB_GTELE pTerm)
@@ -1002,6 +1023,7 @@ static void mouse_exit(PHB_GTELE pTerm)
             hb_gt_ele_termOut(pTerm, s_szMouseOff, strlen(s_szMouseOff));
             hb_gt_ele_termFlush(pTerm);
       }
+      /*
 #if defined(HB_HAS_GPM)
       if ((pTerm->mouse_type & MOUSE_GPM) && gpm_fd >= 0)
       {
@@ -1009,34 +1031,41 @@ static void mouse_exit(PHB_GTELE pTerm)
             Gpm_Close();
       }
 #endif
+*/
 }
 
 static int read_bufch(PHB_GTELE pTerm, int fd)
 {
       int n = 0;
 
-      if (STDIN_BUFLEN > pTerm->stdin_inbuf)
+      //if (STDIN_BUFLEN > pTerm->stdin_inbuf)
+      //{
+      unsigned char buf[STDIN_BUFLEN];
+      int i;
+
+      //#if defined(HB_OS_UNIX)
+      //            n = read(fd, buf, STDIN_BUFLEN - pTerm->stdin_inbuf);
+      //#else
+      // n - number of read bytes
+      n = hb_fsRead(fd, buf, STDIN_BUFLEN - pTerm->stdin_inbuf);
+
+      //#endif
+
+      for (i = 0; i < n; i++)
       {
-            unsigned char buf[STDIN_BUFLEN];
-            int i;
-
-#if defined(HB_OS_UNIX)
-            n = read(fd, buf, STDIN_BUFLEN - pTerm->stdin_inbuf);
-#else
-            n = hb_fsRead(fd, buf, STDIN_BUFLEN - pTerm->stdin_inbuf);
-#endif
-
-            for (i = 0; i < n; i++)
-            {
-                  pTerm->stdin_buf[pTerm->stdin_ptr_r++] = buf[i];
-                  if (pTerm->stdin_ptr_r == STDIN_BUFLEN)
-                        pTerm->stdin_ptr_r = 0;
-                  pTerm->stdin_inbuf++;
-            }
+            pTerm->stdin_buf[pTerm->stdin_ptr_r++] = buf[i];
+            if (pTerm->stdin_ptr_r == STDIN_BUFLEN)
+                  pTerm->stdin_ptr_r = 0;
+            pTerm->stdin_inbuf++;
       }
+      //}
 
       return n;
 }
+
+/*
+  get in char u odredjenom periodu
+*/
 
 static int get_inch(PHB_GTELE pTerm, int milisec)
 {
@@ -1085,7 +1114,7 @@ static int get_inch(PHB_GTELE pTerm, int milisec)
                   }
                   else if (pTerm->event_fds[i]->status == EVTFDSTAT_STOP &&
                            pTerm->event_fds[i]->eventFunc == NULL)
-                        nNext = HB_INKEY_NEW_EVENT(HB_K_TERMINATE);
+                        nNext = HB_INKEY_NEW_EVENT(HB_K_TERMINATE); // emituje na osnovu inkey event
             }
 
             counter = pTerm->key_counter;
@@ -1104,7 +1133,7 @@ static int get_inch(PHB_GTELE pTerm, int milisec)
                                     if (n == 0)
                                     {
                                           pTerm->event_fds[i]->status = EVTFDSTAT_STOP;
-                                          nRet = HB_INKEY_NEW_EVENT(HB_K_CLOSE);
+                                          nRet = HB_INKEY_NEW_EVENT(HB_K_CLOSE); // emituje na osnovu inkey event
                                     }
                               }
                               else if (nRet == 0 && counter == pTerm->key_counter)
@@ -1164,12 +1193,18 @@ static int get_inch(PHB_GTELE pTerm, int milisec)
       return nRet == 0 ? nNext : nRet;
 }
 
+/*
+   test buf char, used by wait_key
+*/
 static int test_bufch(PHB_GTELE pTerm, int n, int delay)
 {
       int nKey = 0;
 
       if (pTerm->stdin_inbuf == n)
+      {
             nKey = get_inch(pTerm, delay);
+            HB_TRACE(HB_TR_DEBUG, ("GTELE test_bufch key=%d n=%d", nKey, n));
+      }
 
       return (IS_CLIPKEY(nKey) || HB_INKEY_ISEXT(nKey)) ? nKey : (pTerm->stdin_inbuf > n ? pTerm->stdin_buf[(pTerm->stdin_ptr_l + n) % STDIN_BUFLEN] : -1);
 }
@@ -1187,6 +1222,7 @@ static int wait_key(PHB_GTELE pTerm, int milisec)
       int nKey, esc, n, i, ch, counter;
       keyTab *ptr;
 
+      /*
 #if defined(HB_OS_UNIX)
       if (s_WinSizeChangeFlag)
       {
@@ -1194,6 +1230,7 @@ static int wait_key(PHB_GTELE pTerm, int milisec)
             return K_RESIZE;
       }
 #endif
+*/
 
 restart:
       counter = ++(pTerm->key_counter);
@@ -1383,6 +1420,8 @@ again:
                   nKey = getClipKey(nKey);
       }
 
+      //hb_gt_ele_termOut(pTerm, s_szInit, strlen(s_szInit));
+
       return nKey;
 }
 
@@ -1393,7 +1432,7 @@ again:
  */
 static void hb_gt_ele_LinuxSetTermMode(PHB_GTELE pTerm, int iAM)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_LinuxSetTermMode(%p,%d)", pTerm, iAM));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_LinuxSetTermMode(%p,%d)", pTerm, iAM));
 
       if (iAM != pTerm->iAM)
       {
@@ -1422,7 +1461,7 @@ static void hb_gt_ele_LinuxSetPalette(PHB_GTELE pTerm, int iIndexFrom, int iInde
                   char szColor[11];
                   int iAnsiIndex = s_AnsiColors[iIndexFrom & 0x0F];
 
-                  hb_snprintf(szColor, sizeof(szColor), "\033]P%X%02X%02X%02X",
+                  hb_snprintf(szColor, sizeof(szColor), "\x1b]P%X%02X%02X%02X",
                               iAnsiIndex,
                               (pTerm->colors[iIndexFrom]) & 0xff,
                               (pTerm->colors[iIndexFrom] >> 8) & 0xff,
@@ -1438,7 +1477,7 @@ static void hb_gt_ele_LinuxSetPalette(PHB_GTELE pTerm, int iIndexFrom, int iInde
        // Linux console simply ignore ST terminator so nothing wrong
        // should happen.
        //
-            hb_gt_ele_termOut(pTerm, "\033\\", 2);
+            hb_gt_ele_termOut(pTerm, "\x1b\\", 2);
       }
 }
 
@@ -1446,7 +1485,7 @@ static void hb_gt_ele_LinuxResetPalette(PHB_GTELE pTerm)
 {
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_LinuxResetPalette(%p)", pTerm));
 
-      hb_gt_ele_termOut(pTerm, "\033]R", 3);
+      hb_gt_ele_termOut(pTerm, "\x1b]R", 3);
 }
 */
 
@@ -1458,18 +1497,20 @@ static HB_BOOL hb_gt_ele_XtermSetMode(PHB_GTELE pTerm, int *piRows, int *piCols)
       int iHeight, iWidth;
       char escseq[64];
 
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_XtermSetMode(%p,%d,%d)", pTerm, *piRows, *piCols));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_XtermSetMode(%p,%d,%d)", pTerm, *piRows, *piCols));
 
       pTerm->iMaxRows = *piRows;
       pTerm->iMaxCols = *piCols;
 
       HB_GTSELF_GETSIZE(pTerm->pGT, &iHeight, &iWidth);
 
-      hb_snprintf(escseq, sizeof(escseq), "\033[8;%d;%dt", *piRows, *piCols);
+      // CSI Ps ; Ps ; Ps t - Windows manipulation
+      // 8 ; height ; width -> resize text area
+      hb_snprintf(escseq, sizeof(escseq), "\x1b[8;%d;%dt", *piRows, *piCols);
       hb_gt_ele_termOut(pTerm, escseq, strlen(escseq));
       hb_gt_ele_termFlush(pTerm);
 
-/*
+      /*
 #if defined(HB_OS_UNIX)
       // dirty hack - wait for SIGWINCH
       if (*piRows != iHeight || *piCols != iWidth)
@@ -1486,7 +1527,7 @@ static HB_BOOL hb_gt_ele_XtermSetMode(PHB_GTELE pTerm, int *piRows, int *piCols)
 
 static void hb_gt_ele_XtermSetAttributes(PHB_GTELE pTerm, int iAttr)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_XtermSetAttributes(%p,%d)", pTerm, iAttr));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_XtermSetAttributes(%p,%d)", pTerm, iAttr));
 
       if (pTerm->iCurrentSGR != iAttr)
       {
@@ -1768,10 +1809,10 @@ static void hb_gt_ele_XtermSetTitle(PHB_GTELE pTerm, const char *szTitle)
 {
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_XtermSetTitle(%p,%s)", pTerm, szTitle));
 
-      hb_gt_ele_termOut(pTerm, "\033]0;", 4);
+      hb_gt_ele_termOut(pTerm, "\x1b]0;", 4);
       if (szTitle)
             hb_gt_ele_termOut(pTerm, szTitle, strlen(szTitle));
-      hb_gt_ele_termOut(pTerm, "\007", 1);
+      hb_gt_ele_termOut(pTerm, "\x07", 1);
 }
 
 static HB_BOOL hb_gt_ele_AnsiGetCursorPos(PHB_GTELE pTerm, int *iRow, int *iCol,
@@ -1779,70 +1820,84 @@ static HB_BOOL hb_gt_ele_AnsiGetCursorPos(PHB_GTELE pTerm, int *iRow, int *iCol,
 {
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiGetCursorPos(%p,%p,%p,%s)", pTerm, iRow, iCol, szPost));
 
-      if (pTerm->fPosAnswer)
+      //if (pTerm->fPosAnswer)
+      //{
+      char rdbuf[64];
+      int i, j, n, d, y, x, z;
+      HB_MAXUINT end_timer, cur_time;
+
+      // CSI Ps n - device status report
+      // Ps = 6 -> Report Cursor Position
+      hb_gt_ele_termOut(pTerm, "\x1B[6n", 4);
+      if (szPost)
+            hb_gt_ele_termOut(pTerm, szPost, strlen(szPost));
+      hb_gt_ele_termFlush(pTerm);
+
+      n = j = x = y = 0;
+      for (z = 0; z < 64; z++)
+            rdbuf[z] = 0;
+      //pTerm->fPosAnswer = HB_FALSE;
+
+      /* wait up to 2 seconds for answer */
+      end_timer = hb_dateMilliSeconds() + 2000;
+      for (;;)
       {
-            char rdbuf[64];
-            int i, j, n, d, y, x;
-            HB_MAXUINT end_timer, cur_time;
-
-            hb_gt_ele_termOut(pTerm, "\x1B[6n", 4);
-            if (szPost)
-                  hb_gt_ele_termOut(pTerm, szPost, strlen(szPost));
-            hb_gt_ele_termFlush(pTerm);
-
-            n = j = x = y = 0;
-            pTerm->fPosAnswer = HB_FALSE;
-
-            /* wait up to 2 seconds for answer */
-            end_timer = hb_dateMilliSeconds() + 2000;
-            for (;;)
+            /* loking for cursor position in "\x1b[%d;%dR" */
+            while (j < n && rdbuf[j] != '\x1b')
             {
-                  /* loking for cursor position in "\033[%d;%dR" */
-                  while (j < n && rdbuf[j] != '\033')
-                        ++j;
-                  if (n - j >= 6)
+                  HB_TRACE(HB_TR_DEBUG, ("GTELE AnsiGetCursorPos while rdbuf: j=%d  char=%d", j, rdbuf[j]));
+                  ++j;
+            }
+            HB_TRACE(HB_TR_DEBUG, ("GTELE AnsiGetCursorPos after while rdbuf: j=%d  char=%d", j, rdbuf[j]));
+
+            for (z = j; z < 64; z++)
+            {
+                  HB_TRACE(HB_TR_DEBUG, ("char %d=0x%02X '%c'", z, rdbuf[z], rdbuf[z]));
+            }
+
+            if (n - j >= 6)
+            {
+                  i = j + 1;
+                  if (rdbuf[i] == '[')
                   {
-                        i = j + 1;
-                        if (rdbuf[i] == '[')
+                        y = 0;
+                        d = ++i;
+                        while (i < n && rdbuf[i] >= '0' && rdbuf[i] <= '9')
+                              y = y * 10 + (rdbuf[i++] - '0');
+                        if (i < n && i > d && rdbuf[i] == ';')
                         {
-                              y = 0;
+                              x = 0;
                               d = ++i;
                               while (i < n && rdbuf[i] >= '0' && rdbuf[i] <= '9')
-                                    y = y * 10 + (rdbuf[i++] - '0');
-                              if (i < n && i > d && rdbuf[i] == ';')
+                                    x = x * 10 + (rdbuf[i++] - '0');
+                              if (i < n && i > d && rdbuf[i] == 'R')
                               {
-                                    x = 0;
-                                    d = ++i;
-                                    while (i < n && rdbuf[i] >= '0' && rdbuf[i] <= '9')
-                                          x = x * 10 + (rdbuf[i++] - '0');
-                                    if (i < n && i > d && rdbuf[i] == 'R')
+                                    if (szPost)
                                     {
-                                          if (szPost)
+                                          while (j >= 5)
                                           {
-                                                while (j >= 5)
-                                                {
-                                                      --j;
-                                                }
+                                                --j;
                                           }
-                                          pTerm->fPosAnswer = HB_TRUE;
-                                          break;
                                     }
+                                    //pTerm->fPosAnswer = HB_TRUE;
+                                    break;
                               }
                         }
-                        if (i < n)
-                        {
-                              j = i;
-                              continue;
-                        }
                   }
-                  if (n == sizeof(rdbuf))
-                        break;
-                  cur_time = hb_dateMilliSeconds();
-                  if (cur_time > end_timer)
-                        break;
-                  else
+                  if (i < n)
                   {
-#if defined(HB_OS_UNIX)
+                        j = i;
+                        continue;
+                  }
+            }
+            if (n == sizeof(rdbuf))
+                  break;
+            cur_time = hb_dateMilliSeconds();
+            if (cur_time > end_timer)
+                  break;
+            else
+            {
+                  /*
                         struct timeval tv;
                         fd_set rdfds;
                         int iMilliSec;
@@ -1855,38 +1910,47 @@ static HB_BOOL hb_gt_ele_AnsiGetCursorPos(PHB_GTELE pTerm, int *iRow, int *iCol,
 
                         if (select(pTerm->hFilenoStdin + 1, &rdfds, NULL, NULL, &tv) <= 0)
                               break;
-                        i = read(pTerm->hFilenoStdin, rdbuf + n, sizeof(rdbuf) - n);
-#else
-                        int iTODO;
+                        */
+                  // unix read out
+                  //i = read(pTerm->hFilenoStdin, rdbuf + n, sizeof(rdbuf) - n);
+
+                  i = hb_fsRead(pTerm->hFilenoStdin, rdbuf + n, sizeof(rdbuf) - n);
+
+                  HB_TRACE(HB_TR_DEBUG, ("GTELE AnsiGetCursorPos feedback rdbuf: size=%d, i=%d", sizeof(rdbuf), i));
+
+                  if (i <= 0)
                         break;
-#endif
-
-                        if (i <= 0)
-                              break;
-                        n += i;
-                  }
-            }
-
-            if (pTerm->fPosAnswer)
-            {
-                  *iRow = y - 1;
-                  *iCol = x - 1;
-            }
-            else
-            {
-                  *iRow = *iCol = -1;
+                  n += i;
             }
       }
-      return pTerm->fPosAnswer;
+
+      //if (pTerm->fPosAnswer)
+      //{
+      *iRow = y - 1;
+      *iCol = x - 1;
+      HB_TRACE(HB_TR_DEBUG, ("HERNAD GTELE ROWPOS: %d, %d", *iRow, *iCol));
+      //}
+      //else
+      //{
+      //      *iRow = *iCol = -1;
+      //      HB_TRACE(HB_TR_DEBUG, ("GTELE ROWPOS ERROR!", *iRow, *iCol);
+      //}
+      //}
+      
+      //return pTerm->fPosAnswer;
+      return HB_TRUE;
 }
 
 static void hb_gt_ele_AnsiSetCursorPos(PHB_GTELE pTerm, int iRow, int iCol)
 {
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiSetCursorPos(%p,%d,%d)", pTerm, iRow, iCol));
 
-      if (pTerm->iRow != iRow || pTerm->iCol != iCol)
+      if (pTerm->iRow != iRow || pTerm->iCol != iCol) // current position changed
       {
             char buff[16];
+
+            //CSI Ps ; Ps H
+            // Cursor Position [row;column] (default = [1,1]) (CUP).
             hb_snprintf(buff, sizeof(buff), "\x1B[%d;%dH", iRow + 1, iCol + 1);
             hb_gt_ele_termOut(pTerm, buff, strlen(buff));
             pTerm->iRow = iRow;
@@ -1896,113 +1960,118 @@ static void hb_gt_ele_AnsiSetCursorPos(PHB_GTELE pTerm, int iRow, int iCol)
 
 static void hb_gt_ele_AnsiSetCursorStyle(PHB_GTELE pTerm, int iStyle)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiSetCursorStyle(%p,%d)", pTerm, iStyle));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiSetCursorStyle(%p,%d)", pTerm, iStyle));
 
-      if (pTerm->iCursorStyle != iStyle)
-      {
-            hb_gt_ele_termOut(pTerm, iStyle == SC_NONE ? "\x1B[?25l" : "\x1B[?25h", 6);
-            pTerm->iCursorStyle = iStyle;
-      }
+      if (pTerm->iCursorStyle == iStyle)
+            return;
+
+      // CSI ? Pm h
+      //    Ps = 2 5  -> Show Cursor (DECTCEM).
+
+      // CSI ? Pm l
+      //    Ps = 2 5  -> Hide Cursor (DECTCEM).
+      hb_gt_ele_termOut(pTerm, iStyle == SC_NONE ? "\x1B[?25l" : "\x1B[?25h", 6);
+      pTerm->iCursorStyle = iStyle;
 }
 
 static void hb_gt_ele_AnsiSetAttributes(PHB_GTELE pTerm, int iAttr)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiSetAttributes(%p,%d)", pTerm, iAttr));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiSetAttributes(%p,%d)", pTerm, iAttr));
 
-      if (pTerm->iCurrentSGR != iAttr)
+      if (pTerm->iCurrentSGR == iAttr) // ansi attribute - no change
+            return;
+
+      int i, acsc, bg, fg, bold, blink;
+      char buff[32];
+
+      i = 2;
+      buff[0] = 0x1b;
+      buff[1] = '[';
+
+      acsc = (iAttr & HB_GTELE_ATTR_ACSC) ? 1 : 0;
+      bg = s_AnsiColors[(iAttr >> 4) & 0x07];
+      fg = s_AnsiColors[iAttr & 0x07];
+      bold = (iAttr & 0x08) ? 1 : 0;
+      blink = (iAttr & 0x80) ? 1 : 0;
+
+      if (pTerm->iCurrentSGR == -1)
       {
-            int i, acsc, bg, fg, bold, blink;
-            char buff[32];
-
-            i = 2;
-            buff[0] = 0x1b;
-            buff[1] = '[';
-
-            acsc = (iAttr & HB_GTELE_ATTR_ACSC) ? 1 : 0;
-            bg = s_AnsiColors[(iAttr >> 4) & 0x07];
-            fg = s_AnsiColors[iAttr & 0x07];
-            bold = (iAttr & 0x08) ? 1 : 0;
-            blink = (iAttr & 0x80) ? 1 : 0;
-
-            if (pTerm->iCurrentSGR == -1)
+            buff[i++] = '0';
+            buff[i++] = ';';
+            buff[i++] = '1';
+            buff[i++] = acsc ? '1' : '0';
+            buff[i++] = ';';
+            if (bold)
             {
-                  buff[i++] = '0';
+                  buff[i++] = '1';
                   buff[i++] = ';';
+            }
+            if (blink)
+            {
+                  buff[i++] = '5';
+                  buff[i++] = ';';
+            }
+            buff[i++] = '3';
+            buff[i++] = '0' + fg;
+            buff[i++] = ';';
+            buff[i++] = '4';
+            buff[i++] = '0' + bg;
+            buff[i++] = 'm';
+            pTerm->iACSC = acsc;
+            pTerm->iBold = bold;
+            pTerm->iBlink = blink;
+            pTerm->iFgColor = fg;
+            pTerm->iBgColor = bg;
+      }
+      else
+      {
+            if (pTerm->iACSC != acsc)
+            {
                   buff[i++] = '1';
                   buff[i++] = acsc ? '1' : '0';
                   buff[i++] = ';';
+                  pTerm->iACSC = acsc;
+            }
+            if (pTerm->iBold != bold)
+            {
                   if (bold)
-                  {
                         buff[i++] = '1';
-                        buff[i++] = ';';
-                  }
-                  if (blink)
+                  else
                   {
-                        buff[i++] = '5';
-                        buff[i++] = ';';
+                        buff[i++] = '2';
+                        buff[i++] = '2';
                   }
+                  buff[i++] = ';';
+                  pTerm->iBold = bold;
+            }
+            if (pTerm->iBlink != blink)
+            {
+                  if (!blink)
+                        buff[i++] = '2';
+                  buff[i++] = '5';
+                  buff[i++] = ';';
+                  pTerm->iBlink = blink;
+            }
+            if (pTerm->iFgColor != fg)
+            {
                   buff[i++] = '3';
                   buff[i++] = '0' + fg;
                   buff[i++] = ';';
+                  pTerm->iFgColor = fg;
+            }
+            if (pTerm->iBgColor != bg)
+            {
                   buff[i++] = '4';
                   buff[i++] = '0' + bg;
-                  buff[i++] = 'm';
-                  pTerm->iACSC = acsc;
-                  pTerm->iBold = bold;
-                  pTerm->iBlink = blink;
-                  pTerm->iFgColor = fg;
+                  buff[i++] = ';';
                   pTerm->iBgColor = bg;
             }
-            else
-            {
-                  if (pTerm->iACSC != acsc)
-                  {
-                        buff[i++] = '1';
-                        buff[i++] = acsc ? '1' : '0';
-                        buff[i++] = ';';
-                        pTerm->iACSC = acsc;
-                  }
-                  if (pTerm->iBold != bold)
-                  {
-                        if (bold)
-                              buff[i++] = '1';
-                        else
-                        {
-                              buff[i++] = '2';
-                              buff[i++] = '2';
-                        }
-                        buff[i++] = ';';
-                        pTerm->iBold = bold;
-                  }
-                  if (pTerm->iBlink != blink)
-                  {
-                        if (!blink)
-                              buff[i++] = '2';
-                        buff[i++] = '5';
-                        buff[i++] = ';';
-                        pTerm->iBlink = blink;
-                  }
-                  if (pTerm->iFgColor != fg)
-                  {
-                        buff[i++] = '3';
-                        buff[i++] = '0' + fg;
-                        buff[i++] = ';';
-                        pTerm->iFgColor = fg;
-                  }
-                  if (pTerm->iBgColor != bg)
-                  {
-                        buff[i++] = '4';
-                        buff[i++] = '0' + bg;
-                        buff[i++] = ';';
-                        pTerm->iBgColor = bg;
-                  }
-                  buff[i - 1] = 'm';
-            }
-            pTerm->iCurrentSGR = iAttr;
-            if (i > 2)
-            {
-                  hb_gt_ele_termOut(pTerm, buff, i);
-            }
+            buff[i - 1] = 'm';
+      }
+      pTerm->iCurrentSGR = iAttr;
+      if (i > 2)
+      {
+            hb_gt_ele_termOut(pTerm, buff, i);
       }
 }
 
@@ -2038,10 +2107,9 @@ static int hb_gt_ele_AnsiGetAcsc(PHB_GTELE pTerm, unsigned char c)
       return c | HB_GTELE_ATTR_ALT;
 }
 
-
 static void hb_gt_ele_AnsiBell(PHB_GTELE pTerm)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiBell(%p)", pTerm));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiBell(%p)", pTerm));
 
       hb_gt_ele_termOut(pTerm, s_szBell, 1);
       hb_gt_ele_termFlush(pTerm);
@@ -2074,7 +2142,7 @@ static void hb_gt_ele_AnsiTone(PHB_GTELE pTerm, double dFrequency, double dDurat
 
 static void hb_gt_ele_AnsiInit(PHB_GTELE pTerm)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiInit(%p)", pTerm));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiInit(%p)", pTerm));
 
       pTerm->iCurrentSGR = pTerm->iRow = pTerm->iCol =
           pTerm->iCursorStyle = pTerm->iACSC = pTerm->iAM = -1;
@@ -2082,14 +2150,13 @@ static void hb_gt_ele_AnsiInit(PHB_GTELE pTerm)
 
 static void hb_gt_ele_AnsiExit(PHB_GTELE pTerm)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiExit(%p)", pTerm));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_AnsiExit(%p)", pTerm));
 
       /* set default color */
       pTerm->SetAttributes(pTerm, 0x07 & pTerm->iAttrMask);
       pTerm->SetCursorStyle(pTerm, SC_NORMAL);
       pTerm->SetTermMode(pTerm, 1);
       hb_gt_ele_termOut(pTerm, "\x1B[m", 3);
-
 }
 
 /* ************************************************************************* */
@@ -2130,32 +2197,47 @@ static HB_BOOL hb_trm_isUTF8(PHB_GTELE pTerm)
       HB_BOOL fUTF8 = HB_FALSE;
       char *szLang;
 
-      if (pTerm->fPosAnswer)
+      //if (pTerm->fPosAnswer)
+      //{
+      hb_gt_ele_termOut(pTerm, "\005\r\303\255", 4);
+      if (pTerm->GetCursorPos(pTerm, &pTerm->iRow, &pTerm->iCol, "\r   \r"))
       {
-            hb_gt_ele_termOut(pTerm, "\005\r\303\255", 4);
-            if (pTerm->GetCursorPos(pTerm, &pTerm->iRow, &pTerm->iCol, "\r   \r"))
-            {
-                  fUTF8 = pTerm->iCol == 1;
-                  pTerm->iCol = 0;
-            }
-      }
-
-      if (hb_ele_Param("UTF8", NULL) || hb_ele_Param("UTF-8", NULL))
-            return HB_TRUE;
-      else if (hb_ele_Param("ISO", NULL))
-            return HB_FALSE;
-      else if (pTerm->fPosAnswer)
+            fUTF8 = pTerm->iCol == 1;
+            pTerm->iCol = 0;
             return fUTF8;
+      }
+      //}
 
+/*
+      if (hb_ele_Param("UTF8", NULL) || hb_ele_Param("UTF-8", NULL))
+      {
+            HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_utf8 %d", HB_TRUE));
+            return HB_TRUE;
+      }
+      else if (hb_ele_Param("ISO", NULL))
+      {
+            HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_utf8 %d", HB_FALSE));
+            return HB_FALSE;
+      }
+      else if (pTerm->fPosAnswer)
+      {
+            HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_utf8 %d", fUTF8));
+            return fUTF8;
+      }
+*/
       szLang = getenv("LANG");
       if (szLang && strstr(szLang, "UTF-8") != NULL)
+      {
+            HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_utf8 %d", HB_TRUE));
             return HB_TRUE;
+      }
 
       //#ifdef IUTF8
       //   if( ( pTerm->curr_TIO.c_iflag & IUTF8 ) != 0 )
       //      return HB_TRUE;
       //#endif
 
+      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_utf8 %d", HB_FALSE));
       return HB_FALSE;
 }
 
@@ -2163,20 +2245,19 @@ static void hb_gt_ele_PutStr(PHB_GTELE pTerm, int iRow, int iCol, int iAttr, con
 {
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_PutStr(%p,%d,%d,%d,%p,%d,%d)", pTerm, iRow, iCol, iAttr, pStr, iLen, iChars));
 
-      if (pTerm->iOutBufSize)
-      {
-            pTerm->SetCursorPos(pTerm, iRow, iCol);
-            pTerm->SetAttributes(pTerm, iAttr & pTerm->iAttrMask);
-#ifdef HB_GT_UNICODE_BUF
+      //if (pTerm->iOutBufSize)
+      //{
+      pTerm->SetCursorPos(pTerm, iRow, iCol);
+      pTerm->SetAttributes(pTerm, iAttr & pTerm->iAttrMask);
+      //#ifdef HB_GT_UNICODE_BUF
             hb_gt_ele_termOut(pTerm, pStr, iLen);
-#else
-            hb_gt_ele_termOutTrans(pTerm, pStr, iLen, iAttr);
-#endif
-      }
+      //#else
+      //hb_gt_ele_termOutTrans(pTerm, pStr, iLen, iAttr);
+      //#endif
+      //}
 
       pTerm->iCol += iChars;
 }
-
 
 static void hb_gt_ele_SetPalette(PHB_GTELE pTerm, int iIndexFrom, int iIndexTo)
 {
@@ -2186,7 +2267,6 @@ static void hb_gt_ele_SetPalette(PHB_GTELE pTerm, int iIndexFrom, int iIndexTo)
 static void hb_gt_ele_ResetPalette(PHB_GTELE pTerm)
 {
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_ResetPalette(%p)", pTerm));
-
 }
 
 static void hb_gt_ele_SetTitle(PHB_GTELE pTerm, const char *szTitle)
@@ -2194,7 +2274,6 @@ static void hb_gt_ele_SetTitle(PHB_GTELE pTerm, const char *szTitle)
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_SetTitle(%p,%s)", pTerm, szTitle));
 
       hb_gt_ele_XtermSetTitle(pTerm, szTitle);
- 
 }
 
 #ifndef HB_GT_UNICODE_BUF
@@ -2374,228 +2453,227 @@ static void init_keys(PHB_GTELE pTerm)
 #endif
           {EXKEY_ENTER, "\r"},
           /* terminal mouse event */
-          {K_MOUSETERM, "\033[M"},
+          {K_MOUSETERM, "\x1b[M"},
           {0, NULL}};
 
       static const keySeq stdFnKeySeq[] = {
 
-          {EXKEY_F1, "\033[11~"}, /* kf1  */
-          {EXKEY_F2, "\033[12~"}, /* kf2  */
-          {EXKEY_F3, "\033[13~"}, /* kf3  */
-          {EXKEY_F4, "\033[14~"}, /* kf4  */
-          {EXKEY_F5, "\033[15~"}, /* kf5  */
+          {EXKEY_F1, "\x1b[11~"}, /* kf1  */
+          {EXKEY_F2, "\x1b[12~"}, /* kf2  */
+          {EXKEY_F3, "\x1b[13~"}, /* kf3  */
+          {EXKEY_F4, "\x1b[14~"}, /* kf4  */
+          {EXKEY_F5, "\x1b[15~"}, /* kf5  */
 
-          {EXKEY_F6, "\033[17~"},  /* kf6  */
-          {EXKEY_F7, "\033[18~"},  /* kf7  */
-          {EXKEY_F8, "\033[19~"},  /* kf8  */
-          {EXKEY_F9, "\033[20~"},  /* kf9  */
-          {EXKEY_F10, "\033[21~"}, /* kf10 */
-          {EXKEY_F11, "\033[23~"}, /* kf11 */
-          {EXKEY_F12, "\033[24~"}, /* kf12 */
+          {EXKEY_F6, "\x1b[17~"},  /* kf6  */
+          {EXKEY_F7, "\x1b[18~"},  /* kf7  */
+          {EXKEY_F8, "\x1b[19~"},  /* kf8  */
+          {EXKEY_F9, "\x1b[20~"},  /* kf9  */
+          {EXKEY_F10, "\x1b[21~"}, /* kf10 */
+          {EXKEY_F11, "\x1b[23~"}, /* kf11 */
+          {EXKEY_F12, "\x1b[24~"}, /* kf12 */
 
-          {EXKEY_F1 | KEY_SHIFTMASK, "\033[25~"},  /* kf13 */
-          {EXKEY_F2 | KEY_SHIFTMASK, "\033[26~"},  /* kf14 */
-          {EXKEY_F3 | KEY_SHIFTMASK, "\033[28~"},  /* kf15 */
-          {EXKEY_F4 | KEY_SHIFTMASK, "\033[29~"},  /* kf16 */
-          {EXKEY_F5 | KEY_SHIFTMASK, "\033[31~"},  /* kf17 */
-          {EXKEY_F6 | KEY_SHIFTMASK, "\033[32~"},  /* kf18 */
-          {EXKEY_F7 | KEY_SHIFTMASK, "\033[33~"},  /* kf19 */
-          {EXKEY_F8 | KEY_SHIFTMASK, "\033[34~"},  /* kf20 */
-          {EXKEY_F9 | KEY_SHIFTMASK, "\033[35~"},  /* kf21 */
-          {EXKEY_F10 | KEY_SHIFTMASK, "\033[36~"}, /* kf22 */
-          {EXKEY_F11 | KEY_SHIFTMASK, "\033[37~"}, /* kf23 */
-          {EXKEY_F12 | KEY_SHIFTMASK, "\033[38~"}, /* kf24 */
+          {EXKEY_F1 | KEY_SHIFTMASK, "\x1b[25~"},  /* kf13 */
+          {EXKEY_F2 | KEY_SHIFTMASK, "\x1b[26~"},  /* kf14 */
+          {EXKEY_F3 | KEY_SHIFTMASK, "\x1b[28~"},  /* kf15 */
+          {EXKEY_F4 | KEY_SHIFTMASK, "\x1b[29~"},  /* kf16 */
+          {EXKEY_F5 | KEY_SHIFTMASK, "\x1b[31~"},  /* kf17 */
+          {EXKEY_F6 | KEY_SHIFTMASK, "\x1b[32~"},  /* kf18 */
+          {EXKEY_F7 | KEY_SHIFTMASK, "\x1b[33~"},  /* kf19 */
+          {EXKEY_F8 | KEY_SHIFTMASK, "\x1b[34~"},  /* kf20 */
+          {EXKEY_F9 | KEY_SHIFTMASK, "\x1b[35~"},  /* kf21 */
+          {EXKEY_F10 | KEY_SHIFTMASK, "\x1b[36~"}, /* kf22 */
+          {EXKEY_F11 | KEY_SHIFTMASK, "\x1b[37~"}, /* kf23 */
+          {EXKEY_F12 | KEY_SHIFTMASK, "\x1b[38~"}, /* kf24 */
 
-          {EXKEY_F1 | KEY_CTRLMASK, "\033[39~"},  /* kf25 */
-          {EXKEY_F2 | KEY_CTRLMASK, "\033[40~"},  /* kf26 */
-          {EXKEY_F3 | KEY_CTRLMASK, "\033[41~"},  /* kf27 */
-          {EXKEY_F4 | KEY_CTRLMASK, "\033[42~"},  /* kf28 */
-          {EXKEY_F5 | KEY_CTRLMASK, "\033[43~"},  /* kf29 */
-          {EXKEY_F6 | KEY_CTRLMASK, "\033[44~"},  /* kf30 */
-          {EXKEY_F7 | KEY_CTRLMASK, "\033[45~"},  /* kf31 */
-          {EXKEY_F8 | KEY_CTRLMASK, "\033[46~"},  /* kf32 */
-          {EXKEY_F9 | KEY_CTRLMASK, "\033[47~"},  /* kf33 */
-          {EXKEY_F10 | KEY_CTRLMASK, "\033[48~"}, /* kf34 */
-          {EXKEY_F11 | KEY_CTRLMASK, "\033[49~"}, /* kf35 */
-          {EXKEY_F12 | KEY_CTRLMASK, "\033[50~"}, /* kf36 */
+          {EXKEY_F1 | KEY_CTRLMASK, "\x1b[39~"},  /* kf25 */
+          {EXKEY_F2 | KEY_CTRLMASK, "\x1b[40~"},  /* kf26 */
+          {EXKEY_F3 | KEY_CTRLMASK, "\x1b[41~"},  /* kf27 */
+          {EXKEY_F4 | KEY_CTRLMASK, "\x1b[42~"},  /* kf28 */
+          {EXKEY_F5 | KEY_CTRLMASK, "\x1b[43~"},  /* kf29 */
+          {EXKEY_F6 | KEY_CTRLMASK, "\x1b[44~"},  /* kf30 */
+          {EXKEY_F7 | KEY_CTRLMASK, "\x1b[45~"},  /* kf31 */
+          {EXKEY_F8 | KEY_CTRLMASK, "\x1b[46~"},  /* kf32 */
+          {EXKEY_F9 | KEY_CTRLMASK, "\x1b[47~"},  /* kf33 */
+          {EXKEY_F10 | KEY_CTRLMASK, "\x1b[48~"}, /* kf34 */
+          {EXKEY_F11 | KEY_CTRLMASK, "\x1b[49~"}, /* kf35 */
+          {EXKEY_F12 | KEY_CTRLMASK, "\x1b[50~"}, /* kf36 */
 
-          {EXKEY_F1 | KEY_ALTMASK, "\033[51~"},  /* kf37 */
-          {EXKEY_F2 | KEY_ALTMASK, "\033[52~"},  /* kf38 */
-          {EXKEY_F3 | KEY_ALTMASK, "\033[53~"},  /* kf39 */
-          {EXKEY_F4 | KEY_ALTMASK, "\033[54~"},  /* kf40 */
-          {EXKEY_F5 | KEY_ALTMASK, "\033[55~"},  /* kf41 */
-          {EXKEY_F6 | KEY_ALTMASK, "\033[56~"},  /* kf42 */
-          {EXKEY_F7 | KEY_ALTMASK, "\033[57~"},  /* kf43 */
-          {EXKEY_F8 | KEY_ALTMASK, "\033[58~"},  /* kf44 */
-          {EXKEY_F9 | KEY_ALTMASK, "\033[59~"},  /* kf45 */
-          {EXKEY_F10 | KEY_ALTMASK, "\033[70~"}, /* kf46 */
-          {EXKEY_F11 | KEY_ALTMASK, "\033[71~"}, /* kf47 */
-          {EXKEY_F12 | KEY_ALTMASK, "\033[72~"}, /* kf48 */
+          {EXKEY_F1 | KEY_ALTMASK, "\x1b[51~"},  /* kf37 */
+          {EXKEY_F2 | KEY_ALTMASK, "\x1b[52~"},  /* kf38 */
+          {EXKEY_F3 | KEY_ALTMASK, "\x1b[53~"},  /* kf39 */
+          {EXKEY_F4 | KEY_ALTMASK, "\x1b[54~"},  /* kf40 */
+          {EXKEY_F5 | KEY_ALTMASK, "\x1b[55~"},  /* kf41 */
+          {EXKEY_F6 | KEY_ALTMASK, "\x1b[56~"},  /* kf42 */
+          {EXKEY_F7 | KEY_ALTMASK, "\x1b[57~"},  /* kf43 */
+          {EXKEY_F8 | KEY_ALTMASK, "\x1b[58~"},  /* kf44 */
+          {EXKEY_F9 | KEY_ALTMASK, "\x1b[59~"},  /* kf45 */
+          {EXKEY_F10 | KEY_ALTMASK, "\x1b[70~"}, /* kf46 */
+          {EXKEY_F11 | KEY_ALTMASK, "\x1b[71~"}, /* kf47 */
+          {EXKEY_F12 | KEY_ALTMASK, "\x1b[72~"}, /* kf48 */
 
           {0, NULL}};
 
       static const keySeq stdCursorKeySeq[] = {
-          {EXKEY_HOME, "\033[1~"}, /* khome */
-          {EXKEY_INS, "\033[2~"},  /* kich1 */
-          {EXKEY_DEL, "\033[3~"},  /* kdch1 */
-          {EXKEY_END, "\033[4~"},  /* kend  */
-          {EXKEY_PGUP, "\033[5~"}, /* kpp   */
-          {EXKEY_PGDN, "\033[6~"}, /* knp   */
+          {EXKEY_HOME, "\x1b[1~"}, /* khome */
+          {EXKEY_INS, "\x1b[2~"},  /* kich1 */
+          {EXKEY_DEL, "\x1b[3~"},  /* kdch1 */
+          {EXKEY_END, "\x1b[4~"},  /* kend  */
+          {EXKEY_PGUP, "\x1b[5~"}, /* kpp   */
+          {EXKEY_PGDN, "\x1b[6~"}, /* knp   */
 
           {0, NULL}};
 
-
       static const keySeq xtermModKeySeq[] = {
           /* XTerm  with modifiers */
-          {EXKEY_F1 | KEY_CTRLMASK, "\033O5P"},
-          {EXKEY_F2 | KEY_CTRLMASK, "\033O5Q"},
-          {EXKEY_F3 | KEY_CTRLMASK, "\033O5R"},
-          {EXKEY_F4 | KEY_CTRLMASK, "\033O5S"},
+          {EXKEY_F1 | KEY_CTRLMASK, "\x1bO5P"},
+          {EXKEY_F2 | KEY_CTRLMASK, "\x1bO5Q"},
+          {EXKEY_F3 | KEY_CTRLMASK, "\x1bO5R"},
+          {EXKEY_F4 | KEY_CTRLMASK, "\x1bO5S"},
 
-          {EXKEY_F1 | KEY_CTRLMASK, "\033[11;5~"},
-          {EXKEY_F2 | KEY_CTRLMASK, "\033[12;5~"},
-          {EXKEY_F3 | KEY_CTRLMASK, "\033[13;5~"},
-          {EXKEY_F4 | KEY_CTRLMASK, "\033[14;5~"},
-          {EXKEY_F5 | KEY_CTRLMASK, "\033[15;5~"},
-          {EXKEY_F6 | KEY_CTRLMASK, "\033[17;5~"},
-          {EXKEY_F7 | KEY_CTRLMASK, "\033[18;5~"},
-          {EXKEY_F8 | KEY_CTRLMASK, "\033[19;5~"},
-          {EXKEY_F9 | KEY_CTRLMASK, "\033[20;5~"},
-          {EXKEY_F10 | KEY_CTRLMASK, "\033[21;5~"},
-          {EXKEY_F11 | KEY_CTRLMASK, "\033[23;5~"},
-          {EXKEY_F12 | KEY_CTRLMASK, "\033[24;5~"},
+          {EXKEY_F1 | KEY_CTRLMASK, "\x1b[11;5~"},
+          {EXKEY_F2 | KEY_CTRLMASK, "\x1b[12;5~"},
+          {EXKEY_F3 | KEY_CTRLMASK, "\x1b[13;5~"},
+          {EXKEY_F4 | KEY_CTRLMASK, "\x1b[14;5~"},
+          {EXKEY_F5 | KEY_CTRLMASK, "\x1b[15;5~"},
+          {EXKEY_F6 | KEY_CTRLMASK, "\x1b[17;5~"},
+          {EXKEY_F7 | KEY_CTRLMASK, "\x1b[18;5~"},
+          {EXKEY_F8 | KEY_CTRLMASK, "\x1b[19;5~"},
+          {EXKEY_F9 | KEY_CTRLMASK, "\x1b[20;5~"},
+          {EXKEY_F10 | KEY_CTRLMASK, "\x1b[21;5~"},
+          {EXKEY_F11 | KEY_CTRLMASK, "\x1b[23;5~"},
+          {EXKEY_F12 | KEY_CTRLMASK, "\x1b[24;5~"},
 
-          {EXKEY_HOME | KEY_CTRLMASK, "\033[1;5~"},
-          {EXKEY_INS | KEY_CTRLMASK, "\033[2;5~"},
-          {EXKEY_DEL | KEY_CTRLMASK, "\033[3;5~"},
-          {EXKEY_END | KEY_CTRLMASK, "\033[4;5~"},
-          {EXKEY_PGUP | KEY_CTRLMASK, "\033[5;5~"},
-          {EXKEY_PGDN | KEY_CTRLMASK, "\033[6;5~"},
+          {EXKEY_HOME | KEY_CTRLMASK, "\x1b[1;5~"},
+          {EXKEY_INS | KEY_CTRLMASK, "\x1b[2;5~"},
+          {EXKEY_DEL | KEY_CTRLMASK, "\x1b[3;5~"},
+          {EXKEY_END | KEY_CTRLMASK, "\x1b[4;5~"},
+          {EXKEY_PGUP | KEY_CTRLMASK, "\x1b[5;5~"},
+          {EXKEY_PGDN | KEY_CTRLMASK, "\x1b[6;5~"},
 
-          {EXKEY_UP | KEY_CTRLMASK, "\033[1;5A"},
-          {EXKEY_DOWN | KEY_CTRLMASK, "\033[1;5B"},
-          {EXKEY_RIGHT | KEY_CTRLMASK, "\033[1;5C"},
-          {EXKEY_LEFT | KEY_CTRLMASK, "\033[1;5D"},
-          {EXKEY_CENTER | KEY_CTRLMASK, "\033[1;5E"},
-          {EXKEY_END | KEY_CTRLMASK, "\033[1;5F"},
-          {EXKEY_CENTER | KEY_CTRLMASK, "\033[1;5G"},
-          {EXKEY_HOME | KEY_CTRLMASK, "\033[1;5H"},
+          {EXKEY_UP | KEY_CTRLMASK, "\x1b[1;5A"},
+          {EXKEY_DOWN | KEY_CTRLMASK, "\x1b[1;5B"},
+          {EXKEY_RIGHT | KEY_CTRLMASK, "\x1b[1;5C"},
+          {EXKEY_LEFT | KEY_CTRLMASK, "\x1b[1;5D"},
+          {EXKEY_CENTER | KEY_CTRLMASK, "\x1b[1;5E"},
+          {EXKEY_END | KEY_CTRLMASK, "\x1b[1;5F"},
+          {EXKEY_CENTER | KEY_CTRLMASK, "\x1b[1;5G"},
+          {EXKEY_HOME | KEY_CTRLMASK, "\x1b[1;5H"},
 
-          {EXKEY_UP | KEY_CTRLMASK, "\033[5A"},
-          {EXKEY_DOWN | KEY_CTRLMASK, "\033[5B"},
-          {EXKEY_RIGHT | KEY_CTRLMASK, "\033[5C"},
-          {EXKEY_LEFT | KEY_CTRLMASK, "\033[5D"},
-          {EXKEY_CENTER | KEY_CTRLMASK, "\033[5E"}, /* --- */
-          {EXKEY_END | KEY_CTRLMASK, "\033[5F"},    /* --- */
-          {EXKEY_CENTER | KEY_CTRLMASK, "\033[5G"}, /* --- */
-          {EXKEY_HOME | KEY_CTRLMASK, "\033[5H"},   /* --- */
+          {EXKEY_UP | KEY_CTRLMASK, "\x1b[5A"},
+          {EXKEY_DOWN | KEY_CTRLMASK, "\x1b[5B"},
+          {EXKEY_RIGHT | KEY_CTRLMASK, "\x1b[5C"},
+          {EXKEY_LEFT | KEY_CTRLMASK, "\x1b[5D"},
+          {EXKEY_CENTER | KEY_CTRLMASK, "\x1b[5E"}, /* --- */
+          {EXKEY_END | KEY_CTRLMASK, "\x1b[5F"},    /* --- */
+          {EXKEY_CENTER | KEY_CTRLMASK, "\x1b[5G"}, /* --- */
+          {EXKEY_HOME | KEY_CTRLMASK, "\x1b[5H"},   /* --- */
 
-          {EXKEY_F1 | KEY_ALTMASK, "\033O3P"},
-          {EXKEY_F2 | KEY_ALTMASK, "\033O3Q"},
-          {EXKEY_F3 | KEY_ALTMASK, "\033O3R"},
-          {EXKEY_F4 | KEY_ALTMASK, "\033O3S"},
+          {EXKEY_F1 | KEY_ALTMASK, "\x1bO3P"},
+          {EXKEY_F2 | KEY_ALTMASK, "\x1bO3Q"},
+          {EXKEY_F3 | KEY_ALTMASK, "\x1bO3R"},
+          {EXKEY_F4 | KEY_ALTMASK, "\x1bO3S"},
 
-          {EXKEY_F1 | KEY_ALTMASK, "\033[11;3~"},
-          {EXKEY_F2 | KEY_ALTMASK, "\033[12;3~"},
-          {EXKEY_F3 | KEY_ALTMASK, "\033[13;3~"},
-          {EXKEY_F4 | KEY_ALTMASK, "\033[14;3~"},
-          {EXKEY_F5 | KEY_ALTMASK, "\033[15;3~"},
-          {EXKEY_F6 | KEY_ALTMASK, "\033[17;3~"},
-          {EXKEY_F7 | KEY_ALTMASK, "\033[18;3~"},
-          {EXKEY_F8 | KEY_ALTMASK, "\033[19;3~"},
-          {EXKEY_F9 | KEY_ALTMASK, "\033[20;3~"},
-          {EXKEY_F10 | KEY_ALTMASK, "\033[21;3~"},
-          {EXKEY_F11 | KEY_ALTMASK, "\033[23;3~"},
-          {EXKEY_F12 | KEY_ALTMASK, "\033[24;3~"},
+          {EXKEY_F1 | KEY_ALTMASK, "\x1b[11;3~"},
+          {EXKEY_F2 | KEY_ALTMASK, "\x1b[12;3~"},
+          {EXKEY_F3 | KEY_ALTMASK, "\x1b[13;3~"},
+          {EXKEY_F4 | KEY_ALTMASK, "\x1b[14;3~"},
+          {EXKEY_F5 | KEY_ALTMASK, "\x1b[15;3~"},
+          {EXKEY_F6 | KEY_ALTMASK, "\x1b[17;3~"},
+          {EXKEY_F7 | KEY_ALTMASK, "\x1b[18;3~"},
+          {EXKEY_F8 | KEY_ALTMASK, "\x1b[19;3~"},
+          {EXKEY_F9 | KEY_ALTMASK, "\x1b[20;3~"},
+          {EXKEY_F10 | KEY_ALTMASK, "\x1b[21;3~"},
+          {EXKEY_F11 | KEY_ALTMASK, "\x1b[23;3~"},
+          {EXKEY_F12 | KEY_ALTMASK, "\x1b[24;3~"},
 
-          {EXKEY_HOME | KEY_ALTMASK, "\033[1;3~"},
-          {EXKEY_INS | KEY_ALTMASK, "\033[2;3~"},
-          {EXKEY_DEL | KEY_ALTMASK, "\033[3;3~"},
-          {EXKEY_END | KEY_ALTMASK, "\033[4;3~"},
-          {EXKEY_PGUP | KEY_ALTMASK, "\033[5;3~"},
-          {EXKEY_PGDN | KEY_ALTMASK, "\033[6;3~"},
+          {EXKEY_HOME | KEY_ALTMASK, "\x1b[1;3~"},
+          {EXKEY_INS | KEY_ALTMASK, "\x1b[2;3~"},
+          {EXKEY_DEL | KEY_ALTMASK, "\x1b[3;3~"},
+          {EXKEY_END | KEY_ALTMASK, "\x1b[4;3~"},
+          {EXKEY_PGUP | KEY_ALTMASK, "\x1b[5;3~"},
+          {EXKEY_PGDN | KEY_ALTMASK, "\x1b[6;3~"},
 
-          {EXKEY_UP | KEY_ALTMASK, "\033[1;3A"},
-          {EXKEY_DOWN | KEY_ALTMASK, "\033[1;3B"},
-          {EXKEY_RIGHT | KEY_ALTMASK, "\033[1;3C"},
-          {EXKEY_LEFT | KEY_ALTMASK, "\033[1;3D"},
-          {EXKEY_CENTER | KEY_ALTMASK, "\033[1;3E"},
-          {EXKEY_END | KEY_ALTMASK, "\033[1;3F"},
-          {EXKEY_CENTER | KEY_ALTMASK, "\033[1;3G"},
-          {EXKEY_HOME | KEY_ALTMASK, "\033[1;3H"},
+          {EXKEY_UP | KEY_ALTMASK, "\x1b[1;3A"},
+          {EXKEY_DOWN | KEY_ALTMASK, "\x1b[1;3B"},
+          {EXKEY_RIGHT | KEY_ALTMASK, "\x1b[1;3C"},
+          {EXKEY_LEFT | KEY_ALTMASK, "\x1b[1;3D"},
+          {EXKEY_CENTER | KEY_ALTMASK, "\x1b[1;3E"},
+          {EXKEY_END | KEY_ALTMASK, "\x1b[1;3F"},
+          {EXKEY_CENTER | KEY_ALTMASK, "\x1b[1;3G"},
+          {EXKEY_HOME | KEY_ALTMASK, "\x1b[1;3H"},
 
-          {EXKEY_UP | KEY_ALTMASK, "\033[3A"},
-          {EXKEY_DOWN | KEY_ALTMASK, "\033[3B"},
-          {EXKEY_RIGHT | KEY_ALTMASK, "\033[3C"},
-          {EXKEY_LEFT | KEY_ALTMASK, "\033[3D"},
-          {EXKEY_CENTER | KEY_ALTMASK, "\033[3E"}, /* --- */
-          {EXKEY_END | KEY_ALTMASK, "\033[3F"},    /* --- */
-          {EXKEY_CENTER | KEY_ALTMASK, "\033[3G"}, /* --- */
-          {EXKEY_HOME | KEY_ALTMASK, "\033[3H"},   /* --- */
+          {EXKEY_UP | KEY_ALTMASK, "\x1b[3A"},
+          {EXKEY_DOWN | KEY_ALTMASK, "\x1b[3B"},
+          {EXKEY_RIGHT | KEY_ALTMASK, "\x1b[3C"},
+          {EXKEY_LEFT | KEY_ALTMASK, "\x1b[3D"},
+          {EXKEY_CENTER | KEY_ALTMASK, "\x1b[3E"}, /* --- */
+          {EXKEY_END | KEY_ALTMASK, "\x1b[3F"},    /* --- */
+          {EXKEY_CENTER | KEY_ALTMASK, "\x1b[3G"}, /* --- */
+          {EXKEY_HOME | KEY_ALTMASK, "\x1b[3H"},   /* --- */
 
-          {EXKEY_F1 | KEY_SHIFTMASK, "\033O2P"},
-          {EXKEY_F2 | KEY_SHIFTMASK, "\033O2Q"},
-          {EXKEY_F3 | KEY_SHIFTMASK, "\033O2R"},
-          {EXKEY_F4 | KEY_SHIFTMASK, "\033O2S"},
+          {EXKEY_F1 | KEY_SHIFTMASK, "\x1bO2P"},
+          {EXKEY_F2 | KEY_SHIFTMASK, "\x1bO2Q"},
+          {EXKEY_F3 | KEY_SHIFTMASK, "\x1bO2R"},
+          {EXKEY_F4 | KEY_SHIFTMASK, "\x1bO2S"},
 
-          {EXKEY_F1 | KEY_SHIFTMASK, "\033O1;2P"},
-          {EXKEY_F2 | KEY_SHIFTMASK, "\033O1;2Q"},
-          {EXKEY_F3 | KEY_SHIFTMASK, "\033O1;2R"},
-          {EXKEY_F4 | KEY_SHIFTMASK, "\033O1;2S"},
+          {EXKEY_F1 | KEY_SHIFTMASK, "\x1bO1;2P"},
+          {EXKEY_F2 | KEY_SHIFTMASK, "\x1bO1;2Q"},
+          {EXKEY_F3 | KEY_SHIFTMASK, "\x1bO1;2R"},
+          {EXKEY_F4 | KEY_SHIFTMASK, "\x1bO1;2S"},
 
-          {EXKEY_F1 | KEY_SHIFTMASK, "\033[1;2P"},
-          {EXKEY_F2 | KEY_SHIFTMASK, "\033[1;2Q"},
-          {EXKEY_F3 | KEY_SHIFTMASK, "\033[1;2R"},
-          {EXKEY_F4 | KEY_SHIFTMASK, "\033[1;2S"},
+          {EXKEY_F1 | KEY_SHIFTMASK, "\x1b[1;2P"},
+          {EXKEY_F2 | KEY_SHIFTMASK, "\x1b[1;2Q"},
+          {EXKEY_F3 | KEY_SHIFTMASK, "\x1b[1;2R"},
+          {EXKEY_F4 | KEY_SHIFTMASK, "\x1b[1;2S"},
 
-          {EXKEY_F1 | KEY_SHIFTMASK, "\033[11;2~"},
-          {EXKEY_F2 | KEY_SHIFTMASK, "\033[12;2~"},
-          {EXKEY_F3 | KEY_SHIFTMASK, "\033[13;2~"},
-          {EXKEY_F4 | KEY_SHIFTMASK, "\033[14;2~"},
-          {EXKEY_F5 | KEY_SHIFTMASK, "\033[15;2~"},
-          {EXKEY_F6 | KEY_SHIFTMASK, "\033[17;2~"},
-          {EXKEY_F7 | KEY_SHIFTMASK, "\033[18;2~"},
-          {EXKEY_F8 | KEY_SHIFTMASK, "\033[19;2~"},
-          {EXKEY_F9 | KEY_SHIFTMASK, "\033[20;2~"},
-          {EXKEY_F10 | KEY_SHIFTMASK, "\033[21;2~"},
-          {EXKEY_F11 | KEY_SHIFTMASK, "\033[23;2~"},
-          {EXKEY_F12 | KEY_SHIFTMASK, "\033[24;2~"},
+          {EXKEY_F1 | KEY_SHIFTMASK, "\x1b[11;2~"},
+          {EXKEY_F2 | KEY_SHIFTMASK, "\x1b[12;2~"},
+          {EXKEY_F3 | KEY_SHIFTMASK, "\x1b[13;2~"},
+          {EXKEY_F4 | KEY_SHIFTMASK, "\x1b[14;2~"},
+          {EXKEY_F5 | KEY_SHIFTMASK, "\x1b[15;2~"},
+          {EXKEY_F6 | KEY_SHIFTMASK, "\x1b[17;2~"},
+          {EXKEY_F7 | KEY_SHIFTMASK, "\x1b[18;2~"},
+          {EXKEY_F8 | KEY_SHIFTMASK, "\x1b[19;2~"},
+          {EXKEY_F9 | KEY_SHIFTMASK, "\x1b[20;2~"},
+          {EXKEY_F10 | KEY_SHIFTMASK, "\x1b[21;2~"},
+          {EXKEY_F11 | KEY_SHIFTMASK, "\x1b[23;2~"},
+          {EXKEY_F12 | KEY_SHIFTMASK, "\x1b[24;2~"},
 
-          {EXKEY_HOME | KEY_SHIFTMASK, "\033[1;2~"},
-          {EXKEY_INS | KEY_SHIFTMASK, "\033[2;2~"},
-          {EXKEY_DEL | KEY_SHIFTMASK, "\033[3;2~"},
-          {EXKEY_END | KEY_SHIFTMASK, "\033[4;2~"},
-          {EXKEY_PGUP | KEY_SHIFTMASK, "\033[5;2~"},
-          {EXKEY_PGDN | KEY_SHIFTMASK, "\033[6;2~"},
+          {EXKEY_HOME | KEY_SHIFTMASK, "\x1b[1;2~"},
+          {EXKEY_INS | KEY_SHIFTMASK, "\x1b[2;2~"},
+          {EXKEY_DEL | KEY_SHIFTMASK, "\x1b[3;2~"},
+          {EXKEY_END | KEY_SHIFTMASK, "\x1b[4;2~"},
+          {EXKEY_PGUP | KEY_SHIFTMASK, "\x1b[5;2~"},
+          {EXKEY_PGDN | KEY_SHIFTMASK, "\x1b[6;2~"},
 
-          {EXKEY_UP | KEY_SHIFTMASK, "\033[1;2A"},
-          {EXKEY_DOWN | KEY_SHIFTMASK, "\033[1;2B"},
-          {EXKEY_RIGHT | KEY_SHIFTMASK, "\033[1;2C"},
-          {EXKEY_LEFT | KEY_SHIFTMASK, "\033[1;2D"},
-          {EXKEY_CENTER | KEY_SHIFTMASK, "\033[1;2E"},
-          {EXKEY_END | KEY_SHIFTMASK, "\033[1;2F"},
-          {EXKEY_CENTER | KEY_SHIFTMASK, "\033[1;2G"},
-          {EXKEY_HOME | KEY_SHIFTMASK, "\033[1;2H"},
+          {EXKEY_UP | KEY_SHIFTMASK, "\x1b[1;2A"},
+          {EXKEY_DOWN | KEY_SHIFTMASK, "\x1b[1;2B"},
+          {EXKEY_RIGHT | KEY_SHIFTMASK, "\x1b[1;2C"},
+          {EXKEY_LEFT | KEY_SHIFTMASK, "\x1b[1;2D"},
+          {EXKEY_CENTER | KEY_SHIFTMASK, "\x1b[1;2E"},
+          {EXKEY_END | KEY_SHIFTMASK, "\x1b[1;2F"},
+          {EXKEY_CENTER | KEY_SHIFTMASK, "\x1b[1;2G"},
+          {EXKEY_HOME | KEY_SHIFTMASK, "\x1b[1;2H"},
 
-          {EXKEY_UP | KEY_SHIFTMASK, "\033[2A"},
-          {EXKEY_DOWN | KEY_SHIFTMASK, "\033[2B"},
-          {EXKEY_RIGHT | KEY_SHIFTMASK, "\033[2C"},
-          {EXKEY_LEFT | KEY_SHIFTMASK, "\033[2D"},
-          {EXKEY_CENTER | KEY_SHIFTMASK, "\033[2E"}, /* --- */
-          {EXKEY_END | KEY_SHIFTMASK, "\033[2F"},    /* --- */
-          {EXKEY_CENTER | KEY_SHIFTMASK, "\033[2G"}, /* --- */
-          {EXKEY_HOME | KEY_SHIFTMASK, "\033[2H"},   /* --- */
+          {EXKEY_UP | KEY_SHIFTMASK, "\x1b[2A"},
+          {EXKEY_DOWN | KEY_SHIFTMASK, "\x1b[2B"},
+          {EXKEY_RIGHT | KEY_SHIFTMASK, "\x1b[2C"},
+          {EXKEY_LEFT | KEY_SHIFTMASK, "\x1b[2D"},
+          {EXKEY_CENTER | KEY_SHIFTMASK, "\x1b[2E"}, /* --- */
+          {EXKEY_END | KEY_SHIFTMASK, "\x1b[2F"},    /* --- */
+          {EXKEY_CENTER | KEY_SHIFTMASK, "\x1b[2G"}, /* --- */
+          {EXKEY_HOME | KEY_SHIFTMASK, "\x1b[2H"},   /* --- */
 
-          {EXKEY_BS | KEY_ALTMASK, "\033\010"},
+          {EXKEY_BS | KEY_ALTMASK, "\x1b\010"},
 
           {0, NULL}};
 
       static const keySeq xtermFnKeySeq[] = {
 
-          {EXKEY_F1, "\033OP"}, /* kf1  */
-          {EXKEY_F2, "\033OQ"}, /* kf2  */
-          {EXKEY_F3, "\033OR"}, /* kf3  */
-          {EXKEY_F4, "\033OS"}, /* kf4  */
+          {EXKEY_F1, "\x1bOP"}, /* kf1  - ok */
+          {EXKEY_F2, "\x1bOQ"}, /* kf2  */
+          {EXKEY_F3, "\x1bOR"}, /* kf3  */
+          {EXKEY_F4, "\x1bOS"}, /* kf4  */
 
           {0, NULL}};
 
@@ -2606,28 +2684,26 @@ static void init_keys(PHB_GTELE pTerm)
           {EXKEY_BS, "\177"},
 
           /* cursor keys */
-          {EXKEY_UP, "\033[A"},
-          {EXKEY_DOWN, "\033[B"},
-          {EXKEY_RIGHT, "\033[C"},
-          {EXKEY_LEFT, "\033[D"},
+          {EXKEY_UP, "\x1b[A"},
+          {EXKEY_DOWN, "\x1b[B"},
+          {EXKEY_RIGHT, "\x1b[C"},
+          {EXKEY_LEFT, "\x1b[D"},
 
-          {EXKEY_CENTER, "\033[E"}, /* XTerm */
-          {EXKEY_END, "\033[F"},    /* XTerm */
-          {EXKEY_HOME, "\033[H"},   /* XTerm */
+          {EXKEY_CENTER, "\x1b[E"}, /* XTerm */
+          {EXKEY_END, "\x1b[F"},    /* XTerm */
+          {EXKEY_HOME, "\x1b[H"},   /* XTerm */
 
-          {EXKEY_TAB | KEY_SHIFTMASK, "\033[Z"}, /* kcbt, XTerm */
+          {EXKEY_TAB | KEY_SHIFTMASK, "\x1b[Z"}, /* kcbt, XTerm */
 
           /* Konsole */
-          {EXKEY_ENTER | KEY_SHIFTMASK, "\033OM"},
-
+          {EXKEY_ENTER | KEY_SHIFTMASK, "\x1bOM"},
 
           /* gnome-terminal */
-          {EXKEY_END, "\033OF"},  /* kend  */
-          {EXKEY_HOME, "\033OH"}, /* khome */
-          {EXKEY_ENTER | KEY_ALTMASK, "\033\012"},
+          {EXKEY_END, "\x1bOF"},  /* kend  */
+          {EXKEY_HOME, "\x1bOH"}, /* khome */
+          {EXKEY_ENTER | KEY_ALTMASK, "\x1b\012"},
 
           {0, NULL}};
-
 
       static const keySeq ansiKeySeq[] = {
 
@@ -2635,85 +2711,81 @@ static void init_keys(PHB_GTELE pTerm)
           {EXKEY_TAB, "\011"}, /* ht    */
           {EXKEY_DEL, "\177"}, /* kdch1 */
           /* cursor keys */
-          {EXKEY_UP, "\033[A"},     /* kcuu1 */
-          {EXKEY_DOWN, "\033[B"},   /* kcud1 */
-          {EXKEY_RIGHT, "\033[C"},  /* kcuf1 */
-          {EXKEY_LEFT, "\033[D"},   /* kcub1 */
-          {EXKEY_CENTER, "\033[E"}, /* kb2   */
-          {EXKEY_END, "\033[F"},    /* kend  */
-          {EXKEY_PGDN, "\033[G"},   /* knp   */
-          {EXKEY_HOME, "\033[H"},   /* khome */
-          {EXKEY_PGUP, "\033[I"},   /* kpp   */
-          {EXKEY_INS, "\033[L"},    /* kich1 */
+          {EXKEY_UP, "\x1b[A"},     /* kcuu1 */
+          {EXKEY_DOWN, "\x1b[B"},   /* kcud1 */
+          {EXKEY_RIGHT, "\x1b[C"},  /* kcuf1 */
+          {EXKEY_LEFT, "\x1b[D"},   /* kcub1 */
+          {EXKEY_CENTER, "\x1b[E"}, /* kb2   */
+          {EXKEY_END, "\x1b[F"},    /* kend  */
+          {EXKEY_PGDN, "\x1b[G"},   /* knp   */
+          {EXKEY_HOME, "\x1b[H"},   /* khome */
+          {EXKEY_PGUP, "\x1b[I"},   /* kpp   */
+          {EXKEY_INS, "\x1b[L"},    /* kich1 */
 
-          {EXKEY_F1, "\033[M"},  /* kf1  */
-          {EXKEY_F2, "\033[N"},  /* kf2  */
-          {EXKEY_F3, "\033[O"},  /* kf3  */
-          {EXKEY_F4, "\033[P"},  /* kf4  */
-          {EXKEY_F5, "\033[Q"},  /* kf5  */
-          {EXKEY_F6, "\033[R"},  /* kf6  */
-          {EXKEY_F7, "\033[S"},  /* kf7  */
-          {EXKEY_F8, "\033[T"},  /* kf8  */
-          {EXKEY_F9, "\033[U"},  /* kf9  */
-          {EXKEY_F10, "\033[V"}, /* kf10 */
-          {EXKEY_F11, "\033[W"}, /* kf11 */
-          {EXKEY_F12, "\033[X"}, /* kf12 */
+          {EXKEY_F1, "\x1b[M"},  /* kf1  */
+          {EXKEY_F2, "\x1b[N"},  /* kf2  */
+          {EXKEY_F3, "\x1b[O"},  /* kf3  */
+          {EXKEY_F4, "\x1b[P"},  /* kf4  */
+          {EXKEY_F5, "\x1b[Q"},  /* kf5  */
+          {EXKEY_F6, "\x1b[R"},  /* kf6  */
+          {EXKEY_F7, "\x1b[S"},  /* kf7  */
+          {EXKEY_F8, "\x1b[T"},  /* kf8  */
+          {EXKEY_F9, "\x1b[U"},  /* kf9  */
+          {EXKEY_F10, "\x1b[V"}, /* kf10 */
+          {EXKEY_F11, "\x1b[W"}, /* kf11 */
+          {EXKEY_F12, "\x1b[X"}, /* kf12 */
 
-          {EXKEY_F1 | KEY_SHIFTMASK, "\033[Y"},  /* kf13 */
-          {EXKEY_F2 | KEY_SHIFTMASK, "\033[Z"},  /* kf14 */
-          {EXKEY_F3 | KEY_SHIFTMASK, "\033[a"},  /* kf15 */
-          {EXKEY_F4 | KEY_SHIFTMASK, "\033[b"},  /* kf16 */
-          {EXKEY_F5 | KEY_SHIFTMASK, "\033[c"},  /* kf17 */
-          {EXKEY_F6 | KEY_SHIFTMASK, "\033[d"},  /* kf18 */
-          {EXKEY_F7 | KEY_SHIFTMASK, "\033[e"},  /* kf19 */
-          {EXKEY_F8 | KEY_SHIFTMASK, "\033[f"},  /* kf20 */
-          {EXKEY_F9 | KEY_SHIFTMASK, "\033[g"},  /* kf21 */
-          {EXKEY_F10 | KEY_SHIFTMASK, "\033[h"}, /* kf22 */
-          {EXKEY_F11 | KEY_SHIFTMASK, "\033[i"}, /* kf23 */
-          {EXKEY_F12 | KEY_SHIFTMASK, "\033[j"}, /* kf24 */
+          {EXKEY_F1 | KEY_SHIFTMASK, "\x1b[Y"},  /* kf13 */
+          {EXKEY_F2 | KEY_SHIFTMASK, "\x1b[Z"},  /* kf14 */
+          {EXKEY_F3 | KEY_SHIFTMASK, "\x1b[a"},  /* kf15 */
+          {EXKEY_F4 | KEY_SHIFTMASK, "\x1b[b"},  /* kf16 */
+          {EXKEY_F5 | KEY_SHIFTMASK, "\x1b[c"},  /* kf17 */
+          {EXKEY_F6 | KEY_SHIFTMASK, "\x1b[d"},  /* kf18 */
+          {EXKEY_F7 | KEY_SHIFTMASK, "\x1b[e"},  /* kf19 */
+          {EXKEY_F8 | KEY_SHIFTMASK, "\x1b[f"},  /* kf20 */
+          {EXKEY_F9 | KEY_SHIFTMASK, "\x1b[g"},  /* kf21 */
+          {EXKEY_F10 | KEY_SHIFTMASK, "\x1b[h"}, /* kf22 */
+          {EXKEY_F11 | KEY_SHIFTMASK, "\x1b[i"}, /* kf23 */
+          {EXKEY_F12 | KEY_SHIFTMASK, "\x1b[j"}, /* kf24 */
 
-          {EXKEY_F1 | KEY_CTRLMASK, "\033[k"},  /* kf25 */
-          {EXKEY_F2 | KEY_CTRLMASK, "\033[l"},  /* kf26 */
-          {EXKEY_F3 | KEY_CTRLMASK, "\033[m"},  /* kf27 */
-          {EXKEY_F4 | KEY_CTRLMASK, "\033[n"},  /* kf28 */
-          {EXKEY_F5 | KEY_CTRLMASK, "\033[o"},  /* kf29 */
-          {EXKEY_F6 | KEY_CTRLMASK, "\033[p"},  /* kf30 */
-          {EXKEY_F7 | KEY_CTRLMASK, "\033[q"},  /* kf31 */
-          {EXKEY_F8 | KEY_CTRLMASK, "\033[r"},  /* kf32 */
-          {EXKEY_F9 | KEY_CTRLMASK, "\033[s"},  /* kf33 */
-          {EXKEY_F10 | KEY_CTRLMASK, "\033[t"}, /* kf34 */
-          {EXKEY_F11 | KEY_CTRLMASK, "\033[u"}, /* kf35 */
-          {EXKEY_F12 | KEY_CTRLMASK, "\033[v"}, /* kf36 */
+          {EXKEY_F1 | KEY_CTRLMASK, "\x1b[k"},  /* kf25 */
+          {EXKEY_F2 | KEY_CTRLMASK, "\x1b[l"},  /* kf26 */
+          {EXKEY_F3 | KEY_CTRLMASK, "\x1b[m"},  /* kf27 */
+          {EXKEY_F4 | KEY_CTRLMASK, "\x1b[n"},  /* kf28 */
+          {EXKEY_F5 | KEY_CTRLMASK, "\x1b[o"},  /* kf29 */
+          {EXKEY_F6 | KEY_CTRLMASK, "\x1b[p"},  /* kf30 */
+          {EXKEY_F7 | KEY_CTRLMASK, "\x1b[q"},  /* kf31 */
+          {EXKEY_F8 | KEY_CTRLMASK, "\x1b[r"},  /* kf32 */
+          {EXKEY_F9 | KEY_CTRLMASK, "\x1b[s"},  /* kf33 */
+          {EXKEY_F10 | KEY_CTRLMASK, "\x1b[t"}, /* kf34 */
+          {EXKEY_F11 | KEY_CTRLMASK, "\x1b[u"}, /* kf35 */
+          {EXKEY_F12 | KEY_CTRLMASK, "\x1b[v"}, /* kf36 */
 
-          {EXKEY_F1 | KEY_ALTMASK, "\033[w"},  /* kf37 */
-          {EXKEY_F2 | KEY_ALTMASK, "\033[x"},  /* kf38 */
-          {EXKEY_F3 | KEY_ALTMASK, "\033[y"},  /* kf39 */
-          {EXKEY_F4 | KEY_ALTMASK, "\033[z"},  /* kf40 */
-          {EXKEY_F5 | KEY_ALTMASK, "\033[@"},  /* kf41 */
-          {EXKEY_F6 | KEY_ALTMASK, "\033[["},  /* kf42 */
-          {EXKEY_F7 | KEY_ALTMASK, "\033[\\"}, /* kf43 */
-          {EXKEY_F8 | KEY_ALTMASK, "\033[]"},  /* kf44 */
-          {EXKEY_F9 | KEY_ALTMASK, "\033[^"},  /* kf45 */
-          {EXKEY_F10 | KEY_ALTMASK, "\033[_"}, /* kf46 */
-          {EXKEY_F11 | KEY_ALTMASK, "\033[`"}, /* kf47 */
-          {EXKEY_F12 | KEY_ALTMASK, "\033[{"}, /* kf48 */
-
-          {0, NULL}};
-
-      static const keySeq bsdConsKeySeq[] = {
-
-          {EXKEY_TAB | KEY_SHIFTMASK, "\033[Z"}, /* SHIFT+TAB */
+          {EXKEY_F1 | KEY_ALTMASK, "\x1b[w"},  /* kf37 */
+          {EXKEY_F2 | KEY_ALTMASK, "\x1b[x"},  /* kf38 */
+          {EXKEY_F3 | KEY_ALTMASK, "\x1b[y"},  /* kf39 */
+          {EXKEY_F4 | KEY_ALTMASK, "\x1b[z"},  /* kf40 */
+          {EXKEY_F5 | KEY_ALTMASK, "\x1b[@"},  /* kf41 */
+          {EXKEY_F6 | KEY_ALTMASK, "\x1b[["},  /* kf42 */
+          {EXKEY_F7 | KEY_ALTMASK, "\x1b[\\"}, /* kf43 */
+          {EXKEY_F8 | KEY_ALTMASK, "\x1b[]"},  /* kf44 */
+          {EXKEY_F9 | KEY_ALTMASK, "\x1b[^"},  /* kf45 */
+          {EXKEY_F10 | KEY_ALTMASK, "\x1b[_"}, /* kf46 */
+          {EXKEY_F11 | KEY_ALTMASK, "\x1b[`"}, /* kf47 */
+          {EXKEY_F12 | KEY_ALTMASK, "\x1b[{"}, /* kf48 */
 
           {0, NULL}};
+
+      //static const keySeq bsdConsKeySeq[] = {
+      //    {EXKEY_TAB | KEY_SHIFTMASK, "\x1b[Z"}, /* SHIFT+TAB */
+      //    {0, NULL}};
 
       addKeyTab(pTerm, stdKeySeq);
-
       addKeyTab(pTerm, xtermKeySeq);
       addKeyTab(pTerm, xtermFnKeySeq);
       addKeyTab(pTerm, stdFnKeySeq);
       addKeyTab(pTerm, stdCursorKeySeq);
       addKeyTab(pTerm, xtermModKeySeq);
-
 }
 
 static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
@@ -2731,7 +2803,7 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
             pTerm->iOutBufSize = 16384;
             pTerm->pOutBuf = (char *)hb_xgrab(pTerm->iOutBufSize);
       }
-      pTerm->mouse_type = MOUSE_NONE;
+      pTerm->mouse_type = MOUSE_XTERM;
       pTerm->esc_delay = ESC_DELAY;
       pTerm->iAttrMask = ~HB_GTELE_ATTR_BOX;
       pTerm->iExtColor = HB_GTELE_CLRSTD;
@@ -2756,8 +2828,6 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
       pTerm->colors[0x0E] = 0x55FFFF;
       pTerm->colors[0x0F] = 0xFFFFFF;
 
-
-
       szTerm = "xterm";
 
       pTerm->Init = hb_gt_ele_AnsiInit;
@@ -2780,14 +2850,16 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
 
       pTerm->hFileno = pTerm->hFilenoStdout;
 
-      pTerm->fOutTTY = pTerm->fStdoutTTY;
-      if (!pTerm->fOutTTY && pTerm->fStdinTTY)
-      {
+      //pTerm->fOutTTY = pTerm->fStdoutTTY;
+      //if (!pTerm->fOutTTY && pTerm->fStdinTTY)
+      //{
             pTerm->hFileno = pTerm->hFilenoStdin;
-            pTerm->fOutTTY = HB_TRUE;
-      }
+            //pTerm->fOutTTY = HB_TRUE;
+      //}
 
-      pTerm->fPosAnswer = pTerm->fOutTTY && !hb_ele_Param("NOPOS", NULL);
+      // gdje se cita odgovor na upit
+      //pTerm->fPosAnswer =  pTerm->fStdoutTTY; //pTerm->fOutTTY; //&& !hb_ele_Param("NOPOS", NULL);
+
       pTerm->fUTF8 = HB_FALSE;
 
       hb_fsSetDevMode(pTerm->hFileno, FD_BINARY);
@@ -2799,9 +2871,11 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
       pTerm->cdpBox = hb_cdpFind("EN");
 #endif
 
+      // add stdin u listu input file descriptora
       add_efds(pTerm, pTerm->hFilenoStdin, O_RDONLY, NULL, NULL);
       init_keys(pTerm);
       mouse_init(pTerm);
+      HB_TRACE(HB_TR_DEBUG, ("GTELE broj file descriptora=%d", pTerm->efds_size));
 }
 
 static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFilenoStdout, HB_FHANDLE hFilenoStderr)
@@ -2822,35 +2896,38 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
 
       hb_gt_ele_SetTerm(pTerm);
 
-/* SA_NOCLDSTOP in #if is a hack to detect POSIX compatible environment */
-#if defined(HB_OS_UNIX) && defined(SA_NOCLDSTOP)
+      /* SA_NOCLDSTOP in #if is a hack to detect POSIX compatible environment */
+      //#if defined(HB_OS_UNIX) && defined(SA_NOCLDSTOP)
 
-      if (pTerm->fStdinTTY)
-      {
-            struct sigaction act, old;
+      //if (pTerm->fStdinTTY)
+      //{
+      struct sigaction act, old;
 
-            s_fRestTTY = HB_TRUE;
+      //s_fRestTTY = HB_TRUE;
 
-            /* if( pTerm->saved_TIO.c_lflag & TOSTOP ) != 0 */
-            sigaction(SIGTTOU, NULL, &old);
-            memcpy(&act, &old, sizeof(struct sigaction));
-            act.sa_handler = sig_handler;
-            /* do not use SA_RESTART - new Linux kernels will repeat the operation */
+      /* if( pTerm->saved_TIO.c_lflag & TOSTOP ) != 0 */
+
+      /* signali out
+      sigaction(SIGTTOU, NULL, &old);
+      memcpy(&act, &old, sizeof(struct sigaction));
+      act.sa_handler = sig_handler;
+      // do not use SA_RESTART - new Linux kernels will repeat the operation 
 #if defined(SA_ONESHOT)
-            act.sa_flags = SA_ONESHOT;
+      act.sa_flags = SA_ONESHOT;
 #elif defined(SA_RESETHAND)
-            act.sa_flags = SA_RESETHAND;
+      act.sa_flags = SA_RESETHAND;
 #else
-            act.sa_flags = 0;
+      act.sa_flags = 0;
 #endif
-            sigaction(SIGTTOU, &act, 0);
+      sigaction(SIGTTOU, &act, 0);
+*/
 
-            //hernad tcgetattr( pTerm->hFilenoStdin, &pTerm->saved_TIO );
-            //hernad memcpy( &pTerm->curr_TIO, &pTerm->saved_TIO, sizeof( struct termios ) );
+      //hernad tcgetattr( pTerm->hFilenoStdin, &pTerm->saved_TIO );
+      //hernad memcpy( &pTerm->curr_TIO, &pTerm->saved_TIO, sizeof( struct termios ) );
 
-            /* atexit( restore_input_mode ); */
+      /* atexit( restore_input_mode ); */
 
-            /* hernad
+      /* hernad
       pTerm->curr_TIO.c_lflag &= ~( ECHO | ECHONL | ICANON | ISIG | IEXTEN );
       pTerm->curr_TIO.c_lflag |= NOFLSH;
       pTerm->curr_TIO.c_cflag &= ~( CSIZE | PARENB );
@@ -2859,42 +2936,62 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       pTerm->curr_TIO.c_oflag &= ~OPOST;
      */
 
-            /* Enable LF->CR+LF translation */
+      /* Enable LF->CR+LF translation */
 
-            //hernad  pTerm->curr_TIO.c_oflag = ONLCR | OPOST;
+      // pTerm->curr_TIO.c_oflag = ONLCR | OPOST;
+      // memset( pTerm->curr_TIO.c_cc, 0, NCCS );
 
-            //hernad memset( pTerm->curr_TIO.c_cc, 0, NCCS );
-
-            /* workaround for bug in some Linux kernels (i.e. 3.13.0-64-generic
+      /* workaround for bug in some Linux kernels (i.e. 3.13.0-64-generic
          *buntu) in which select() unconditionally accepts stdin for
          reading if c_cc[ VMIN ] = 0 [druzus] */
 
-            // hernad pTerm->curr_TIO.c_cc[ VMIN ] = 1;
+      // control characters for the terminal session
+      // line discipline code
+      // VMIN - character count 0 - 255 chars; read() is satisfied when VMIN characters have been transfered to the callers buffer
+      pTerm->curr_TIO.c_cc[VMIN] = 1;
+      pTerm->curr_TIO.c_cc[VTIME] = 0;
 
-            /* pTerm->curr_TIO.c_cc[ VMIN ] = 0; */
-            /* pTerm->curr_TIO.c_cc[ VTIME ] = 0; */
+      /* pTerm->curr_TIO.c_cc[ VMIN ] = 0; */
+      /* pTerm->curr_TIO.c_cc[ VTIME ] = 0; */
 
-            // hernad tcsetattr( pTerm->hFilenoStdin, TCSAFLUSH, &pTerm->curr_TIO );
-            act.sa_handler = SIG_DFL;
+      /*
+       http://unixwiz.net/techtips/termios-vmin-vtime.html
+      Function-key processing
+      On a regular keyboard, most keys send just one byte each, but almost all keyboards have special keys 
+      that send a sequence of characters at a time. Examples (from an ANSI keyboard)
+      ESC [ A       up arrow
+      ESC [ 5 ~     page up
+      ESC [ 18 ~    F7
+      and so on 
+      
+      From a strictly "string recognition" point of view, it's easy enough to translate "ESC [ A" into "up arrow" 
+      inside a program, but how does it tell the difference between "user typed up-arrow" 
+      and "user typed the ESCAPE key"? >>>>>>>> The difference is timing <<<<<<<<<<<<<<<<<<<< 
+      If the ESCAPE is immediately followed by the rest of the expected sequence, then it's a function key: otherwise it's just a plain ESCAPE.
+      */
 
-            sigaction(SIGTTOU, &old, NULL);
+      //tcsetattr(pTerm->hFilenoStdin, TCSAFLUSH, &pTerm->curr_TIO);
 
-            // hernad pTerm->fRestTTY = s_fRestTTY;
-      }
-      set_signals();
+      // ovo ne treba
+      //act.sa_handler = SIG_DFL;
+      //sigaction(SIGTTOU, &old, NULL);
+
+      //pTerm->fRestTTY = s_fRestTTY;
+      //}
+      //set_signals();
       if (!hb_gt_ele_getSize(pTerm, &iRows, &iCols))
       {
             iRows = 24;
             iCols = 80;
       }
-#endif
+      //#endif
 
       HB_GTSUPER_INIT(pGT, hFilenoStdin, hFilenoStdout, hFilenoStderr);
       HB_GTSELF_RESIZE(pGT, iRows, iCols);
       HB_GTSELF_SETFLAG(pGT, HB_GTI_COMPATBUFFER, HB_FALSE);
       HB_GTSELF_SETFLAG(pGT, HB_GTI_REDRAWMAX, 8);
       HB_GTSELF_SETFLAG(pGT, HB_GTI_STDOUTCON, pTerm->fStdoutTTY);
-      HB_GTSELF_SETFLAG(pGT, HB_GTI_STDERRCON, pTerm->fStderrTTY && pTerm->fOutTTY);
+      HB_GTSELF_SETFLAG(pGT, HB_GTI_STDERRCON, pTerm->fStderrTTY);
       pTerm->Init(pTerm);
       pTerm->SetTermMode(pTerm, 0);
 #ifdef HB_GTELE_CHK_EXACT_POS
@@ -2903,8 +3000,8 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       pTerm->fUTF8 = hb_trm_isUTF8(pTerm);
 #else
       pTerm->fUTF8 = hb_trm_isUTF8(pTerm);
-      if (pTerm->fPosAnswer)
-            HB_GTSELF_SETPOS(pGT, pTerm->iRow, pTerm->iCol);
+      //if (pTerm->fPosAnswer)
+      HB_GTSELF_SETPOS(pGT, pTerm->iRow, pTerm->iCol);
 #endif
       if (!pTerm->fUTF8)
       {
@@ -2914,8 +3011,8 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
             hb_gt_ele_SetDispTrans(pTerm, 0);
       }
       HB_GTSELF_SETBLINK(pGT, HB_TRUE);
-      if (pTerm->fOutTTY)
-            HB_GTSELF_SEMICOLD(pGT);
+      //if (pTerm->fOutTTY)
+      HB_GTSELF_SEMICOLD(pGT);
 }
 
 static void hb_gt_ele_Exit(PHB_GT pGT)
@@ -2936,7 +3033,7 @@ static void hb_gt_ele_Exit(PHB_GT pGT)
 
             pTerm->Exit(pTerm);
             hb_gt_ele_ResetPalette(pTerm);
-            if (pTerm->fOutTTY && pTerm->iCol > 0)
+            if ( pTerm->iCol > 0)
                   hb_gt_ele_termOut(pTerm, "\r\n", 2);
             hb_gt_ele_termFlush(pTerm);
       }
@@ -2946,10 +3043,9 @@ static void hb_gt_ele_Exit(PHB_GT pGT)
       if (pTerm)
       {
             /* hernad
-#if defined( HB_OS_UNIX )
-      if( pTerm->fRestTTY )
+
+      //if( pTerm->fRestTTY )
          tcsetattr( pTerm->hFilenoStdin, TCSANOW, &pTerm->saved_TIO );
-#endif
 */
 
             if (pTerm->nLineBufSize > 0)
@@ -2974,10 +3070,12 @@ static void hb_gt_ele_mouse_Show(PHB_GT pGT)
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_mouse_Show(%p)", pGT));
 
       pTerm = HB_GTELE_GET(pGT);
+      /*      
 #if defined(HB_HAS_GPM)
       if (pTerm->mouse_type & MOUSE_GPM)
             gpm_visiblepointer = 1;
 #endif
+*/
       disp_mousecursor(pTerm);
 }
 
@@ -2985,14 +3083,16 @@ static void hb_gt_ele_mouse_Hide(PHB_GT pGT)
 {
       HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_mouse_Hide(%p)", pGT));
 
+      /*
 #if defined(HB_HAS_GPM)
       if (HB_GTELE_GET(pGT)->mouse_type & MOUSE_GPM)
       {
             gpm_visiblepointer = 0;
       }
 #else
+*/
       HB_SYMBOL_UNUSED(pGT);
-#endif
+      //#endif
 }
 
 static void hb_gt_ele_mouse_GetPos(PHB_GT pGT, int *piRow, int *piCol)
@@ -3057,7 +3157,7 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
 {
       int iKey;
 
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_ReadKey(%p,%d)", pGT, iEventMask));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_ReadKey(%p,%d)", pGT, iEventMask));
 
       HB_SYMBOL_UNUSED(iEventMask);
 
@@ -3070,10 +3170,15 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
             if (hb_gt_ele_getSize(HB_GTELE_GET(pGT), &iRows, &iCols))
             {
                   HB_GTSELF_RESIZE(pGT, iRows, iCols);
-                  iKey = HB_INKEY_NEW_EVENT(HB_K_RESIZE);
+                  iKey = HB_INKEY_NEW_EVENT(HB_K_RESIZE); // emituje na osnovu inkey event
             }
             else
                   iKey = 0;
+      }
+
+      if (iKey)
+      {
+            HB_TRACE(HB_TR_DEBUG, ("GTELE read_key: %c", iKey));
       }
 
       return iKey;
@@ -3101,7 +3206,7 @@ static void hb_gt_ele_Bell(PHB_GT pGT)
 
 static const char *hb_gt_ele_Version(PHB_GT pGT, int iType)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_Version(%p,%d)", pGT, iType));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_Version(%p,%d)", pGT, iType));
 
       HB_SYMBOL_UNUSED(pGT);
 
@@ -3115,7 +3220,7 @@ static HB_BOOL hb_gt_ele_Suspend(PHB_GT pGT)
 {
       PHB_GTELE pTerm;
 
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_Suspend(%p)", pGT));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_Suspend(%p)", pGT));
 
       pTerm = HB_GTELE_GET(pGT);
       if (pTerm->mouse_type & MOUSE_XTERM)
@@ -3136,7 +3241,7 @@ static HB_BOOL hb_gt_ele_Resume(PHB_GT pGT)
       PHB_GTELE pTerm;
       int iHeight, iWidth;
 
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_Resume(%p)", pGT));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_Resume(%p)", pGT));
 
       pTerm = HB_GTELE_GET(pGT);
 
@@ -3194,7 +3299,7 @@ static void hb_gt_ele_Scroll(PHB_GT pGT, int iTop, int iLeft, int iBottom, int i
 
 static HB_BOOL hb_gt_ele_SetMode(PHB_GT pGT, int iRows, int iCols)
 {
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_SetMode(%p,%d,%d)", pGT, iRows, iCols));
+      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_SetMode(%d,%d)", iRows, iCols));
 
       if (iRows > 0 && iCols > 0)
       {
@@ -3514,25 +3619,23 @@ static HB_BOOL hb_gt_ele_Info(PHB_GT pGT, int iType, PHB_GT_INFO pInfo)
             pInfo->pResult = hb_itemPutL(pInfo->pResult, HB_TRUE);
             break;
 
-
       case HB_GTI_DESKTOPROWS:
       {
- 
-         pTerm->iMaxRows = hb_itemGetNI( pInfo->pNewVal);
-         pInfo->pResult = hb_itemPutNI( pInfo->pResult, pTerm->iMaxRows);
-         break;
+
+            pTerm->iMaxRows = hb_itemGetNI(pInfo->pNewVal);
+            pInfo->pResult = hb_itemPutNI(pInfo->pResult, pTerm->iMaxRows);
+            break;
       }
 
       case HB_GTI_DESKTOPCOLS:
       {
 
-         pTerm->iMaxCols = hb_itemGetNI( pInfo->pNewVal);
-         pInfo->pResult = hb_itemPutNI( pInfo->pResult, pTerm->iMaxCols);
+            pTerm->iMaxCols = hb_itemGetNI(pInfo->pNewVal);
+            pInfo->pResult = hb_itemPutNI(pInfo->pResult, pTerm->iMaxCols);
 
-         HB_GTSELF_RESIZE(pGT, pTerm->iMaxRows, pTerm->iMaxCols );     
-         break;
+            HB_GTSELF_RESIZE(pGT, pTerm->iMaxRows, pTerm->iMaxCols);
+            break;
       }
-
 
       case HB_GTI_CLOSABLE:
             pInfo->pResult = hb_itemPutL(pInfo->pResult, HB_TRUE);

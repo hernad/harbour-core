@@ -2318,15 +2318,6 @@ HB_USHORT hb_fsRead( HB_FHANDLE hFileHandle, void * pBuff, HB_USHORT uiCount )
 
       uiRead = bResult ? ( HB_USHORT ) dwRead : 0;
    }
-#elif defined( HB_OS_OS2 )
-   {
-      ULONG ulRead = 0;
-      APIRET ret;
-
-      ret = DosRead( hFileHandle, pBuff, uiCount, &ulRead );
-      hb_fsSetError( ( HB_ERRCODE ) ret );
-      uiRead = ret == NO_ERROR ? ( HB_USHORT ) ulRead : 0;
-   }
 #else
    {
       long lRead;

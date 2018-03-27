@@ -1,5 +1,13 @@
 #include "hbtrace.ch"
 #include "hbgtinfo.ch"
+#include "inkey.ch"
+
+
+Set( _SET_OSCODEPAGE, hb_cdpOS() )
+hb_cdpSelect( "SL852" )
+
+Set( _SET_EVENTMASK, INKEY_ALL )
+MSetCursor( .T. )
 
 
 ? "export HB_TR_LEVEL=DEBUG"

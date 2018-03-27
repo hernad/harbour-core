@@ -1130,7 +1130,7 @@ static int get_inch( PHB_GTTRM pTerm, int milisec )
          }
          else if( pTerm->event_fds[ i ]->status == EVTFDSTAT_STOP &&
                   pTerm->event_fds[ i ]->eventFunc == NULL )
-            nNext = HB_INKEY_NEW_EVENT( HB_K_TERMINATE );
+            nNext = HB_INKEY_NEW_EVENT( HB_K_TERMINATE ); // emituje inkey event
       }
 
       counter = pTerm->key_counter;
@@ -1149,7 +1149,7 @@ static int get_inch( PHB_GTTRM pTerm, int milisec )
                   if( n == 0 )
                   {
                      pTerm->event_fds[ i ]->status = EVTFDSTAT_STOP;
-                     nRet = HB_INKEY_NEW_EVENT( HB_K_CLOSE );
+                     nRet = HB_INKEY_NEW_EVENT( HB_K_CLOSE ); // emituje inkey event
                   }
                }
                else if( nRet == 0 && counter == pTerm->key_counter )
@@ -1555,7 +1555,7 @@ static void hb_gt_trm_LinuxSetPalette( PHB_GTTRM pTerm, int iIndexFrom, int iInd
 
 static void hb_gt_trm_LinuxResetPalette( PHB_GTTRM pTerm )
 {
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_trm_LinuxResetPalette(%p)", pTerm ) );
+   //HB_TRACE( HB_TR_DEBUG, ( "hb_gt_trm_LinuxResetPalette(%p)", pTerm ) );
 
    hb_gt_trm_termOut( pTerm, "\033]R", 3 );
 }
@@ -3591,7 +3591,7 @@ static int hb_gt_trm_ReadKey( PHB_GT pGT, int iEventMask )
       if( hb_gt_trm_getSize( HB_GTTRM_GET( pGT ), &iRows, &iCols ) )
       {
          HB_GTSELF_RESIZE( pGT, iRows, iCols );
-         iKey = HB_INKEY_NEW_EVENT( HB_K_RESIZE );
+         iKey = HB_INKEY_NEW_EVENT( HB_K_RESIZE ); // emituje inkey event
       }
       else
          iKey = 0;
