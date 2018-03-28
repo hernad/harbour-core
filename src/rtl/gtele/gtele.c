@@ -79,9 +79,11 @@
 #if defined(HB_OS_WIN)
 #include <windows.h>
 #endif
-#if (defined(_MSC_VER)
-#include <conio.h>
-#endif
+
+//#if (defined(_MSC_VER)
+//#include <conio.h>
+//#endif
+
 #endif
 
 /*
@@ -2900,7 +2902,7 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       //#if defined(HB_OS_UNIX) && defined(SA_NOCLDSTOP)
 
       //if (pTerm->fStdinTTY)
-      //{
+      //
       //struct sigaction act, old;
 
       //s_fRestTTY = HB_TRUE;
