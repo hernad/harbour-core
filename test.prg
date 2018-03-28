@@ -4,7 +4,7 @@
 
 
 Set( _SET_OSCODEPAGE, hb_cdpOS() )
-hb_cdpSelect( "SL852" )
+hb_cdpSelect( "SL852" ) // šŠćĆđĐžŽ
 
 Set( _SET_EVENTMASK, INKEY_ALL )
 MSetCursor( .T. )
