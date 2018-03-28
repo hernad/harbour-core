@@ -2901,7 +2901,7 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
 
       //if (pTerm->fStdinTTY)
       //{
-      struct sigaction act, old;
+      //struct sigaction act, old;
 
       //s_fRestTTY = HB_TRUE;
 
