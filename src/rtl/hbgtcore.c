@@ -2642,7 +2642,7 @@ static int hb_gt_def_InkeyFilter( PHB_GT pGT, int iKey, int iEventMask )
 {
    int iMask;
 
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyFilter(%p,%d,%d)", pGT, iKey, iEventMask ) );
+   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyFilter iKey=%d, iEventMask=%d)", iKey, iEventMask ) );
 
    HB_SYMBOL_UNUSED( pGT );
 
@@ -2833,7 +2833,6 @@ static void hb_gt_def_InkeyIns( PHB_GT pGT, int iKey )
 /* helper internal function */
 static HB_BOOL hb_gt_def_InkeyNextCheck( PHB_GT pGT, int iEventMask, int * iKey )
 {
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyNextCheck(%p,%p)", pGT, iKey ) );
 
    if( pGT->StrBuffer )
    {
@@ -2868,9 +2867,11 @@ static void hb_gt_def_InkeyPollDo( PHB_GT pGT )
 {
    int iKey;
 
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyPollDo(%p)", pGT ) );
+   //HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyPollDo(%p)", pGT ) );
 
    iKey = HB_GTSELF_READKEY( pGT, HB_INKEY_ALL | HB_INKEY_EXT );
+
+   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyPollDo iKey=%d inkey_value=%c", iKey, HB_INKEY_VALUE( iKey ) ) );
 
    if( iKey )
    {
@@ -2943,11 +2944,10 @@ static int hb_gt_def_InkeyNext( PHB_GT pGT, int iEventMask )
 {
    int iKey = 0;
 
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyNext(%p,%d)", pGT, iEventMask ) );
-
    HB_GTSELF_INKEYPOLL( pGT );
    hb_gt_def_InkeyNextCheck( pGT, iEventMask, &iKey );
 
+   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyNext iKey=%d", iKey ) );
    return iKey;
 }
 

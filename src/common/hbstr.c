@@ -248,7 +248,7 @@ int hb_stricmp( const char * s1, const char * s2 )
 {
    int rc = 0, c1;
 
-   HB_TRACE( HB_TR_DEBUG, ( "hb_stricmp(%s, %s)", s1, s2 ) );
+   //HB_TRACE( HB_TR_DEBUG, ( "hb_stricmp(%s, %s)", s1, s2 ) );
 
    do
    {

@@ -28,6 +28,8 @@ inkey(0)
 
 hb_gtInfo( HB_GTI_WINTITLE, "TTTTTITLE XTERMJS" )
 
+Alert( "hello world" )
+
 CLEAR SCREEN
 Tone( 300, 2)
 SET BELL ON

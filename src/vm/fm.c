@@ -680,7 +680,7 @@ void * hb_xgrab( HB_SIZE nSize )         /* allocates fixed memory, exits on fai
 {
    PHB_MEMINFO pMem;
 
-   HB_TRACE_FM( HB_TR_DEBUG, ( "hb_xgrab(%" HB_PFS "u)", nSize ) );
+   //HB_TRACE_FM( HB_TR_DEBUG, ( "hb_xgrab(%" HB_PFS "u)", nSize ) );
 
    if( nSize == 0 )
       hb_errInternal( HB_EI_XGRABNULLSIZE, NULL, NULL, NULL );
@@ -770,16 +770,8 @@ void * hb_xgrab( HB_SIZE nSize )         /* allocates fixed memory, exits on fai
 
 void * hb_xrealloc( void * pMem, HB_SIZE nSize )       /* reallocates memory */
 {
-   HB_TRACE_FM( HB_TR_DEBUG, ( "hb_xrealloc(%p, %" HB_PFS "u)", pMem, nSize ) );
+   //HB_TRACE_FM( HB_TR_DEBUG, ( "hb_xrealloc(%p, %" HB_PFS "u)", pMem, nSize ) );
 
-#if 0
-   /* disabled to make hb_xrealloc() ANSI-C realloc() compatible */
-   if( ! pMem )
-      hb_errInternal( HB_EI_XREALLOCNULL, NULL, NULL, NULL );
-
-   if( nSize == 0 )
-      hb_errInternal( HB_EI_XREALLOCNULLSIZE, NULL, NULL, NULL );
-#endif
 
 #ifdef HB_FM_STATISTICS
    if( pMem == NULL )

@@ -19,6 +19,7 @@ bash -xc "pacman --noconfirm -S curl zip unzip"
 
 rem Install required tools
 REM bash -xlc "pacman --noconfirm -S --needed base-devel"
+REM bash -xlc "pacman --noconfirm -S --needed mingw-w64-i686-toolchain git"
 
 rem Install the relevant native dependencies
 REM bash -xlc "pacman --noconfirm -S --needed mingw-w64-%MSYS2_ARCH%-json-c"
