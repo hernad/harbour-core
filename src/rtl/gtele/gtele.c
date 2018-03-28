@@ -343,7 +343,7 @@ typedef struct _HB_GTELE
       int terminal_ext;
 
       //#if defined( HB_OS_UNIX )
-      struct termios saved_TIO /* external environment termios */, curr_TIO;
+      //struct termios saved_TIO /* external environment termios */, curr_TIO;
       //HB_BOOL fRestTTY;
       //#endif
 
@@ -2948,8 +2948,8 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       // control characters for the terminal session
       // line discipline code
       // VMIN - character count 0 - 255 chars; read() is satisfied when VMIN characters have been transfered to the callers buffer
-      pTerm->curr_TIO.c_cc[VMIN] = 1;
-      pTerm->curr_TIO.c_cc[VTIME] = 0;
+      //pTerm->curr_TIO.c_cc[VMIN] = 1;
+      //pTerm->curr_TIO.c_cc[VTIME] = 0;
 
       /* pTerm->curr_TIO.c_cc[ VMIN ] = 0; */
       /* pTerm->curr_TIO.c_cc[ VTIME ] = 0; */
