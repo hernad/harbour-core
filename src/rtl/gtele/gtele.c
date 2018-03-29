@@ -1833,7 +1833,7 @@ static HB_BOOL hb_gt_ele_AnsiGetCursorPos(PHB_GTELE pTerm, int *iRow, int *iCol,
       //if (pTerm->fPosAnswer)
       //{
       char rdbuf[64];
-      int i, j, n, d, y, x, z;
+      int i, j, n, d, y, x, z, q;
       HB_MAXUINT end_timer, cur_time;
 
       // CSI Ps n - device status report
@@ -1850,7 +1850,7 @@ static HB_BOOL hb_gt_ele_AnsiGetCursorPos(PHB_GTELE pTerm, int *iRow, int *iCol,
 
       /* wait up to 2 seconds for answer */
       end_timer = hb_dateMilliSeconds() + 2000;
-      for (;;)
+      for (q=1; q++; q<10)
       {
             /* loking for cursor position in "\x1b[%d;%dR" */
             while (j < n && rdbuf[j] != '\x1b')
