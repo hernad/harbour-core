@@ -2874,7 +2874,9 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
 
       hb_fsSetDevMode(pTerm->hFileno, FD_BINARY);
 
+#if defined( HB_OS_UNIX )
       hb_gt_chrmapinit(pTerm->charmap, szTerm, pTerm->terminal_type == TERM_XTERM);
+#endif
 
 #ifndef HB_GT_UNICODE_BUF
       pTerm->cdpHost = pTerm->cdpIn = NULL;
