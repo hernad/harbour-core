@@ -210,7 +210,8 @@ static HB_GT_FUNCS SuperTable;
 #define K_MOUSETERM 0x10004
 #define K_RESIZE 0x10005
 
-#if defined(HB_OS_UNIX)
+
+//#if defined(HB_OS_UNIX)
 
 #define TIMEVAL_GET(tv) gettimeofday(&(tv), NULL)
 #define TIMEVAL_LESS(tv1, tv2) (((tv1).tv_sec == (tv2).tv_sec) ? ((tv1).tv_usec < (tv2).tv_usec) : ((tv1).tv_sec < (tv2).tv_sec))
@@ -225,7 +226,9 @@ static HB_GT_FUNCS SuperTable;
             }                                                                     \
       } while (0)
 
-#else
+//#else
+
+/*
 
 #define TIMEVAL_GET(tv)              \
       do                             \
@@ -239,8 +242,8 @@ static HB_GT_FUNCS SuperTable;
             (dst) = (src) + n / 1000; \
       } while (0)
 
-#endif
-
+//#endif
+*/
 typedef struct
 {
       int fd;
@@ -842,11 +845,11 @@ static void chk_mevtdblck(PHB_GTELE pTerm)
 
       if (newbuttons != 0)
       {
-#if defined(HB_OS_UNIX)
+//#if defined(HB_OS_UNIX)
             struct timeval tv;
-#else
-            double tv;
-#endif
+//#else
+//            double tv;
+//#endif
 
             TIMEVAL_GET(tv);
             if (newbuttons & M_BUTTON_LEFT)
@@ -1079,6 +1082,7 @@ static int get_inch(PHB_GTELE pTerm, int milisec)
 
       if (milisec == 0)
             ptv = NULL;
+            //§tv = 0;
       else
       {
             if (milisec < 0)
@@ -1086,6 +1090,7 @@ static int get_inch(PHB_GTELE pTerm, int milisec)
             tv.tv_sec = (milisec / 1000);
             tv.tv_usec = (milisec % 1000) * 1000;
             ptv = &tv;
+            //tv = milisec;
       }
 
       while (nRet == 0 && lRead == 0)
@@ -1120,6 +1125,9 @@ static int get_inch(PHB_GTELE pTerm, int milisec)
             }
 
             counter = pTerm->key_counter;
+            // https://www.gnu.org/software/libc/manual/html_node/Waiting-for-I_002fO.html
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/ms740141(v=vs.85).aspx
+
             if (select(n + 1, &rfds, &wfds, NULL, ptv) > 0)
             {
                   for (i = 0; i < pTerm->efds_no; i++)
@@ -3666,6 +3674,7 @@ static HB_BOOL hb_gt_FuncInit(PHB_GT_FUNCS pFuncTable)
       pFuncTable->SetBlink = hb_gt_ele_SetBlink;
       pFuncTable->SetDispCP = hb_gt_ele_SetDispCP;
 #ifndef HB_GT_UNICODE_BUF
+      HB_TRACE( HB_TR_DEBUG, ("UNICODE_BUF YES") );
       pFuncTable->SetKeyCP = hb_gt_ele_SetKeyCP;
 #endif
       pFuncTable->Tone = hb_gt_ele_Tone;

@@ -35,7 +35,7 @@ int       (* InkeyLast) ( HB_GT_PTR, int iEventMask );
 hbgtcore.c:
 
 
-/* Wait for keyboard input */
+// Wait for keyboard input 
 static int hb_gt_def_InkeyGet( PHB_GT pGT, HB_BOOL fWait, double dSeconds, int iEventMask )
 {
    HB_MAXUINT end_timer;
@@ -56,7 +56,7 @@ static int hb_gt_def_InkeyGet( PHB_GT pGT, HB_BOOL fWait, double dSeconds, int i
          return iKey;
    }
 
-   /* Wait forever ?, Use fixed value 100 for strict Clipper compatibility */
+   // Wait forever ?, Use fixed value 100 for strict Clipper compatibility
    if( fWait && dSeconds * 100 >= 1 )
       end_timer = hb_dateMilliSeconds() + ( HB_MAXUINT ) ( dSeconds * 1000 );
    else
@@ -80,7 +80,7 @@ static int hb_gt_def_InkeyGet( PHB_GT pGT, HB_BOOL fWait, double dSeconds, int i
             break;
       }
 
-      /* immediately break if a VM request is pending. */
+      // immediately break if a VM request is pending.
       if( ! fWait || hb_vmRequestQuery() != 0 ||
                     ( end_timer != 0 && end_timer <= hb_dateMilliSeconds() ) )
          break;
@@ -98,7 +98,7 @@ static int hb_gt_def_InkeyGet( PHB_GT pGT, HB_BOOL fWait, double dSeconds, int i
    return fPop ? pGT->inkeyLast : 0;
 }
 
-/* Return the value of the last key that was extracted */
+// Return the value of the last key that was extracted
 static int hb_gt_def_InkeyLast( PHB_GT pGT, int iEventMask )
 {
    HB_TRACE( HB_TR_DEBUG, ( "hb_gt_def_InkeyLast(%p,%d)", pGT, iEventMask ) );
@@ -108,7 +108,7 @@ static int hb_gt_def_InkeyLast( PHB_GT pGT, int iEventMask )
    return hb_gt_def_InkeyFilter( pGT, pGT->inkeyLast, iEventMask );
 }
 
-/* Set LastKey() value and return previous value */
+// Set LastKey() value and return previous value
 static int hb_gt_def_InkeySetLast( PHB_GT pGT, int iKey )
 {
    int iLast;
