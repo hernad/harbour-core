@@ -2881,6 +2881,9 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
 #ifndef HB_GT_UNICODE_BUF
       pTerm->cdpHost = pTerm->cdpIn = NULL;
       pTerm->cdpBox = hb_cdpFind("EN");
+      HB_TRACE(HB_TR_DEBUG, ("UNICODE_BUF ON"));
+#else
+      HB_TRACE(HB_TR_DEBUG, ("UNICODE_BUF OFF"));
 #endif
 
       // add stdin u listu input file descriptora
