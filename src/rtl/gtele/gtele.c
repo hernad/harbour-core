@@ -2884,6 +2884,9 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
       pTerm->fUTF8 = HB_FALSE;
 
       hb_fsSetDevMode(pTerm->hFilenoStdin, FD_BINARY);
+      hb_fsSetDevMode(pTerm->hFilenoStdOut, FD_BINARY);
+
+
 
 #if defined( HB_OS_UNIX )
       hb_gt_chrmapinit(pTerm->charmap, szTerm, pTerm->terminal_type == TERM_XTERM);
@@ -2909,7 +2912,7 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       int iRows = 24, iCols = 80;
       PHB_GTELE pTerm;
 
-      HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_Init(%p,%p,%p,%p)", pGT, (void *)(HB_PTRUINT)hFilenoStdin, (void *)(HB_PTRUINT)hFilenoStdout, (void *)(HB_PTRUINT)hFilenoStderr));
+      //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_Init(%p,%p,%p,%p)", pGT, (void *)(HB_PTRUINT)hFilenoStdin, (void *)(HB_PTRUINT)hFilenoStdout, (void *)(HB_PTRUINT)hFilenoStderr));
 
       HB_GTLOCAL(pGT) = pTerm = (PHB_GTELE)hb_xgrabz(sizeof(HB_GTELE));
 
@@ -3020,12 +3023,13 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       HB_GTSELF_SETFLAG(pGT, HB_GTI_STDERRCON, pTerm->fStderrTTY);
 
 #if defined( HB_OS_WIN )
-      SetConsoleMode( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), 0x0000 );
+ //     SetConsoleMode( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), 0x0000 );
 #endif
 
 
       pTerm->Init(pTerm);
       pTerm->SetTermMode(pTerm, 0);
+
 #ifdef HB_GTELE_CHK_EXACT_POS
       if (pTerm->GetCursorPos(pTerm, &pTerm->iRow, &pTerm->iCol, NULL))
             HB_GTSELF_SETPOS(pGT, pTerm->iRow, pTerm->iCol);
