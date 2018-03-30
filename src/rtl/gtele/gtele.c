@@ -294,7 +294,7 @@ typedef struct _HB_GTELE
 {
       PHB_GT pGT;
 
-      HB_FHANDLE hFileno;
+      //HB_FHANDLE hFileno;
       HB_FHANDLE hFilenoStdin;
       HB_FHANDLE hFilenoStdout;
       HB_FHANDLE hFilenoStderr;
@@ -571,15 +571,18 @@ static int hb_gt_ele_getSize(PHB_GTELE pTerm, int *piRows, int *piCols)
       return *piRows > 0 && *piCols > 0;
 }
 
+
 static void hb_gt_ele_termFlush(PHB_GTELE pTerm)
 {
       if (pTerm->iOutBufIndex > 0)
       {
-            hb_fsWriteLarge(pTerm->hFileno, pTerm->pOutBuf, pTerm->iOutBufIndex);
+            hb_fsWriteLarge(pTerm->hFilenoStdout, pTerm->pOutBuf, pTerm->iOutBufIndex);
             HB_TRACE(HB_TR_DEBUG, ("GTELE OUTPUT %s", pTerm->pOutBuf)); 
             pTerm->iOutBufIndex = 0;
       }
 }
+
+#if defined(HB_OS_UNIX)
 
 
 static void hb_gt_ele_termOut(PHB_GTELE pTerm, const char *pStr, int iLen)
@@ -601,6 +604,14 @@ static void hb_gt_ele_termOut(PHB_GTELE pTerm, const char *pStr, int iLen)
             }
       }
 }
+#else
+
+static void hb_gt_std_termOut( PHB_GTELE pTerm, const char * szStr, HB_SIZE nLen )
+{
+   hb_fsWriteLarge( pTerm->hFilenoStdout, szStr, nLen );
+}
+
+#endif
 
 
 /*
@@ -2858,12 +2869,12 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
       pTerm->fStdoutTTY = hb_fsIsDevice(pTerm->hFilenoStdout);
       pTerm->fStderrTTY = hb_fsIsDevice(pTerm->hFilenoStderr);
 
-      pTerm->hFileno = pTerm->hFilenoStdout;
+      //pTerm->hFileno = pTerm->hFilenoStdout;
 
       //pTerm->fOutTTY = pTerm->fStdoutTTY;
       //if (!pTerm->fOutTTY && pTerm->fStdinTTY)
       //{
-            pTerm->hFileno = pTerm->hFilenoStdin;
+        //    pTerm->hFileno = pTerm->hFilenoStdin;
             //pTerm->fOutTTY = HB_TRUE;
       //}
 
@@ -2872,7 +2883,7 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
 
       pTerm->fUTF8 = HB_FALSE;
 
-      hb_fsSetDevMode(pTerm->hFileno, FD_BINARY);
+      hb_fsSetDevMode(pTerm->hFilenoStdin, FD_BINARY);
 
 #if defined( HB_OS_UNIX )
       hb_gt_chrmapinit(pTerm->charmap, szTerm, pTerm->terminal_type == TERM_XTERM);
