@@ -2884,7 +2884,7 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
       pTerm->fUTF8 = HB_FALSE;
 
       //hb_fsSetDevMode(pTerm->hFilenoStdin, FD_BINARY);
-      //hb_fsSetDevMode(pTerm->hFilenoStdout, FD_BINARY);
+      hb_fsSetDevMode(pTerm->hFilenoStdout, FD_BINARY);
 
 
 
