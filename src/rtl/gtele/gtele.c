@@ -3216,7 +3216,7 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
 
    HB_SYMBOL_UNUSED( iEventMask );
 
-   pGTELE = HB_GTSTD_GET( pGT );
+   pGTELE = HB_GTELE_GET( pGT );
 
 //pTerm->hFilenoStdin
 
