@@ -3234,12 +3234,13 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
             if( hb_fsRead( pTerm->hFilenoStdin, &bChar, 1 ) == 1 )
                ch = bChar;
          }
-         else /* Remove from the input queue */
+         else // Remove from the input queue
             ReadConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), &ir, 1, &dwEvents );
       }
  
    }
 */
+
    if( ch )
    {
       int u = HB_GTSELF_KEYTRANS( pGT, ch );
