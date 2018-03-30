@@ -3216,17 +3216,14 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
 
    pTerm = HB_GTELE_GET( pGT );
 
-   if( ! pTerm->fStdinTTY )
-   {
-      HB_TRACE( HB_TR_DEBUG, ( "windows read_key STDINTTY OFF" ) );
-      HB_BYTE bChar;
-      if( hb_fsRead( pTerm->hFilenoStdin, &bChar, 1 ) == 1 )
-         ch = bChar;
-   }
-   else if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), 0 ) == WAIT_OBJECT_0 )
-   {
+   HB_BYTE bChar;
+   if( hb_fsRead( pTerm->hFilenoStdin, &bChar, 1 ) == 1 )
+      ch = bChar;
 
-      HB_TRACE( HB_TR_DEBUG, ( "windows read_key STDINTTY ON" ) );
+
+/*
+   if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), 0 ) == WAIT_OBJECT_0 )
+   {
       INPUT_RECORD  ir;
       DWORD         dwEvents;
       while( PeekConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), &ir, 1, &dwEvents ) && dwEvents == 1 )
@@ -3240,8 +3237,9 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
          else /* Remove from the input queue */
             ReadConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), &ir, 1, &dwEvents );
       }
+ 
    }
-
+*/
    if( ch )
    {
       int u = HB_GTSELF_KEYTRANS( pGT, ch );
