@@ -3212,8 +3212,6 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
    PHB_GTELE pTerm;
    int ch = 0;
 
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_ele_ReadKey(%p,%d)", pGT, iEventMask ) );
-
    HB_SYMBOL_UNUSED( iEventMask );
 
    pTerm = HB_GTELE_GET( pGT );
@@ -3248,6 +3246,8 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
       if( u )
          ch = HB_INKEY_NEW_UNICODE( u );
    }
+
+   HB_TRACE( HB_TR_DEBUG, ( "windows read_key %d %c", ch, ch) );
 
    return ch;
 #endif
