@@ -606,7 +606,7 @@ static void hb_gt_ele_termOut(PHB_GTELE pTerm, const char *pStr, int iLen)
 }
 #else
 
-static void hb_gt_std_termOut( PHB_GTELE pTerm, const char * szStr, HB_SIZE nLen )
+static void hb_gt_ele_termOut( PHB_GTELE pTerm, const char * szStr, HB_SIZE nLen )
 {
    hb_fsWriteLarge( pTerm->hFilenoStdout, szStr, nLen );
 }
