@@ -3009,7 +3009,7 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       HB_GTSELF_SETFLAG(pGT, HB_GTI_STDERRCON, pTerm->fStderrTTY);
 
 #if defined( HB_OS_WIN )
-      SetConsoleMode( ( HANDLE ) hb_fsGetOsHandle( pGTELE->hFilenoStdin ), 0x0000 );
+      SetConsoleMode( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), 0x0000 );
 #endif
 
 
@@ -3209,38 +3209,36 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
 
 #elif defined( HB_OS_WIN )
 
-   PHB_GTELE pGTELE;
+   PHB_GTELE pTerm;
    int ch = 0;
 
    HB_TRACE( HB_TR_DEBUG, ( "hb_gt_ele_ReadKey(%p,%d)", pGT, iEventMask ) );
 
    HB_SYMBOL_UNUSED( iEventMask );
 
-   pGTELE = HB_GTELE_GET( pGT );
+   pTerm = HB_GTELE_GET( pGT );
 
-//pTerm->hFilenoStdin
-
-   if( ! pGTELE->fStdinTTY )
+   if( ! pTerm->fStdinTTY )
    {
       HB_BYTE bChar;
-      if( hb_fsRead( pGTELE->hFilenoStdin, &bChar, 1 ) == 1 )
+      if( hb_fsRead( pTerm->hFilenoStdin, &bChar, 1 ) == 1 )
          ch = bChar;
    }
-   else if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pGTELE->hFilenoStdin ), 0 ) == WAIT_OBJECT_0 )
+   else if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), 0 ) == WAIT_OBJECT_0 )
    {
 
       INPUT_RECORD  ir;
       DWORD         dwEvents;
-      while( PeekConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pGTELE->hFilenoStdin ), &ir, 1, &dwEvents ) && dwEvents == 1 )
+      while( PeekConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), &ir, 1, &dwEvents ) && dwEvents == 1 )
       {
          if( ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown )
          {
             HB_BYTE bChar;
-            if( hb_fsRead( pGTELE->hFilenoStdin, &bChar, 1 ) == 1 )
+            if( hb_fsRead( pTerm->hFilenoStdin, &bChar, 1 ) == 1 )
                ch = bChar;
          }
          else /* Remove from the input queue */
-            ReadConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pGTELE->hFilenoStdin ), &ir, 1, &dwEvents );
+            ReadConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), &ir, 1, &dwEvents );
       }
    }
 
