@@ -2883,8 +2883,8 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
 
       pTerm->fUTF8 = HB_FALSE;
 
-      hb_fsSetDevMode(pTerm->hFilenoStdin, FD_BINARY);
-      hb_fsSetDevMode(pTerm->hFilenoStdout, FD_BINARY);
+      //hb_fsSetDevMode(pTerm->hFilenoStdin, FD_BINARY);
+      //hb_fsSetDevMode(pTerm->hFilenoStdout, FD_BINARY);
 
 
 
@@ -3231,12 +3231,13 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
 
    pTerm = HB_GTELE_GET( pGT );
 
+/*
    HB_BYTE bChar;
    if( hb_fsRead( pTerm->hFilenoStdin, &bChar, 1 ) == 1 )
       ch = bChar;
+*/
 
 
-/*
    if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), 0 ) == WAIT_OBJECT_0 )
    {
       INPUT_RECORD  ir;
@@ -3254,7 +3255,6 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
       }
  
    }
-*/
 
    if( ch )
    {
