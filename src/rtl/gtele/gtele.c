@@ -3218,6 +3218,7 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
 
    if( ! pTerm->fStdinTTY )
    {
+      HB_TRACE( HB_TR_DEBUG, ( "windows read_key STDINTTY OFF" ) );
       HB_BYTE bChar;
       if( hb_fsRead( pTerm->hFilenoStdin, &bChar, 1 ) == 1 )
          ch = bChar;
@@ -3225,6 +3226,7 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
    else if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), 0 ) == WAIT_OBJECT_0 )
    {
 
+      HB_TRACE( HB_TR_DEBUG, ( "windows read_key STDINTTY ON" ) );
       INPUT_RECORD  ir;
       DWORD         dwEvents;
       while( PeekConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pTerm->hFilenoStdin ), &ir, 1, &dwEvents ) && dwEvents == 1 )
@@ -3247,7 +3249,8 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
          ch = HB_INKEY_NEW_UNICODE( u );
    }
 
-   HB_TRACE( HB_TR_DEBUG, ( "windows read_key %d %c", ch, ch) );
+   if ( ch )
+      HB_TRACE( HB_TR_DEBUG, ( "windows read_key %d %c", ch, ch) );
 
    return ch;
 #endif
