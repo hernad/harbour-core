@@ -2854,7 +2854,7 @@ static void hb_gt_ele_SetTerm(PHB_GTELE pTerm)
       pTerm->szAcsc = szAcsc;
       pTerm->terminal_type = TERM_XTERM;
 
-      pTerm->fStdinTTY = hb_fsIsDevice(pTerm->hFilenoStdin);
+      pTerm->fStdinTTY = hb_fsIsDevice(pTerm->hFilenoStdin);   // -> BOOL true if hFilenoStdin exists
       pTerm->fStdoutTTY = hb_fsIsDevice(pTerm->hFilenoStdout);
       pTerm->fStderrTTY = hb_fsIsDevice(pTerm->hFilenoStderr);
 
@@ -3009,7 +3009,7 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       HB_GTSELF_SETFLAG(pGT, HB_GTI_STDERRCON, pTerm->fStderrTTY);
 
 #if defined( HB_OS_WIN )
-      SetConsoleMode( ( HANDLE ) hb_fsGetOsHandle( pGTSTD->hStdin ), 0x0000 );
+      SetConsoleMode( ( HANDLE ) hb_fsGetOsHandle( pGTELE->hFilenoStdin ), 0x0000 );
 #endif
 
 
@@ -3209,36 +3209,38 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
 
 #elif defined( HB_OS_WIN )
 
-   PHB_GTSTD pGTSTD;
+   PHB_GTELE pGTELE;
    int ch = 0;
 
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_std_ReadKey(%p,%d)", pGT, iEventMask ) );
+   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_ele_ReadKey(%p,%d)", pGT, iEventMask ) );
 
    HB_SYMBOL_UNUSED( iEventMask );
 
-   pGTSTD = HB_GTSTD_GET( pGT );
+   pGTELE = HB_GTSTD_GET( pGT );
 
-   if( ! pGTSTD->fStdinConsole )
+//pTerm->hFilenoStdin
+
+   if( ! pGTELE->fStdinTTY )
    {
       HB_BYTE bChar;
-      if( hb_fsRead( pGTSTD->hStdin, &bChar, 1 ) == 1 )
+      if( hb_fsRead( pGTELE->hFilenoStdin, &bChar, 1 ) == 1 )
          ch = bChar;
    }
-   else if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pGTSTD->hStdin ), 0 ) == WAIT_OBJECT_0 )
+   else if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pGTELE->hFilenoStdin ), 0 ) == WAIT_OBJECT_0 )
    {
 
       INPUT_RECORD  ir;
       DWORD         dwEvents;
-      while( PeekConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pGTSTD->hStdin ), &ir, 1, &dwEvents ) && dwEvents == 1 )
+      while( PeekConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pGTELE->hFilenoStdin ), &ir, 1, &dwEvents ) && dwEvents == 1 )
       {
          if( ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown )
          {
             HB_BYTE bChar;
-            if( hb_fsRead( pGTSTD->hStdin, &bChar, 1 ) == 1 )
+            if( hb_fsRead( pGTELE->hFilenoStdin, &bChar, 1 ) == 1 )
                ch = bChar;
          }
          else /* Remove from the input queue */
-            ReadConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pGTSTD->hStdin ), &ir, 1, &dwEvents );
+            ReadConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pGTELE->hFilenoStdin ), &ir, 1, &dwEvents );
       }
    }
 
