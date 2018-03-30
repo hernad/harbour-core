@@ -3007,6 +3007,12 @@ static void hb_gt_ele_Init(PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFile
       HB_GTSELF_SETFLAG(pGT, HB_GTI_REDRAWMAX, 8);
       HB_GTSELF_SETFLAG(pGT, HB_GTI_STDOUTCON, pTerm->fStdoutTTY);
       HB_GTSELF_SETFLAG(pGT, HB_GTI_STDERRCON, pTerm->fStderrTTY);
+
+#if defined( HB_OS_WIN )
+      SetConsoleMode( ( HANDLE ) hb_fsGetOsHandle( pGTSTD->hStdin ), 0x0000 );
+#endif
+
+
       pTerm->Init(pTerm);
       pTerm->SetTermMode(pTerm, 0);
 #ifdef HB_GTELE_CHK_EXACT_POS
@@ -3170,6 +3176,8 @@ static int hb_gt_ele_mouse_CountButton(PHB_GT pGT)
 
 static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
 {
+
+#if defined( HB_OS_UNIX )
       int iKey;
 
       //HB_TRACE(HB_TR_DEBUG, ("hb_gt_ele_ReadKey(%p,%d)", pGT, iEventMask));
@@ -3197,6 +3205,53 @@ static int hb_gt_ele_ReadKey(PHB_GT pGT, int iEventMask)
       }
 
       return iKey;
+
+
+#elif defined( HB_OS_WIN )
+
+   PHB_GTSTD pGTSTD;
+   int ch = 0;
+
+   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_std_ReadKey(%p,%d)", pGT, iEventMask ) );
+
+   HB_SYMBOL_UNUSED( iEventMask );
+
+   pGTSTD = HB_GTSTD_GET( pGT );
+
+   if( ! pGTSTD->fStdinConsole )
+   {
+      HB_BYTE bChar;
+      if( hb_fsRead( pGTSTD->hStdin, &bChar, 1 ) == 1 )
+         ch = bChar;
+   }
+   else if( WaitForSingleObject( ( HANDLE ) hb_fsGetOsHandle( pGTSTD->hStdin ), 0 ) == WAIT_OBJECT_0 )
+   {
+
+      INPUT_RECORD  ir;
+      DWORD         dwEvents;
+      while( PeekConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pGTSTD->hStdin ), &ir, 1, &dwEvents ) && dwEvents == 1 )
+      {
+         if( ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown )
+         {
+            HB_BYTE bChar;
+            if( hb_fsRead( pGTSTD->hStdin, &bChar, 1 ) == 1 )
+               ch = bChar;
+         }
+         else /* Remove from the input queue */
+            ReadConsoleInput( ( HANDLE ) hb_fsGetOsHandle( pGTSTD->hStdin ), &ir, 1, &dwEvents );
+      }
+   }
+
+   if( ch )
+   {
+      int u = HB_GTSELF_KEYTRANS( pGT, ch );
+      if( u )
+         ch = HB_INKEY_NEW_UNICODE( u );
+   }
+
+   return ch;
+#endif
+
 }
 
 static void hb_gt_ele_Tone(PHB_GT pGT, double dFrequency, double dDuration)
