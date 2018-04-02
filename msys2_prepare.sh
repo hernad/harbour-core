@@ -25,3 +25,8 @@ export HB_INSTALL_PREFIX=$HB_ROOT
 export PATH=$PATH:$HB_ROOT/bin:$PATH:$(pwd)/node-x86
 
 export HB_USER_CFLAGS=-DHB_TR_LEVEL=5
+
+
+echo === harbour build: =====
+echo cd harbour-core
+echo ./win-make.exe install
