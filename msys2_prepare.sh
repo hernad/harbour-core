@@ -1,9 +1,10 @@
 #!/bin/bash
 
-MINGW=i686
+MINGWARCH=i686
 
-echo "run install packages:"
-echo pacman -Sy base-devel mingw-w64-$MINGW-toolchain git
+echo "run install packages (arch: $MINGWARCH):"
+echo pacman -Sy base-devel mingw-w64-$MINGWARCH-toolchain git
+echo pacman -Sy mingw-w64-$MINGWARCH-postgresql
 
 export HB_ARCHITECTURE=win
 export HB_COMPILER=mingw

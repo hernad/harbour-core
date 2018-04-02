@@ -2245,12 +2245,12 @@ static int hb_gt_trm_AnsiGetAcsc( PHB_GTTRM pTerm, unsigned char c )
 
 static HB_BOOL hb_gt_trm_AnsiSetMode( PHB_GTTRM pTerm, int * piRows, int * piCols )
 {
-   HB_TRACE( HB_TR_DEBUG, ( "hb_gt_trm_AnsiSetMode(%p,%d,%d)", pTerm, *piRows, *piCols ) );
+   //HB_TRACE( HB_TR_DEBUG, ( "hb_gt_trm_AnsiSetMode(%p,%d,%d)", pTerm, *piRows, *piCols ) );
 
-   if( pTerm->terminal_ext & TERM_PUTTY )
+   //if( pTerm->terminal_ext & TERM_PUTTY )
       return hb_gt_trm_XtermSetMode( pTerm, piRows, piCols );
 
-   return HB_FALSE;
+   //return HB_FALSE;
 }
 
 static void hb_gt_trm_AnsiBell( PHB_GTTRM pTerm )

@@ -138,6 +138,12 @@ nRows = 40
 nCols = 120
 cColor := "N/G,R/W,,,N/G"
 SetMode( nRows, nCols )
+
+? hb_gtInfo( HB_GTI_DESKTOPROWS, nRows )
+? hb_gtInfo( HB_GTI_DESKTOPCOLS, nCols )
+? "---------------------------------------------"
+inkey(0)
+
 set color to (cColor)
 clear screen
 
