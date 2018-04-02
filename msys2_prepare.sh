@@ -12,7 +12,9 @@ export PATH=/c/msys64/mingw32/bin:$PATH
 
 cd $HOME
 
-export HB_INSTALL_PREFIX=$(pwd)/harbour
-export PATH=$PATH:$(pwd)/harbour/bin:$PATH:$(pwd)/node-x86
+export HB_ROOT=$(pwd)/harbour-core/harbour
+
+export HB_INSTALL_PREFIX=$HB_ROOT
+export PATH=$PATH:$HB_ROOT/bin:$PATH:$(pwd)/node-x86
 
 export HB_USER_CFLAGS=-DHB_TR_LEVEL=5
