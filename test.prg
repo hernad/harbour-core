@@ -134,6 +134,15 @@ static HB_BOOL hb_gt_def_Info( PHB_GT pGT, int iType, PHB_GT_INFO pInfo )
 
 */
 
+nRows = 40
+nCols = 120
+cColor := "N/G,R/W,,,N/G"
+SetMode( nRows, nCols )
+set color to (cColor)
+clear screen
+
+? maxrow(), maxcol()
+
 Set( _SET_OSCODEPAGE, hb_cdpOS() )
 hb_cdpSelect( "SL852" ) // šŠćĆđĐžŽ
 
@@ -158,9 +167,9 @@ ENDIF
 
 cGet := "AB  "
 
-? hb_gtInfo( HB_GTI_DESKTOPROWS, 40 )
-? hb_gtInfo( HB_GTI_DESKTOPCOLS, 70 )
-inkey(0)
+//? hb_gtInfo( HB_GTI_DESKTOPROWS, 40 )
+//? hb_gtInfo( HB_GTI_DESKTOPCOLS, 70 )
+//inkey(0)
 
 hb_gtInfo( HB_GTI_WINTITLE, "TTTTTITLE XTERMJS" )
 
