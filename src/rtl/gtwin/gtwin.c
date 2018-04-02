@@ -826,7 +826,7 @@ static void hb_gt_win_Init( PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFil
    //https://docs.microsoft.com/en-us/windows/console/setconsolemode
 
    //SetConsoleMode( s_HInput, s_fMouseEnable ? ENABLE_MOUSE_INPUT : 0x0000 );
-   SetConsoleMode( s_HInput, hb_bitOr( ENABLE_EXTENDED_FLAGS, ENABLE_MOUSE_INPUT );
+   SetConsoleMode( s_HInput, ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT );
 
 
    s_fClosable = s_fOldClosable = hb_gt_win_SetCloseButton( HB_FALSE, HB_FALSE );
