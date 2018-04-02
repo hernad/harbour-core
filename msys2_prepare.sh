@@ -10,6 +10,8 @@ export HB_COMPILER=mingw
 
 export PATH=/c/msys64/mingw32/bin:$PATH
 
+cd $HOME
+
 export HB_INSTALL_PREFIX=$(pwd)/harbour
 export PATH=$PATH:$(pwd)/harbour/bin:$PATH:$(pwd)/node-x86
 
