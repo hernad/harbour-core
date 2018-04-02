@@ -31,3 +31,12 @@ export HB_USER_CFLAGS=-DHB_TR_LEVEL=5
 echo === harbour build: =====
 echo cd harbour-core
 echo ./win-make.exe install
+
+
+echo === F18 envars === 
+export F18_GT_CONSOLE=1
+export F18_DEBUG=1
+export F18_POS=1
+
+set | grep F18_
+
