@@ -6,11 +6,13 @@ echo "run install packages (arch: $MINGWARCH):"
 echo pacman -Sy base-devel mingw-w64-$MINGWARCH-toolchain git
 echo pacman -Sy mingw-w64-$MINGWARCH-postgresql
 
-echo export MINGW_INCLUDE=C:\\\\msys64\\\\$MINGWARCH\\\\include
-echo export HB_WITH_CURL=\${MINGW_INCLUDE} HB_WITH_OPENSSL=\${MINGW_INCLUDE} HB_WITH_PGSQL=\${MINGW_INCLUDE} HB_WITH_ICU=\${MINGW_INCLUDE} 
+export MINGW_INCLUDE=C:\\msys64\\\MINGWARCH\\include
+export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_WITH_ICU=${MINGW_INCLUDE} 
 
 export HB_ARCHITECTURE=win
 export HB_COMPILER=mingw
+
+set | grep HB_
 
 export PATH=/c/msys64/mingw32/bin:$PATH
 
