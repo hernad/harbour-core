@@ -823,7 +823,11 @@ static void hb_gt_win_Init( PHB_GT pGT, HB_FHANDLE hFilenoStdin, HB_FHANDLE hFil
    GetConsoleMode( s_HOutput, &s_dwomode );
    GetConsoleMode( s_HInput, &s_dwimode );
 
-   SetConsoleMode( s_HInput, s_fMouseEnable ? ENABLE_MOUSE_INPUT : 0x0000 );
+   //https://docs.microsoft.com/en-us/windows/console/setconsolemode
+
+   //SetConsoleMode( s_HInput, s_fMouseEnable ? ENABLE_MOUSE_INPUT : 0x0000 );
+   SetConsoleMode( s_HInput, hb_bitOr( ENABLE_EXTENDED_FLAGS, ENABLE_MOUSE_INPUT );
+
 
    s_fClosable = s_fOldClosable = hb_gt_win_SetCloseButton( HB_FALSE, HB_FALSE );
    s_fResetColors = HB_FALSE;
