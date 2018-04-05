@@ -4,8 +4,8 @@ export MINGWARCH=i686
 export MINGWDIR=mingw32
 
 echo "run install packages (arch: $MINGWARCH):"
-echo pacman -Sy base-devel mingw-w64-$MINGWARCH-toolchain git
-echo pacman -Sy mingw-w64-$MINGWARCH-postgresql
+echo pacman -Sy base-devel mingw-w64-$MINGWARCH-toolchain zip unzip mingw-w64-$MINGWARCH-postgresql 
+echo pacman -Sy msys2-runtime
 
 export MINGW_INCLUDE="C:\\msys64\\${MINGWDIR}\\include"
 echo $MINGW_INCLUDE
