@@ -43,6 +43,7 @@ RETURN
 
 ## fedora
 
-	dnf install postgresql-devel
+	dnf install postgresql-devel libX11-devel libstdc++-static
       dnf groupinstall "Development Tools" "Development Libraries"
       dnf install gcc-c++ # node native
+
