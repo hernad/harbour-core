@@ -45,3 +45,4 @@ RETURN
 
 	dnf install postgresql-devel
       dnf groupinstall "Development Tools" "Development Libraries"
+      dnf install gcc-c++ # node native
