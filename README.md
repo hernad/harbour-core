@@ -40,3 +40,8 @@ OutStd( field->ver )
 RETURN
 </pre>
 
+
+## fedora
+
+	dnf install postgresql-devel
+      dnf groupinstall "Development Tools" "Development Libraries"
