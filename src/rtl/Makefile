@@ -304,7 +304,6 @@ DIRS := \
    gtstd \
    gttrm \
    gtcgi \
-   gtele \
    gtwin \
    gtwvt \
    gtxwc \

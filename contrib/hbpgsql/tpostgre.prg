@@ -111,7 +111,7 @@ METHOD New( cHost, cDatabase, cUser, cPass, nPort, cSchema, hCustom ) CLASS TPQs
    ENDIF
 
    ::pDB := PQconnectdb( cConnect )
-
+   
    IF PQstatus( ::pDb ) != CONNECTION_OK
       ::lError := .T.
       ::cError := PQerrorMessage( ::pDb )
@@ -125,6 +125,8 @@ METHOD New( cHost, cDatabase, cUser, cPass, nPort, cSchema, hCustom ) CLASS TPQs
          ENDIF
       ENDIF
    ENDIF
+
+   // PQNOTICEPROCESSOR( ::pDB )
 
    RETURN self
 

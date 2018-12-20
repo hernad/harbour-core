@@ -49,6 +49,8 @@
 
 #include "hbapierr.h"
 #include "hbapiitm.h"
+#include "hbapi.h"
+#include <errno.h>
 
 static HB_GARBAGE_FUNC( PGconn_release )
 {
@@ -237,6 +239,95 @@ HB_FUNC( PQCONNECTDB )
    else
       hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
+
+/*
+static void
+processNotice(void *arg, const char *message)
+{
+   // UNUSED(arg);
+    fprintf( stderr, "NOTIFY_PORUKA: %s %s\n", message);
+}
+
+// https://github.com/afiskon/c-libpq-example/blob/master/libpq_example.c
+
+HB_FUNC( PQNOTICEPROCESSOR )
+{
+
+   PGconn * conn = hb_PGconn_par( 1 ); 
+
+   if( conn ) {
+      PQsetNoticeProcessor(conn, processNotice, NULL);
+      fprintf( stderr, "NOTIFY PROCESOR OK\n");
+   } else
+      fprintf( stderr, "NOTIFY PROCESOR CONN ERROR\n");
+   //   hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+}
+*/
+
+HB_FUNC ( PQRECEIVE )
+{
+   PGnotify  *notify;
+   PGconn * conn = hb_PGconn_par( 1 );
+
+/*
+   int         sock;
+   fd_set      input_mask;
+   struct timeval timeout;
+
+   sock = PQsocket(conn);
+
+   if (sock < 0)
+      return;
+
+   FD_ZERO(&input_mask);
+   FD_SET(sock, &input_mask);
+
+   timeout.tv_sec = 10;
+   timeout.tv_usec = 0;
+
+   if (select(sock + 1, &input_mask, NULL, NULL, &timeout) < 0)
+   {
+      fprintf(stderr, "select() failed: %s\n", strerror(errno));
+      return;
+   }
+*/
+
+   if (PQisBusy(conn)) {
+      hb_ret(); // RETURN NIL
+      return;
+   }
+
+   /* Now check for input */
+   PQconsumeInput(conn);
+   // while ((notify = PQnotifies(conn)) != NULL)
+   if ((notify = PQnotifies(conn)) != NULL)
+   {
+      fprintf(stderr,
+         "ASYNC NOTIFY of '%s' : payload: '%s' received from backend PID %d\n",
+                    notify->relname, notify->extra, notify->be_pid);
+   
+      // hb_arraySetNI( aInfo, 1, cf.iPointSize );
+      // hb_arraySetNInt( aInfo, 2, cf.rgbColors  );
+
+      PHB_ITEM pRet = hb_itemArrayNew( 3 );
+
+      hb_arraySetC(  pRet, 1, notify->relname );
+      hb_arraySetC(  pRet, 2, notify->extra );
+      hb_arraySetNInt( pRet, 3, notify->be_pid  );
+      
+      PQfreemem(notify);
+
+      hb_itemReturnRelease( pRet );
+      // break;
+   } else
+      hb_ret();
+
+   // fprintf(stderr, "kraj saslusanja\n");
+   
+   
+}
+
+
 
 /* NOTE: Deprecated */
 HB_FUNC( PQSETDBLOGIN )

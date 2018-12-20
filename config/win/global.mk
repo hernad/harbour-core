@@ -6,7 +6,7 @@ DYN_EXT := .dll
 
 HB_CFLAGS += -DUNICODE
 
-HB_GT_LIBS += gtwvt gtele gtgui gtwin
+HB_GT_LIBS += gtwvt gtgui gtwin
 
 # kernel32: needed by some compilers (pocc/watcom)
 # user32: *Clipboard*(), GetKeyState(), GetKeyboardState(), SetKeyboardState(), gtwvt stuff

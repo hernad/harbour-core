@@ -70,6 +70,7 @@ DYNAMIC PQprepare
 DYNAMIC PQprotocolVersion
 DYNAMIC PQputCopyData
 DYNAMIC PQputCopyEnd
+DYNAMIC PQRECEIVE
 DYNAMIC PQrequestCancel
 DYNAMIC PQreset
 DYNAMIC PQresStatus
