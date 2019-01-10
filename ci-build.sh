@@ -57,6 +57,10 @@ echo "install to: $HB_INSTALL_PREFIX"
 
 set
 
+cygpath `which zip` -d
+cygpath `/usr/bin` -d
+cygpath `which gcc` -d
+
 ./win-make.exe 
 ./win-make.exe install
 
