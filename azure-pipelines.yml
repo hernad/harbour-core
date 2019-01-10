@@ -10,12 +10,12 @@ jobs:
           MINGW_UPPER: MINGW32
           MINGW_LOWER: mingw32
           MINGW_ARCH: i686
-          HB_USER_CFLAGS: -m32
+          HB_COMPILER: mingw 
         x86_64:
           MINGW_UPPER: MINGW64
           MINGW_LOWER: mingw64
           MINGW_ARCH: x86_64
-          HB_USER_CFLAGS: -m64
+          HB_COMPILER: mingw64 
     steps:
       - script: |
           git clone https://github.com/lazka/msys2-ci-base.git %CD:~0,2%\msys64

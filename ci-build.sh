@@ -45,7 +45,8 @@ export WIN_DRIVE=$1
 pacman --noconfirm -S curl zip unzip
 pacman --noconfirm -S --needed mingw-w64-$MINGW_ARCH-postgresql mingw-w64-$MINGW_ARCH-icu mingw-w64-$MINGW_ARCH-curl mingw-w64-$MINGW_ARCH-openssl
 
-export HB_ARCHITECTURE=win HB_COMPILER=mingw 
+# export HB_ARCHITECTURE=win 
+
 export MINGW_INCLUDE=$WIN_DRIVE:\\\\msys64\\\\include
 export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_WITH_ICU=${MINGW_INCLUDE} 
 export HB_INSTALL_PREFIX=$(pwd)/artifacts
