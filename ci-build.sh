@@ -15,7 +15,7 @@ sed -i 's/^CheckSpace/#CheckSpace/g' /etc/pacman.conf
 list_commits  || failure 'Could not detect added commits'
 # list_packages || failure 'Could not detect changed files'
 message 'Processing changes' "${commits[@]}"
-test -z "${packages}" && success 'No changes in package recipes'
+# test -z "${packages}" && success 'No changes in package recipes'
 # define_build_order || failure 'Could not determine build order'
 
 # Build
@@ -38,14 +38,19 @@ test -z "${packages}" && success 'No changes in package recipes'
 # execute 'SHA-256 checksums' sha256sum *
 # success 'All artifacts built successfully'
 
+set
+
+export WIN_DRIVE=$1
 
 pacman --noconfirm -S curl zip unzip
 pacman --noconfirm -S --needed mingw-w64-$MINGW_ARCH-postgresql mingw-w64-$MINGW_ARCH-icu mingw-w64-$MINGW_ARCH-curl mingw-w64-$MINGW_ARCH-openssl
 
 export HB_ARCHITECTURE=win HB_COMPILER=mingw 
-export MINGW_INCLUDE=C:\\\\msys64\\\\include
+export MINGW_INCLUDE=$WIN_DRIVE:\\\\msys64\\\\include
 export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_WITH_ICU=${MINGW_INCLUDE} 
 export HB_INSTALL_PREFIX=C:\\\\projects\\\\harbour-core\\\\harbour HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}
+
+set
 ./win-make.exe 
 ./win-make.exe install
 

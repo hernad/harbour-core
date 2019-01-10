@@ -31,7 +31,7 @@ jobs:
       - script: |
           set PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           %CD:~0,2%\msys64\usr\bin\sed -i "s|#CacheDir.*|CacheDir=/c/Users/%USERNAME%/AppData/Local/Temp|g" /etc/pacman.conf
-          %CD:~0,2%\msys64\usr\bin\bash -lc "bash ci-build.sh"
+          %CD:~0,2%\msys64\usr\bin\bash -lc "bash ci-build.sh %CD:~0,1%"
         displayName: CI-Build
         env:
           MSYSTEM: $(MINGW_UPPER)
