@@ -6,8 +6,8 @@ source 'ci-library.sh'
 deploy_enabled && mkdir artifacts
 git_config user.email 'hernad@bring.out.ba'
 git_config user.name  'Ernad Husremovic'
-git remote add upstream 'https://github.com/hernad/harbour-core'
-git fetch --quiet upstream
+# git remote add upstream 'https://github.com/hernad/harbour-core'
+# git fetch --quiet upstream
 # reduce time required to install packages by disabling pacman's disk space checking
 sed -i 's/^CheckSpace/#CheckSpace/g' /etc/pacman.conf
 
@@ -48,13 +48,14 @@ pacman --noconfirm -S --needed mingw-w64-$MINGW_ARCH-postgresql mingw-w64-$MINGW
 export HB_ARCHITECTURE=win HB_COMPILER=mingw 
 export MINGW_INCLUDE=$WIN_DRIVE:\\\\msys64\\\\include
 export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_WITH_ICU=${MINGW_INCLUDE} 
-export HB_INSTALL_PREFIX=C:\\\\projects\\\\harbour-core\\\\harbour HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}
+export HB_INSTALL_PREFIX=$(pwd)/artifacts
+
+echo "install to: $HB_INSTALL_PREFIX"
+# WIN_DRIVE:\\\\harbour 
+# export HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}
 
 set
+
 ./win-make.exe 
 ./win-make.exe install
-
-
-
-
 
