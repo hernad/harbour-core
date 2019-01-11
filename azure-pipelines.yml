@@ -77,7 +77,7 @@ jobs:
       BINTRAY_ARCH: i386
     steps:
     - script: |
-        ./ci-build-linux.sh
+        bash ci-build-linux.sh
       displayName: CI-Build
       env:
         CHERE_INVOKING: yes
@@ -91,7 +91,7 @@ jobs:
       BINTRAY_ARCH: x64
     steps:
     - script: |
-        ./ci-build-linux.sh
+        bash ci-build-linux.sh
       displayName: CI-Build
       env:
         CHERE_INVOKING: yes
