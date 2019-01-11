@@ -2,8 +2,9 @@
 
 set
 
-
 if [ "$BUILD_ARCH" == "ia32" ] ; then
+
+   sudo apt-get -y remove libpq-dev libpq5
 
    sudo apt-get install -y g++-multilib gcc-multilib libc6:i386 \
      libx11-dev:i386 libpcre3-dev:i386 libssl-dev:i386 \
@@ -15,7 +16,6 @@ if [ "$BUILD_ARCH" == "ia32" ] ; then
    export HB_USER_DFLAGS='-m32 -L/usr/lib32'
    export HB_USER_LDFLAGS='-m32 -L/usr/lib32'
    
-
 else
    sudo apt-get update -y
    sudo apt-get install -y g++ gcc libc6 \
@@ -27,7 +27,7 @@ echo "install to: $HB_INSTALL_PREFIX"
 
 set
 
-HB_INSTALL_PREFIX=$(pwd)/artifacts
+export HB_INSTALL_PREFIX=$(pwd)/artifacts
 
 make
 make install
