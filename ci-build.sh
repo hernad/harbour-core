@@ -47,7 +47,10 @@ pacman --noconfirm -S --needed mingw-w64-$MINGW_ARCH-postgresql mingw-w64-$MINGW
 
 # export HB_ARCHITECTURE=win 
 
-export MINGW_INCLUDE=$WIN_DRIVE:\\\\msys64\\\\include
+# D:\msys64\mingw32\bin\gcc.exe
+#cygpath `which gcc` -d
+
+export MINGW_INCLUDE=$WIN_DRIVE:\\\\msys64\\\\mingw32\\\\include
 export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_WITH_ICU=${MINGW_INCLUDE} 
 export HB_INSTALL_PREFIX=$(pwd)/artifacts
 
@@ -57,9 +60,6 @@ echo "install to: $HB_INSTALL_PREFIX"
 
 set
 
-cygpath `which zip` -d
-cygpath `/usr/bin` -d
-cygpath `which gcc` -d
 
 ./win-make.exe 
 ./win-make.exe install
