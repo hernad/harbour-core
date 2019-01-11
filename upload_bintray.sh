@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 BINTRAY_API_KEY=${BINTRAY_API_KEY:-`cat bintray_api_key`}
 BINTRAY_OWNER=hernad
 BINTRAY_REPOS=harbour
-BINTRAY_PACKAGE=$1
+BINTRAY_PACKAGE=harbour-windows-$BINTRAY_ARCH
 BINTRAY_PACKAGE_VER=$BUILD_BUILDNUMBER
 
 #pacman --noconfirm -S curl zip unzip
