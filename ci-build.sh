@@ -49,7 +49,10 @@ pacman --noconfirm -S --needed mingw-w64-$MINGW_ARCH-postgresql mingw-w64-$MINGW
 # export HB_ARCHITECTURE=win 
 
 # D:\msys64\mingw32\bin\gcc.exe
-#cygpath `which gcc` -d
+# cygpath `which gcc` -d
+
+# PATH=/mingw64/bin:/usr/local/bin:/usr/bin:/bin:/c/Windows/System32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+
 
 export MINGW_INCLUDE=$WIN_DRIVE:\\\\msys64\\\\mingw32\\\\include
 export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_WITH_ICU=${MINGW_INCLUDE} 
@@ -61,6 +64,8 @@ echo "install to: $HB_INSTALL_PREFIX"
 
 set
 
-./win-make.exe 
-./win-make.exe install
+find /mingw64
+
+# ./win-make.exe 
+#./win-make.exe install
 
