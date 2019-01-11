@@ -47,7 +47,7 @@ jobs:
       - script: |
           set PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           %CD:~0,2%\msys64\usr\bin\bash -lc "pwd ; bash upload_bintray.sh"
-        displayName: upload harbour-windows-$(BINTRAY_ARCH)
+        displayName: upload harbour-windows-$(BINTRAY_ARCH) version $(BUILD_BUILDNUMBER)
         env:
           CHERE_INVOKING: yes
           BINTRAY_API_KEY: $(BINTRAY_API_KEY)
