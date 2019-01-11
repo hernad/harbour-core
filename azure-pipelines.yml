@@ -1,3 +1,6 @@
+variables:
+- group: API_KEYS
+
 jobs:
   - job: MINGW
     timeoutInMinutes: 360
@@ -40,9 +43,14 @@ jobs:
           CHERE_INVOKING: yes
           MINGW_INSTALLS: $(MINGW_LOWER)
           BUILD_URL: dummy
-          DEPLOY_PROVIDER: bintray
-          BINTRAY_ACCOUNT: hernad
-          PACMAN_REPOSITORY_NAME: ci.mingw
+
+      - script: |
+          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %CD:~0,2%\msys64\usr\bin\bash -lc "bash upload_bintray.sh"
+        displayName: upload to bintray
+        env:
+          BINTRAY_API_KEY: $(BINTRAY_API_KEY)
+
       - task: PublishBuildArtifacts@1
         displayName: Publish packages
         continueOnError: true
