@@ -6,6 +6,7 @@ source 'ci-library.sh'
 deploy_enabled && mkdir artifacts
 git_config user.email 'hernad@bring.out.ba'
 git_config user.name  'Ernad Husremovic'
+git config core.autocrlf true
 # git remote add upstream 'https://github.com/hernad/harbour-core'
 # git fetch --quiet upstream
 # reduce time required to install packages by disabling pacman's disk space checking
@@ -59,7 +60,6 @@ echo "install to: $HB_INSTALL_PREFIX"
 # export HB_VER=${APPVEYOR_REPO_TAG_NAME:=0.0.0}
 
 set
-
 
 ./win-make.exe 
 ./win-make.exe install
