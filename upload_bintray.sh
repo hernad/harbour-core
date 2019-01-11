@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 BINTRAY_API_KEY=${BINTRAY_API_KEY:-`cat bintray_api_key`}
 BINTRAY_OWNER=hernad
 BINTRAY_REPOS=harbour
-BINTRAY_PACKAGE=harbour-windows-$BINTRAY_ARCH
+BINTRAY_PACKAGE=harbour-windows-${BINTRAY_ARCH}
 BINTRAY_PACKAGE_VER=$BUILD_BUILDNUMBER
 
 #pacman --noconfirm -S curl zip unzip
@@ -24,10 +24,19 @@ ls -lh $FILE
 set
 echo uploading $FILE to bintray ...
 
-curl -s -T $FILE \
+if [ "$HB_COMPILER" == "mingw64" ] ; then
+   # PATH=/mingw64/bin:/usr/local/bin:/usr/bin:/bin:/c/Windows/System32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+   MINGW_BASE='mingw64'
+else
+   # PATH=/mingw32/bin:/usr/local/bin:/usr/bin:/bin:/c/Windows/System32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+   MINGW_BASE='mingw32' 
+fi
+CURL=/${MINGW_BASE}/bin/curl
+
+$CURL -s -T $FILE \
       -u $BINTRAY_OWNER:$BINTRAY_API_KEY \
       --header "X-Bintray-Override: 1" \
      https://api.bintray.com/content/$BINTRAY_OWNER/$BINTRAY_REPOS/$BINTRAY_PACKAGE/$BINTRAY_PACKAGE_VER/$FILE
 
-curl -s -u $BINTRAY_OWNER:$BINTRAY_API_KEY \
+$CURL -s -u $BINTRAY_OWNER:$BINTRAY_API_KEY \
    -X POST https://api.bintray.com/content/$BINTRAY_OWNER/$BINTRAY_REPOS/$BINTRAY_PACKAGE/$BINTRAY_PACKAGE_VER/publish

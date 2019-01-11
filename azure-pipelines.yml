@@ -14,11 +14,13 @@ jobs:
           MINGW_LOWER: mingw32
           MINGW_ARCH: i686
           HB_COMPILER: mingw 
+          BINTRAY_ARCH: x86
         x86_64:
           MINGW_UPPER: MINGW64
           MINGW_LOWER: mingw64
           MINGW_ARCH: x86_64
-          HB_COMPILER: mingw64 
+          HB_COMPILER: mingw64
+          BINTRAY_ARCH: x64
     steps:
       - script: |
           git clone https://github.com/lazka/msys2-ci-base.git %CD:~0,2%\msys64
@@ -46,7 +48,7 @@ jobs:
 
       - script: |
           set PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          %CD:~0,2%\msys64\usr\bin\bash -lc "pwd ; bash upload_bintray.sh"
+          %CD:~0,2%\msys64\usr\bin\bash -lc "bash upload_bintray.sh"
         displayName: upload harbour-windows-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
         env:
           CHERE_INVOKING: yes
