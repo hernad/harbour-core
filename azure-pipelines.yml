@@ -61,3 +61,29 @@ jobs:
         inputs:
           pathtoPublish: $(Build.SourcesDirectory)/artifacts
           artifactName: harbour-$(MINGW_ARCH)
+  - job: Linux_ia32
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    container: vscode-x64
+    variables:
+      BUILD_ARCH: ia32
+      BINTRAY_ARCH: i386
+    steps:
+    - script: |
+        ./ci-build-linux.sh
+      displayName: CI-Build
+      env:
+        CHERE_INVOKING: yes
+  - job: Linux_x64
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    container: vscode-x64
+    variables:
+      BUILD_ARCH: x64
+      BINTRAY_ARCH: x64
+    steps:
+    - script: |
+        ./ci-build-linux.sh
+      displayName: CI-Build
+      env:
+        CHERE_INVOKING: yes
