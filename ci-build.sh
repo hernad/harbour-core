@@ -50,11 +50,21 @@ pacman --noconfirm -S --needed mingw-w64-$MINGW_ARCH-postgresql mingw-w64-$MINGW
 
 # D:\msys64\mingw32\bin\gcc.exe
 # cygpath `which gcc` -d
+# /mingw64/include/libpq-fe.h
 
-# PATH=/mingw64/bin:/usr/local/bin:/usr/bin:/bin:/c/Windows/System32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+# win64
+# mingw64
 
 
-export MINGW_INCLUDE=$WIN_DRIVE:\\\\msys64\\\\mingw32\\\\include
+if [ "$HB_COMPILER" == "mingw64" ] ; then
+   # PATH=/mingw64/bin:/usr/local/bin:/usr/bin:/bin:/c/Windows/System32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+   MINGW_BASE='mingw64'
+else
+   # PATH=/mingw32/bin:/usr/local/bin:/usr/bin:/bin:/c/Windows/System32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+   MINGW_BASE='mingw32' 
+fi
+export MINGW_INCLUDE=$WIN_DRIVE:\\\\msys64\\\\${MINGW_BASE}\\\\include
+
 export HB_WITH_CURL=${MINGW_INCLUDE} HB_WITH_OPENSSL=${MINGW_INCLUDE} HB_WITH_PGSQL=${MINGW_INCLUDE} HB_WITH_ICU=${MINGW_INCLUDE} 
 export HB_INSTALL_PREFIX=$(pwd)/artifacts
 
@@ -64,8 +74,6 @@ echo "install to: $HB_INSTALL_PREFIX"
 
 set
 
-find /mingw64
-
-# ./win-make.exe 
-#./win-make.exe install
+./win-make.exe 
+./win-make.exe install
 
