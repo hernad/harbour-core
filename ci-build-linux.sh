@@ -28,7 +28,6 @@ echo "install to: $HB_INSTALL_PREFIX"
 set
 
 export HB_INSTALL_PREFIX=$(pwd)/artifacts
-
 set | grep HB_
 
 make
