@@ -7,67 +7,66 @@ resources:
     image: joaomoreno/vscode-linux-build-agent:x64
   - container: vscode-ia32
     image: joaomoreno/vscode-linux-build-agent:ia32
-
 jobs:
-  #- job: MINGW
-  #  timeoutInMinutes: 360
-  #  pool:
-  #    vmImage: vs2015-win2012r2
-  #  strategy:
-  #    maxParallel: 5
-  #    matrix:
-  #      i686:
-  #        MINGW_UPPER: MINGW32
-  #        MINGW_LOWER: mingw32
-  #        MINGW_ARCH: i686
-  #        HB_COMPILER: mingw 
-  #        BINTRAY_ARCH: x86
-  #      x86_64:
-  #        MINGW_UPPER: MINGW64
-  #        MINGW_LOWER: mingw64
-  #        MINGW_ARCH: x86_64
-  #        HB_COMPILER: mingw64
-  #        BINTRAY_ARCH: x64
-  #  steps:
-  #    - script: |
-  #        git clone https://github.com/lazka/msys2-ci-base.git %CD:~0,2%\msys64
-  #        %CD:~0,2%\msys64\usr\bin\rm -rf %CD:~0,2%\msys64\.git
-  #      displayName: Install MSYS2
-  #    - script: |
-  #        set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-  #        %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Syyuu
-  #      displayName: Update MSYS2
-  #    - script: |
-  #        set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-  #        %CD:~0,2%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-$(MINGW_ARCH)-toolchain
-  #        %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Scc
-  #      displayName: Install Toolchain
-  #    - script: |
-  #        set PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-  #        %CD:~0,2%\msys64\usr\bin\sed -i "s|#CacheDir.*|CacheDir=/c/Users/%USERNAME%/AppData/Local/Temp|g" /etc/pacman.conf
-  #        %CD:~0,2%\msys64\usr\bin\bash -lc "bash ci-build.sh %CD:~0,1%"
-  #      displayName: CI-Build
-  #      env:
-  #        MSYSTEM: $(MINGW_UPPER)
-  #        CHERE_INVOKING: yes
-  #        MINGW_INSTALLS: $(MINGW_LOWER)
-  #        BUILD_URL: dummy
-#
-  #    - script: |
-  #        set PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-  #        %CD:~0,2%\msys64\usr\bin\bash -lc "bash upload_bintray.sh"
-  #      displayName: upload harbour-windows-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
-  #      env:
-  #        CHERE_INVOKING: yes
-  #        BINTRAY_API_KEY: $(BINTRAY_API_KEY)
-#
-  #    - task: PublishBuildArtifacts@1
-  #      displayName: Publish packages
-  #      continueOnError: true
-  #      condition: and(succeeded(), eq(variables['system.pullrequest.isfork'], false))
-  #      inputs:
-  #        pathtoPublish: $(Build.SourcesDirectory)/artifacts
-  #        artifactName: harbour-$(MINGW_ARCH)
+  - job: MINGW
+    timeoutInMinutes: 360
+    pool:
+      vmImage: vs2015-win2012r2
+    strategy:
+      maxParallel: 5
+      matrix:
+        i686:
+          MINGW_UPPER: MINGW32
+          MINGW_LOWER: mingw32
+          MINGW_ARCH: i686
+          HB_COMPILER: mingw 
+          BINTRAY_ARCH: x86
+        x86_64:
+          MINGW_UPPER: MINGW64
+          MINGW_LOWER: mingw64
+          MINGW_ARCH: x86_64
+          HB_COMPILER: mingw64
+          BINTRAY_ARCH: x64
+    steps:
+      - script: |
+          git clone https://github.com/lazka/msys2-ci-base.git %CD:~0,2%\msys64
+          %CD:~0,2%\msys64\usr\bin\rm -rf %CD:~0,2%\msys64\.git
+        displayName: Install MSYS2
+      - script: |
+          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Syyuu
+        displayName: Update MSYS2
+      - script: |
+          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-$(MINGW_ARCH)-toolchain
+          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Scc
+        displayName: Install Toolchain
+      - script: |
+          set PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %CD:~0,2%\msys64\usr\bin\sed -i "s|#CacheDir.*|CacheDir=/c/Users/%USERNAME%/AppData/Local/Temp|g" /etc/pacman.conf
+          %CD:~0,2%\msys64\usr\bin\bash -lc "bash ci-build.sh %CD:~0,1%"
+        displayName: CI-Build
+        env:
+          MSYSTEM: $(MINGW_UPPER)
+          CHERE_INVOKING: yes
+          MINGW_INSTALLS: $(MINGW_LOWER)
+          BUILD_URL: dummy
+
+      - script: |
+          set PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %CD:~0,2%\msys64\usr\bin\bash -lc "bash upload_bintray.sh"
+        displayName: upload harbour-windows-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
+        env:
+          CHERE_INVOKING: yes
+          BINTRAY_API_KEY: $(BINTRAY_API_KEY)
+
+      #- task: PublishBuildArtifacts@1
+      #  displayName: Publish packages
+      #  continueOnError: true
+      #  condition: and(succeeded(), eq(variables['system.pullrequest.isfork'], false))
+      #  inputs:
+      #    pathtoPublish: $(Build.SourcesDirectory)/artifacts
+      #    artifactName: harbour-$(MINGW_ARCH)
   - job: Linux_ia32
     pool:
       vmImage: 'Ubuntu-16.04'
@@ -81,7 +80,14 @@ jobs:
       displayName: CI-Build
       env:
         CHERE_INVOKING: yes
-  
+    - script: |
+         bash upload_bintray_linux.sh
+      displayName: upload harbour-linux-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
+      env:
+        CHERE_INVOKING: yes
+        BINTRAY_API_KEY: $(BINTRAY_API_KEY)
+
+
   - job: Linux_x64
     pool:
       vmImage: 'Ubuntu-16.04'
@@ -95,4 +101,10 @@ jobs:
       displayName: CI-Build
       env:
         CHERE_INVOKING: yes
+    - script: |
+         bash upload_bintray_linux.sh
+      displayName: upload harbour-linux-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
+      env:
+        CHERE_INVOKING: yes
+        BINTRAY_API_KEY: $(BINTRAY_API_KEY)
 
