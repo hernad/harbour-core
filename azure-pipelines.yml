@@ -22,14 +22,21 @@
 variables:
 - group: API_KEYS
 
+#resources:
+#  containers:
+#  - container: vscode-x64
+#    image: joaomoreno/vscode-linux-build-agent:x64
+#  - container: harbour-ia32
+#    image: hernad/vscode-linux-build-agent:ia32
+#    # service connection docker
+#    endpoint: docker
+
 resources:
   containers:
   - container: vscode-x64
     image: joaomoreno/vscode-linux-build-agent:x64
-  - container: harbour-ia32
-    image: hernad/vscode-linux-build-agent:ia32
-    # service conneciton docker
-    endpoint: docker
+  - container: vscode-ia32
+    image: hernad/azure-linux-build-agent:ia32
 
 jobs:
   - job: MINGW
@@ -94,7 +101,7 @@ jobs:
   - job: Linux_ia32
     pool:
       vmImage: 'Ubuntu-16.04'
-    container: harbour-ia32
+    container: vscode-ia32
     variables:
       BUILD_ARCH: ia32
       BINTRAY_ARCH: x86
