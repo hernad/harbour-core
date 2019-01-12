@@ -4,13 +4,8 @@ set
 
 if [ "$BUILD_ARCH" == "ia32" ] ; then
 
-   sudo apt-get -y remove libpq-dev libpq5
-
-   sudo apt-get install -y g++-multilib gcc-multilib libc6:i386 \
-     libx11-dev:i386 libpcre3-dev:i386 libssl-dev:i386 \
-     libncurses5:i386 libstdc++6:i386 lib32stdc++6  libpq-dev:i386 lib32z1
-
    dpkg -L libpq5:i386
+   # /usr/lib/libpq.so.5
 
    export HB_USER_CFLAGS=-m32
    export HB_USER_DFLAGS='-m32 -L/usr/lib32'
