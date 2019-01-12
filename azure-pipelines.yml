@@ -1,4 +1,7 @@
 # docker hub service connection potrebna?
+# ma jok nesto je sa azure stranom
+# hernad/azure-linux-build-agent:ia32
+
 variables:
 - group: API_KEYS
 
@@ -8,6 +11,7 @@ resources:
     image: joaomoreno/vscode-linux-build-agent:x64
   - container: harbour-ia32
     image: hernad/vscode-linux-build-agent:ia32
+
 jobs:
   - job: MINGW
     timeoutInMinutes: 360
