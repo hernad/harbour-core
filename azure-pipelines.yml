@@ -2,6 +2,23 @@
 # ma jok nesto je sa azure stranom
 # hernad/azure-linux-build-agent:ia32
 
+#pool:
+#  vmImage: 'ubuntu-16.04'
+#
+#strategy:
+#  matrix:
+#    ubuntu14:
+#      containerImage: ubuntu:14.04
+#    ubuntu16:
+#      containerImage: ubuntu:16.04
+#    ubuntu18:
+#      containerImage: ubuntu:18.04
+#
+#container: $[ variables['containerImage'] ]
+#
+#steps:
+#  - script: printenv
+
 variables:
 - group: API_KEYS
 
@@ -11,6 +28,8 @@ resources:
     image: joaomoreno/vscode-linux-build-agent:x64
   - container: harbour-ia32
     image: hernad/vscode-linux-build-agent:ia32
+    # service conneciton docker
+    endpoint: docker
 
 jobs:
   - job: MINGW
