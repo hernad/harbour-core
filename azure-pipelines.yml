@@ -99,8 +99,7 @@ jobs:
         cd $(Build.SourcesDirectory)
         bash ci-build-linux.sh
       displayName: CI-Build
-      env:
-        #CHERE_INVOKING: yes
+
     - script: |
         cd $(Build.SourcesDirectory)
         bash upload_bintray_linux.sh
