@@ -96,14 +96,16 @@ jobs:
       BINTRAY_ARCH: x64
     steps:
     - script: |
+        cd $(Build.SourcesDirectory)
         bash ci-build-linux.sh
       displayName: CI-Build
       env:
-        CHERE_INVOKING: yes
+        #CHERE_INVOKING: yes
     - script: |
+        cd $(Build.SourcesDirectory)
         bash upload_bintray_linux.sh
       displayName: upload harbour-linux-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
       env:
-        CHERE_INVOKING: yes
+        # CHERE_INVOKING: yes
         BINTRAY_API_KEY: $(BINTRAY_API_KEY)
 
