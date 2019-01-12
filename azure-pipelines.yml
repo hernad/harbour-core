@@ -87,7 +87,6 @@ jobs:
         CHERE_INVOKING: yes
         BINTRAY_API_KEY: $(BINTRAY_API_KEY)
 
-
   - job: Linux_x64
     pool:
       vmImage: 'Ubuntu-16.04'
