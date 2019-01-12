@@ -73,11 +73,11 @@ jobs:
     container: vscode-ia32
     variables:
       BUILD_ARCH: ia32
-      BINTRAY_ARCH: i386
+      BINTRAY_ARCH: x86
     steps:
     - script: |
         bash ci-build-linux.sh
-      displayName: CI-Build
+      displayName: CI-Build harbour 32-bit
       env:
         CHERE_INVOKING: yes
     - script: |
@@ -98,12 +98,10 @@ jobs:
     - script: |
         cd $(Build.SourcesDirectory)
         bash ci-build-linux.sh
-      displayName: CI-Build
+      displayName: CI-Build harbour 64-bit
 
     - script: |
         cd $(Build.SourcesDirectory)
-        pwd
-        find .
         bash upload_bintray_linux.sh
       displayName: upload harbour-linux-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
       env:
