@@ -30,7 +30,7 @@ trigger:
     include:
     - config/global.mk
 
-    
+
 variables:
 - group: API_KEYS
 
