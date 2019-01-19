@@ -19,6 +19,18 @@
 #steps:
 #  - script: printenv
 
+trigger:
+  branches:
+    include:
+    - my-master
+    - releases/*
+  paths:
+    exclude:
+    - README.md
+    include:
+    - config/global.mk
+
+    
 variables:
 - group: API_KEYS
 
@@ -62,7 +74,7 @@ jobs:
           set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           %CD:~0,2%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-$(MINGW_ARCH)-toolchain
           %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Scc
-        displayName: Install Toolchain
+        displayName: Install gcc build toolchain
       - script: |
           set PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           %CD:~0,2%\msys64\usr\bin\sed -i "s|#CacheDir.*|CacheDir=/c/Users/%USERNAME%/AppData/Local/Temp|g" /etc/pacman.conf
@@ -80,7 +92,7 @@ jobs:
         displayName: upload harbour-windows-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
         env:
           CHERE_INVOKING: yes
-          BINTRAY_API_KEY: $(BINTRAY_API_KEY)
+          BINTRAY_API_KEY: $(BINTRAY_BRINGOUT_API_KEY)
 
       #- task: PublishBuildArtifacts@1
       #  displayName: Publish packages
@@ -107,7 +119,7 @@ jobs:
       displayName: upload harbour-linux-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
       env:
         CHERE_INVOKING: yes
-        BINTRAY_API_KEY: $(BINTRAY_API_KEY)
+        BINTRAY_API_KEY: $(BINTRAY_BRINGOUT_API_KEY)
 
   - job: Linux_x64
     pool:
@@ -127,5 +139,5 @@ jobs:
         bash upload_bintray_linux.sh
       displayName: upload harbour-linux-$(BINTRAY_ARCH) version $(BUILD.BUILDNUMBER)
       env:
-        BINTRAY_API_KEY: $(BINTRAY_API_KEY)
+        BINTRAY_API_KEY: $(BINTRAY_BRINGOUT_API_KEY)
 
