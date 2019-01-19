@@ -6,8 +6,8 @@
 #cd "$(dirname "$0")"
 
 BINTRAY_API_KEY=${BINTRAY_API_KEY:-`cat bintray_api_key`}
-BINTRAY_OWNER=hernad
-BINTRAY_REPOS=bringout
+BINTRAY_OWNER=bringout
+BINTRAY_REPOS=hernad
 BINTRAY_PACKAGE=harbour-linux-${BINTRAY_ARCH}
 BINTRAY_PACKAGE_VER=$BUILD_BUILDNUMBER
 
