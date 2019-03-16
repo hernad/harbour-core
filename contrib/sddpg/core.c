@@ -78,6 +78,7 @@
 #define BITOID          1560
 #define VARBITOID       1562
 #define NUMERICOID      1700
+#define UUIDOID         2950
 
 typedef struct
 {
@@ -320,6 +321,12 @@ static HB_ERRCODE pgsqlOpen( SQLBASEAREAP pArea )
             dbFieldInfo.uiLen  = 6;
             break;
 
+         case UUIDOID:
+            dbFieldInfo.uiType = HB_FT_DOUBLE;
+            dbFieldInfo.uiLen = 16;
+            dbFieldInfo.uiDec = 0;
+            break;
+             
          case INT4OID:
             dbFieldInfo.uiType = HB_FT_INTEGER;
             dbFieldInfo.uiLen  = 11;

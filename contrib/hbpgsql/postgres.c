@@ -669,6 +669,7 @@ HB_FUNC( PQMETADATA )  /* not a direct wrapper */
                   break;
 
                case FLOAT8OID:
+               case UUIDOID:
                   hb_strncpy( buf, "double precision", sizeof( buf ) - 1 );
                   break;
 

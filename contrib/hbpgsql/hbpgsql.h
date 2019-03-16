@@ -74,6 +74,7 @@
 #define BITOID          1560
 #define VARBITOID       1562
 #define NUMERICOID      1700
+#define UUIDOID         2950
 
 #define INV_WRITE       0x00020000
 #define INV_READ        0x00040000

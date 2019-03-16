@@ -982,7 +982,7 @@ STATIC PROCEDURE Page_CodePages( pdf )
    font := HPDF_GetFont( pdf, "Helvetica", NIL )
 
    /* load font object */
-   font_name := HPDF_LoadTTFontFromFile( pdf, hb_DirBase() + "files" + hb_ps() + "libsanrg.ttf" )
+   font_name := HPDF_LoadTTFontFromFile( pdf, hb_DirBase() + "files" + hb_ps() + "ubuntu-mono.ttf", .T. )
 
    /* create outline root. */
    root := HPDF_CreateOutline( pdf, , "Encoding list", NIL )
