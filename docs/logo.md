@@ -23,13 +23,13 @@ App icons for
 {% unless site.fork %}
 # Historical
 
-* Hompages<br>
+* Homepages<br>
   [2000](https://web.archive.org/web/20000309023122/www.hagbard.demon.co.uk/harbour/harbour.html)
   [2001](https://web.archive.org/web/20010206043812/www.harbour-project.org/)
   [2008](https://web.archive.org/web/20081011053452/www.harbour-project.org/)
   [2009](https://web.archive.org/web/20090321144714/www.harbour-project.org/)
   [2011](https://web.archive.org/web/20110723030605/www.harbour-project.org/)
-* [T-Shirt]({{ site.baseurl }}/tshirt)
+* [T-Shirt]({{ site.baseurl }}/tshirt{{ site.ilink_suffix }})
 * Badge<br>
   [![button](https://harbour.github.io/art/harbour-button.png)](https://harbour.github.io/art/harbour-button.png)
 * [Badge – animated](https://harbour.github.io/art/harbour-animgif.zip)

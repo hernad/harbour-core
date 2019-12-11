@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -52,7 +52,7 @@ REQUEST HB_CODEPAGE_UTF8EX
 
 PROCEDURE Main()
 
-   LOCAL hUnzip, aWild, cFileName, cExt, cPath, cFile
+   LOCAL hUnzip, aWild, cFileName, cFile
    LOCAL tDate, cTime, nSize, nCompSize, nErr
    LOCAL lCrypted, cPassword, cComment, tmp
 
@@ -85,7 +85,7 @@ PROCEDURE Main()
       ? "Archive file:", cFileName
       hb_unzipGlobalInfo( hUnzip, @nSize, @cComment )
       ? "Number of entries:", hb_ntos( nSize )
-      IF ! HB_ISNULL( cComment )
+      IF ! cComment == ""
          ? "global comment:", cComment
       ENDIF
       ?
@@ -95,16 +95,20 @@ PROCEDURE Main()
       DO WHILE nErr == 0
          hb_unzipFileInfo( hUnzip, @cFile, @tDate, @cTime, , , , @nSize, @nCompSize, @lCrypted, @cComment )
          ? hb_UPadR( cFile + iif( lCrypted, "*", "" ), 30 ), hb_TToD( tDate ), cTime, nSize, nCompSize
-         IF ! HB_ISNULL( cComment )
+         IF ! cComment == ""
             ? "comment:", cComment
          ENDIF
 
-         IF AScan( aWild, {| cPattern | hb_WildMatch( cPattern, cFile, .T. ) } ) > 0
-            ?? " Extracting"
+         DO CASE
+         CASE hb_LeftEq( cFile, "from_memory" )
+            hb_unzipExtractCurrentFileToMem( hUnzip, cPassword, @tmp )
+            ?? " " + hb_ValToExp( iif( hb_BLen( tmp ) > 60, hb_BLen( tmp ), tmp ) )
+         CASE AScan( aWild, {| cPattern | hb_WildMatch( cPattern, cFile, .T. ) } ) > 0
+            ?? " " + "Extracting"
             hb_unzipExtractCurrentFile( hUnzip, , cPassword )
-         ELSE
-            ?? " Skipping"
-         ENDIF
+         OTHERWISE
+            ?? " " + "Skipping"
+         ENDCASE
 
          nErr := hb_unzipFileNext( hUnzip )
       ENDDO

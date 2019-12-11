@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -40,6 +40,7 @@
  *
  * If you write modifications of your own for Harbour, it is your choice
  * whether to permit this exception to apply to your modifications.
+ * If you do not wish that, delete this exception notice.
  *
  */
 
@@ -89,7 +90,7 @@ THREAD STATIC t_cHtmlUnicChars
 THREAD STATIC t_aHtmlAnsiEntities  // HTML character entities (ANSI character set)
 THREAD STATIC t_cHtmlAnsiChars
 #endif
-THREAD STATIC t_lInit := .F.       // initilization flag for HTML data
+THREAD STATIC t_lInit := .F.       // initialization flag for HTML data
 
 #ifdef _DEBUG_
 #xtranslate HIDDEN: => EXPORTED:   // debugger cannot see HIDDEN iVars
@@ -441,11 +442,11 @@ METHOD MatchCriteria( oFound ) CLASS THtmlIteratorScan
 
    LOCAL xData
 
-   IF ::cName != NIL .AND. !( Lower( ::cName ) == Lower( oFound:htmlTagName ) )
+   IF ::cName != NIL .AND. ! Lower( ::cName ) == Lower( oFound:htmlTagName )
       RETURN .F.
    ENDIF
 
-   IF ::cAttribute != NIL .AND. !( ::cAttribute $ oFound:getAttributes() )
+   IF ::cAttribute != NIL .AND. ! ::cAttribute $ oFound:getAttributes()
       RETURN .F.
    ENDIF
 
@@ -458,8 +459,8 @@ METHOD MatchCriteria( oFound ) CLASS THtmlIteratorScan
 
    IF ::cData != NIL
       xData := oFound:getText( " " )
-      /* NOTE: != changed to !( == ) */
-      IF Empty( xData ) .OR. !( AllTrim( ::cData ) == AllTrim( xData ) )
+      /* NOTE: != changed to ! == */
+      IF Empty( xData ) .OR. ! AllTrim( ::cData ) == AllTrim( xData )
          RETURN .F.
       ENDIF
    ENDIF
@@ -592,9 +593,9 @@ CREATE CLASS THtmlNode MODULE FRIENDLY
    METHOD findNodeByTagName
    METHOD findNodesByTagName
 
-   ERROR HANDLER noMessage
+   ERROR HANDLER noMessage( ... )
 
-   METHOD noAttribute
+   METHOD noAttribute( cName, aValue )
 
 ENDCLASS
 
@@ -659,7 +660,7 @@ METHOD isInline() CLASS THtmlNode
 METHOD isOptional() CLASS THtmlNode
    RETURN hb_bitAnd( ::htmlTagType[ 2 ], CM_OPT ) != 0
 
-// checks if this is a node (leafs contain no further nodes, e.g. <br />,<hr>,_text_)
+// checks if this is a node (leafs contain no further nodes, e.g. <br>,<hr>,_text_)
 METHOD isNode() CLASS THtmlNode
    RETURN HB_ISARRAY( ::htmlContent ) .AND. Len( ::htmlContent ) > 0
 
@@ -695,12 +696,12 @@ METHOD parseHtml( parser ) CLASS THtmlNode
       cText    := LTrim( SubStr( parser:p_str, nLastPos + 1, nStart - nLastPos - 1 ) )
       cTagName := CutStr( " ", @cAttr )
 
-      IF !( cText == "" )
+      IF ! cText == ""
          IF hb_LeftEq( cText, "</" )
             // ending tag of previous node
             cText := Lower( AllTrim( SubStr( CutStr( ">", @cText ), 3 ) ) )
             oLastTag := oThisTag:parent
-            DO WHILE oLastTag != NIL .AND. !( Lower( oLastTag:htmlTagName ) == cText )  /* NOTE: != changed to !( == ) */
+            DO WHILE oLastTag != NIL .AND. ! Lower( oLastTag:htmlTagName ) == cText  /* NOTE: != changed to ! == */
                oLastTag := oLastTag:parent
             ENDDO
             IF oLastTag != NIL
@@ -740,7 +741,7 @@ METHOD parseHtml( parser ) CLASS THtmlNode
          ELSE
 
             oNextTag := oThisTag:parent
-            DO WHILE oNextTag != NIL .AND. !( Lower( oNextTag:htmlTagName ) == Lower( SubStr( cTagName, 2 ) ) )  /* NOTE: != changed to !( == ) */
+            DO WHILE oNextTag != NIL .AND. ! Lower( oNextTag:htmlTagName ) == Lower( SubStr( cTagName, 2 ) )  /* NOTE: != changed to ! == */
                oNextTag := oNextTag:parent
             ENDDO
 
@@ -856,7 +857,7 @@ METHOD parseHtmlFixed( parser ) CLASS THtmlNode
    ENDIF
 
    // back to "<"
-   DO WHILE !( P_PREV( parser ) == "<" )  /* NOTE: != changed to !( == ) */
+   DO WHILE ! P_PREV( parser ) == "<"  /* NOTE: != changed to ! == */
    ENDDO
 
    nEnd  := parser:p_pos
@@ -985,8 +986,8 @@ METHOD nextNode() CLASS THtmlNode
       RETURN ::htmlContent[ 1 ]
    ENDIF
 
-   /* NOTE: != changed to !( == ) */
-   IF !( ::htmlTagName == "_text_" ) .AND. ! Empty( ::htmlContent )
+   /* NOTE: != changed to ! == */
+   IF ! ::htmlTagName == "_text_" .AND. ! Empty( ::htmlContent )
       RETURN ::htmlContent[ 1 ]
    ENDIF
 
@@ -1058,7 +1059,7 @@ METHOD toString( nIndent ) CLASS THtmlNode
       IF ::isInline() .OR. ::keepFormatting() .OR. ::isType( CM_HEADING ) .OR. ::isType( CM_HEAD )
          RETURN cHtml += iif( ::htmlEndTagName == "/", " />", "<" + ::htmlEndTagName + ">" )
       ENDIF
-      IF !( Right( cHtml, Len( hb_eol() ) ) == hb_eol() )
+      IF ! Right( cHtml, Len( hb_eol() ) ) == hb_eol()
          cHtml += hb_eol()
       ENDIF
       RETURN cHtml += cIndent + iif( ::htmlEndTagName == "/", " />", "<" + ::htmlEndTagName + ">" )
@@ -1099,7 +1100,7 @@ STATIC FUNCTION __AttrToStr( cName, cValue, aAttr, oTHtmlNode )
       RETURN oTHtmlNode:error( "Invalid HTML attribute for: <" + oTHtmlNode:htmlTagName + ">", oTHtmlNode:className(), cName, EG_ARG, { cName, cValue } )
    ENDIF
 
-   IF aAttr[ nPos, 2 ] == HTML_ATTR_TYPE_BOOL
+   IF aAttr[ nPos ][ 2 ] == HTML_ATTR_TYPE_BOOL
       RETURN " " + cName
    ENDIF
 
@@ -1230,7 +1231,7 @@ STATIC FUNCTION __ParseAttr( parser )
 
       CASE " "
          IF nMode == 1
-            IF !( aAttr[ 1 ] == "" )
+            IF ! aAttr[ 1 ] == ""
                hHash[ aAttr[ 1 ] ] := aAttr[ 2 ]
                aAttr[ 1 ] := ""
                aAttr[ 2 ] := ""
@@ -1295,7 +1296,7 @@ STATIC FUNCTION __ParseAttr( parser )
       ENDSWITCH
    ENDDO
 
-   IF !( aAttr[ 1 ] == "" )
+   IF ! aAttr[ 1 ] == ""
       hHash[ aAttr[ 1 ] ] := aAttr[ 2 ]
    ENDIF
 
@@ -1325,7 +1326,7 @@ METHOD setAttribute( cName, cValue ) CLASS THtmlNode
       RETURN ::error( "Invalid HTML attribute for: <" + ::htmlTagName + ">", ::className(), cName, EG_ARG, { cName, cValue } )
    ENDIF
 
-   IF aAttr[ nPos, 2 ] == HTML_ATTR_TYPE_BOOL
+   IF aAttr[ nPos ][ 2 ] == HTML_ATTR_TYPE_BOOL
       hHash[ cName ] := ""
    ELSE
       hHash[ cName ] := cValue
@@ -1493,7 +1494,7 @@ METHOD pushNode( cTagName ) CLASS THtmlNode
       RETURN ::error( "Cannot add HTML tag to: <" + ::htmlTagName + ">", ::className(), "+", EG_ARG, { cName } )
    ENDIF
 
-   IF !( cName $ t_hHT )
+   IF ! cName $ t_hHT
       IF hb_LeftEq( cName, "/" ) .AND. SubStr( cName, 2 ) $ t_hHT
          IF ! Lower( SubStr( cName, 2 ) ) == Lower( ::htmlTagName )
             RETURN ::error( "Not a valid closing HTML tag for: <" + ::htmlTagName + ">", ::className(), "-", EG_ARG, { cName } )
@@ -1527,7 +1528,7 @@ METHOD popNode( cName ) CLASS THtmlNode
       cName := SubStr( cName, 1 + 1 )
    ENDIF
 
-   IF !( cName == Lower( ::htmlTagName ) )
+   IF ! cName == Lower( ::htmlTagName )
       RETURN ::error( "Invalid closing HTML tag for: <" + ::htmlTagName + ">", ::className(), "-", EG_ARG, { cName } )
    ENDIF
 
@@ -1621,7 +1622,7 @@ FUNCTION THtmlIsValid( cTagName, cAttrName )
    RETURN lRet
 
 /* HTML Tag data are adopted for Harbour from Tidy
-   http://www.html-tidy.org */
+   https://github.com/htacg/tidy-html5 */
 
 STATIC PROCEDURE _Init_Html_TagTypes
 
@@ -4233,7 +4234,7 @@ FUNCTION ANSIToHtml( cAnsiText )
       nEnd  := parser:p_pos
       cText := SubStr( parser:p_str, nStart, nEnd - nStart )
 
-      DO WHILE !( ( cChr := P_NEXT( parser ) ) $ "; " ) .AND. ! Empty( cChr ) .AND. parser:p_pos != 0
+      DO WHILE ! ( cChr := P_NEXT( parser ) ) $ "; " .AND. ! Empty( cChr ) .AND. parser:p_pos != 0
       ENDDO
 
       SWITCH cChr
@@ -4268,7 +4269,7 @@ FUNCTION ANSIToHtml( cAnsiText )
 FUNCTION OEMToHtml( cOemText )
    RETURN ANSIToHtml( hb_OEMToANSI( cOemText ) )
 
-// This function returs the HTML character entities that are exchangeable between ANSI and OEM character sets
+// This function returns the HTML character entities that are exchangeable between ANSI and OEM character sets
 STATIC PROCEDURE _Init_Html_AnsiCharacterEntities()
 
    t_cHtmlAnsiChars := ;
@@ -4377,7 +4378,7 @@ FUNCTION tip_StrToHtml( cAnsiText )
       nEnd  := parser:p_pos
       cText := SubStr( parser:p_str, nStart, nEnd - nStart )
 
-      DO WHILE !( ( cChr := P_NEXT( parser ) ) $ "; " ) .AND. ! Empty( cChr ) .AND. parser:p_pos != 0
+      DO WHILE ! ( cChr := P_NEXT( parser ) ) $ "; " .AND. ! Empty( cChr ) .AND. parser:p_pos != 0
       ENDDO
 
       SWITCH cChr
@@ -4410,7 +4411,7 @@ FUNCTION tip_StrToHtml( cAnsiText )
 
 STATIC PROCEDURE _Init_Html_CharacterEntities()
 
-   IF t_aHtmlUnicEntities == NIL .OR. !( t_cHtmlCP == hb_cdpSelect() )
+   IF t_aHtmlUnicEntities == NIL .OR. ! t_cHtmlCP == hb_cdpSelect()
       t_cHtmlCP := hb_cdpSelect()
       t_cHtmlUnicChars := hb_UTF8ToStr( "&<>¢£¥¦§©®°¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ^¢£¥¦§©®°¿~" )
       t_aHtmlUnicEntities := __HtmlEntities()

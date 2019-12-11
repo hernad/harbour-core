@@ -15,9 +15,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -70,7 +70,7 @@ HB_FUNC( HB_VERSION )
       case HB_VERSION_URL_SOURCE:
       {
          char * pszVersion = hb_xstrcpy( NULL, HB_VER_ORIGIN_URL,
-            strlen( hb_verCommitID() ) ? "commit/" : NULL, hb_verCommitID(), NULL );
+            strlen( hb_verCommitID() ) ? "tree/" : NULL, hb_verCommitID(), NULL );
 
          hb_retclen_buffer( pszVersion, strlen( pszVersion ) );
          break;
@@ -84,6 +84,7 @@ HB_FUNC( HB_VERSION )
       case HB_VERSION_REVISION:       hb_retni( hb_verCommitRev() ); break;
       case HB_VERSION_COMMIT_INFO:    hb_retc_const( hb_verCommitInfo() ); break;
       case HB_VERSION_ID:             hb_retc_const( hb_verCommitID() ); break;
+      case HB_VERSION_ID_SHORT:       hb_retc_const( hb_verCommitIDShort() ); break;
       case HB_VERSION_PCODE_VER:      hb_retni( HB_PCODE_VER ); break;
       case HB_VERSION_PCODE_VER_STR:  hb_retc_buffer( hb_verPCode() ); break;
       case HB_VERSION_BUILD_PLAT:     hb_retc_const( hb_verHB_PLAT() ); break;
@@ -192,7 +193,7 @@ HB_FUNC( HB_VERSION )
       case HB_VERSION_BITWIDTH:       hb_retni( ( int ) sizeof( void * ) * 8 ); break;
       case HB_VERSION_MT:             hb_retl( hb_vmIsMt() ); break;
 
-      case HB_VERSION_SHARED:  /* TOFIX: This only works when platforms has separate
+      case HB_VERSION_SHARED:  /* FIXME: This only works when platforms has separate
                                          compilation pass for harbour dynlib build -
                                          it is 32-bit Windows. */
 

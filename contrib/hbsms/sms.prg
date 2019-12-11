@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -48,11 +48,9 @@
 /* TODO: - Receive support */
 
 /* Source of information:
-   http://www.smssolutions.net/tutorials/gsm/sendsmsat/
-   http://www.smssolutions.net/tutorials/gsm/receivesmsat/
-   http://www.developershome.com/sms/sendSmsByAtCommands.asp
-   http://www.developershome.com/sms/readSmsByAtCommands.asp
-   http://www.dreamfabric.com/sms/
+   https://web.archive.org/web/www.smssolutions.net/tutorials/gsm/sendsmsat/
+   https://web.archive.org/web/www.smssolutions.net/tutorials/gsm/receivesmsat/
+   https://web.archive.org/web/20121115163620/dreamfabric.com/sms/
  */
 
 STATIC FUNCTION port_send( h, s )
@@ -144,7 +142,7 @@ FUNCTION smsctx_Send( smsctx, cPhoneNo, cText, lNotification )
 
             IF ! Empty( smsctx[ _SMSCTX_cPIN ] )
                port_send( smsctx[ _SMSCTX_xHnd ], 'AT+CPIN="' + smsctx[ _SMSCTX_cPIN ] + '"' + Chr( 13 ) )
-               IF !( StripCRLF( port_rece( smsctx[ _SMSCTX_xHnd ] ) ) == "OK" )
+               IF ! StripCRLF( port_rece( smsctx[ _SMSCTX_xHnd ] ) ) == "OK"
                   RETURN -5
                ENDIF
             ENDIF
@@ -158,7 +156,7 @@ FUNCTION smsctx_Send( smsctx, cPhoneNo, cText, lNotification )
                   IF Len( tmp ) < 2
                      RETURN -6
                   ENDIF
-                  IF !( ATail( tmp ) == "OK" )
+                  IF ! ATail( tmp ) == "OK"
                      RETURN -7
                   ENDIF
                   IF ! hb_LeftEq( tmp[ 1 ], "+CSMP: " )
@@ -172,7 +170,7 @@ FUNCTION smsctx_Send( smsctx, cPhoneNo, cText, lNotification )
                         tmp[ 1 ] := hb_ntos( hb_bitReset( Val( tmp[ 1 ] ), 5 ) )
                      ENDIF
                      port_send( smsctx[ _SMSCTX_xHnd ], "AT+CSMP=" + MakeList( tmp ) + Chr( 13 ) )
-                     IF !( StripCRLF( port_rece( smsctx[ _SMSCTX_xHnd ] ) ) == "OK" )
+                     IF ! StripCRLF( port_rece( smsctx[ _SMSCTX_xHnd ] ) ) == "OK"
                         RETURN -9
                      ENDIF
                   ENDIF

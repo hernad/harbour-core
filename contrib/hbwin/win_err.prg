@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -64,7 +64,7 @@ PROCEDURE Main( cInputFile )
 
    ? "Input file:", cInputFile
 
-   IF HB_ISNULL( cFile := hb_MemoRead( cInputFile ) )
+   IF ( cFile := hb_MemoRead( cInputFile ) ) == ""
       ? "Input file not found"
    ELSEIF Empty( pRegex := hb_regexComp( "[ \t]*#[ \t]*define[ \t]+([a-zA-Z0-9_]+)[ \t]+([\-A-F0-9]+)+L([ \t\n\r]|$)", .T., .T. ) )
       ? "Invalid regexp"
@@ -86,7 +86,7 @@ PROCEDURE Main( cInputFile )
       hWas := { => }
 
       FOR EACH tmp IN hb_regexAll( pRegex, StrTran( cFile, Chr( 13 ) ),,,,, .T. )
-         IF !( Val( tmp[ 3 ] ) $ hWas )
+         IF ! Val( tmp[ 3 ] ) $ hWas
             hWas[ Val( tmp[ 3 ] ) ] := NIL
             cOutput += "   CASE " + PadR( tmp[ 3 ], 5 ) + " ; RETURN " + '"' + tmp[ 2 ] + '"' + hb_eol()
          ENDIF

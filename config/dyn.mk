@@ -3,6 +3,8 @@ include $(TOP)$(ROOT)config/global.mk
 ifneq ($(HB_PLATFORM),)
 ifneq ($(HB_COMPILER),)
 
+HB_RCFLAGS := -DHB_DYNLIB
+
 HB_LINKING_RTL :=
 HB_LINKING_VMMT :=
 
@@ -60,10 +62,8 @@ HB_DYN_LIBS := \
 
 ifneq ($(HB_HAS_PCRE2_LOCAL),)
    HB_DYN_LIBS += hbpcre2
-else
-ifneq ($(HB_HAS_PCRE_LOCAL),)
+else ifneq ($(HB_HAS_PCRE_LOCAL),)
    HB_DYN_LIBS += hbpcre
-endif
 endif
 ifneq ($(HB_HAS_ZLIB_LOCAL),)
    HB_DYN_LIBS += hbzlib
@@ -80,7 +80,7 @@ DYN_FILE :=
 IMP_FILE :=
 DEF_FILE := $(DEFNAME)
 
-ifneq ($(HB_BUILD_DYN),no)
+ifneq ($(__HB_BUILD_DYN),no)
 ifneq ($(DY_RULE),)
 
 DYN_NAME := $(DYN_PREF)$(DYNNAME)$(HB_DYNLIB_POST)$(DYN_EXT)$(HB_DYNLIB_PEXT)
@@ -99,7 +99,7 @@ endif
 ifeq ($(HB_DYN_FROM_LIBS),yes)
    ALL_OBJS := $(subst /,$(DIRSEP),$(foreach lib,$(HB_DYN_LIBS),$(wildcard $(LIB_DIR)/$(LIB_PREF)$(lib)$(LIB_EXT))))
 else
-   ALL_OBJS := $(subst /,$(DIRSEP),$(foreach dir,$(DYNDIRLIST),$(wildcard $(TOP)$(ROOT)$(dir)/$(OBJ_DIR)/*$(OBJ_DYN_POSTFIX)$(OBJ_EXT))))
+   ALL_OBJS := $(subst /,$(DIRSEP),$(foreach dir,$(DYNDIRLIST),$(wildcard $(TOP)$(ROOT)$(dir)/$(OBJ_DIR)/*$(OBJ_DYN_SUFFIX)$(OBJ_EXT))))
 endif
 ifneq ($(RC),)
    ALL_OBJS += $(ALL_RC_OBJS)

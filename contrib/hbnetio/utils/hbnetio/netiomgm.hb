@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA (or visit
- * their website at https://www.gnu.org/).
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * (or visit their website at https://www.gnu.org/licenses/).
  *
  */
 
@@ -112,7 +112,7 @@ STATIC FUNCTION hbnetiocon_init( hConIO, aParam )
       "shutdown"      => { ""               , "Stop server."                                   , {| netiocli | cmdShutdown( netiocli ) } }, ;
       "help"          => { ""               , "Display this help."                             , {| netiocli | cmdHelp( netiocli ) } } }
 
-   IF ! HB_ISNULL( cPassword )
+   IF ! cPassword == ""
       ConnectLow( netiocli, cIP, nPort, cPassword )
    ENDIF
 
@@ -325,7 +325,9 @@ STATIC FUNCTION XToStrX( xValue )
 STATIC PROCEDURE cmdAbout( netiocli )
 
    hbnetiocon_dispevent( netiocli, "Harbour NETIO Server Management Console " + HBRawVersionMgmnt() )
-   hbnetiocon_dispevent( netiocli, "Copyright (c) 2009-2017, Viktor Szakats" )
+   hbnetiocon_dispevent( netiocli, "Copyright (c) 2009-" + ;
+      hb_ntos( Year( hb_Version( HB_VERSION_BUILD_DATE ) ) ) + ", " + ;
+      "Viktor Szakats" )
    hbnetiocon_dispevent( netiocli, hb_Version( HB_VERSION_URL_BASE ) )
 
    RETURN
@@ -336,7 +338,7 @@ STATIC FUNCTION HBRawVersionMgmnt()
       hb_Version( HB_VERSION_MINOR ), ;
       hb_Version( HB_VERSION_RELEASE ), ;
       hb_Version( HB_VERSION_STATUS ), ;
-      hb_Version( HB_VERSION_ID ), ;
+      hb_Version( HB_VERSION_ID_SHORT ), ;
       "20" + Transform( hb_Version( HB_VERSION_REVISION ), "99-99-99 99:99" ) )
 
 STATIC PROCEDURE cmdHelp( netiocli )

@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -47,7 +47,7 @@
 #include "hbclass.ch"
 
 /* An URL:
-   https://user:passwd@example.com:port/mypages/mysite/page.html?avar=0&avar1=1
+   https://user:passwd@example.org:port/mypages/mysite/page.html?avar=0&avar1=1
    ^---^   ^--^ ^----^ ^---------^ ^--^ ^----------------------^ ^------------^
    cProto   UID  PWD     cServer  nPort          cPath               cQuery
                                         ^------------^ ^-------^
@@ -106,11 +106,11 @@ METHOD SetAddress( cUrl ) CLASS TUrl
    ::cFile := ""
    ::nPort := -1
 
-   IF HB_ISNULL( cUrl )
+   IF cUrl == ""
       RETURN .T.
    ENDIF
 
-   // TOPLEVEL url parsing. May fail.
+   // Top-level URL parsing. May fail.
    IF Empty( aMatch := hb_regex( ::cREuri, cUrl ) )
       RETURN .F.
    ENDIF
@@ -145,46 +145,46 @@ METHOD BuildAddress() CLASS TUrl
       ::cProto := Lower( ::cProto )
    ENDIF
 
-   IF ! Empty( ::cProto ) .AND. ! HB_ISNULL( ::cServer )
+   IF ! Empty( ::cProto ) .AND. ! ::cServer == ""
       cRet := ::cProto + "://"
    ENDIF
 
-   IF ! HB_ISNULL( ::cUserid )
+   IF ! ::cUserid == ""
       cRet += ::cUserid
-      IF ! HB_ISNULL( ::cPassword )
+      IF ! ::cPassword == ""
          cRet += ":" + ::cPassword
       ENDIF
       cRet += "@"
    ENDIF
 
-   IF ! HB_ISNULL( ::cServer )
+   IF ! ::cServer == ""
       cRet += ::cServer
       IF ::nPort > 0
          cRet += ":" + hb_ntos( ::nPort )
       ENDIF
    ENDIF
 
-   IF HB_ISNULL( ::cPath ) .OR. !( Right( ::cPath, 1 ) == "/" )
+   IF ::cPath == "" .OR. ! Right( ::cPath, 1 ) == "/"
       ::cPath += "/"
    ENDIF
 
    cRet += ::cPath + ::cFile
-   IF ! HB_ISNULL( ::cQuery )
+   IF ! ::cQuery == ""
       cRet += "?" + ::cQuery
    ENDIF
 
-   RETURN iif( HB_ISNULL( cRet ), NIL, ::cAddress := cRet )
+   RETURN iif( cRet == "", NIL, ::cAddress := cRet )
 
 METHOD BuildQuery() CLASS TUrl
 
    LOCAL cLine
 
-   IF HB_ISNULL( ::cPath ) .OR. !( Right( ::cPath, 1 ) == "/" )
+   IF ::cPath == "" .OR. ! Right( ::cPath, 1 ) == "/"
       ::cPath += "/"
    ENDIF
 
    cLine := ::cPath + ::cFile
-   IF ! HB_ISNULL( ::cQuery )
+   IF ! ::cQuery == ""
       cLine += "?" + ::cQuery
    ENDIF
 
@@ -218,5 +218,5 @@ METHOD AddGetForm( xPostData ) CLASS TUrl
       cData := xPostData
    ENDCASE
 
-   RETURN iif( HB_ISNULL( cData ), NIL, ;
-      ::cQuery += iif( HB_ISNULL( ::cQuery ), "", "&" ) + cData )
+   RETURN iif( cData == "", NIL, ;
+      ::cQuery += iif( ::cQuery == "", "", "&" ) + cData )

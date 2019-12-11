@@ -20,7 +20,7 @@ CREATE CLASS TFileRead
    METHOD Open( nMode )        // Open the file for reading
    METHOD Close()              // Close the file when done
    METHOD ReadLine()           // Read a line from the file
-   METHOD Name()               // Retunrs the file name
+   METHOD Name()               // Returns the file name
    METHOD IsOpen()             // Returns .T. if file is open
    METHOD MoreToRead()         // Returns .T. if more to be read
    METHOD Error()              // Returns .T. if error occurred
@@ -129,15 +129,15 @@ METHOD ReadLine() CLASS TFileRead
          // Deal with multiple possible end of line conditions.
          DO CASE
          CASE SubStr( ::cBuffer, nPos, 3 ) == Chr( 13 ) + Chr( 13 ) + Chr( 10 )
-            // It's a messed up DOS newline (such as that created by a program
+            // It's a messed up CRLF newline (such as that created by a program
             // that uses "\r\n" as newline when writing to a text mode file,
             // which causes the '\n' to expand to "\r\n", giving "\r\r\n").
             nPos += 3
          CASE SubStr( ::cBuffer, nPos, 2 ) == Chr( 13 ) + Chr( 10 )
-            // It's a standard DOS newline
+            // It's a standard CRLF newline
             nPos += 2
          OTHERWISE
-            // It's probably a Mac or Unix newline
+            // It's probably LF (Unix) or a CR (Mac) newline
             nPos++
          ENDCASE
          ::cBuffer := SubStr( ::cBuffer, nPos )
@@ -196,7 +196,7 @@ METHOD IsOpen() CLASS TFileRead
 // Returns .T. if there is more to be read from either the file or the
 // readahead buffer. Only when both are exhausted is there no more to read.
 METHOD MoreToRead() CLASS TFileRead
-   RETURN ! ::lEOF .OR. ! HB_ISNULL( ::cBuffer )
+   RETURN ! ::lEOF .OR. ! ::cBuffer == ""
 
 // Returns .T. if an error was recorded.
 METHOD Error() CLASS TFileRead

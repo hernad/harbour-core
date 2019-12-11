@@ -7,11 +7,6 @@
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version, with one exception:
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
  *
@@ -21,9 +16,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -57,10 +52,10 @@
 
 #pragma -b-
 
-#define HB_CLS_NOTOBJECT      /* do not inherit from HBObject calss */
+#define HB_CLS_NOTOBJECT      /* do not inherit from HBObject class */
 #include "hbclass.ch"
 
-#include "hbdebug.ch"   /* for "nMode" of __dbgEntry */
+#include "hbdebug.ch"   /* for "nMode" of __dbgEntry() */
 #include "hbgtinfo.ch"
 #include "hbmemvar.ch"
 
@@ -351,10 +346,10 @@ METHOD New() CLASS HBDebugger
       that way if the source is in the same directory it will still be found even if the application
       changes the current directory with the SET DEFAULT command. */
    ::cPathForFiles := GetEnv( "HB_DBG_PATH" )
-   IF HB_ISNULL( ::cPathForFiles )
+   IF ::cPathForFiles == ""
       ::cPathForFiles := GetEnv( "PATH" )
    ENDIF
-   IF HB_ISNULL( ::cPathForFiles )
+   IF ::cPathForFiles == ""
       ::cPathForFiles := NIL
    ENDIF
    ::aPathDirs := PathToArray( ::cPathForFiles )
@@ -502,7 +497,7 @@ METHOD PROCEDURE BuildBrowseStack() CLASS HBDebugger
          ::oBrwStack:Cargo := Min( Max( ::oBrwStack:Cargo, 1 ), ;
          Len( ::aProcStack ) ), ::oBrwStack:Cargo - nOld }
 
-      ::oBrwStack:Cargo := 1 // Actual highligthed row
+      ::oBrwStack:Cargo := 1 // Actual highlighted row
 
       ::oBrwStack:AddColumn( HBDbColumnNew( "", {|| iif( Len( ::aProcStack ) > 0, ;
          hb_UPadC( ::aProcStack[ ::oBrwStack:Cargo ][ HB_DBG_CS_FUNCTION ], 14 ), Space( 14 ) ) } ) )
@@ -724,7 +719,7 @@ METHOD PROCEDURE Colors() CLASS HBDebugger
       RETURN
    ENDIF
 
-   oBrwColors:Cargo := { 1, {} }  // Actual highligthed row
+   oBrwColors:Cargo := { 1, {} }  // Actual highlighted row
    oBrwColors:ColorSpec := ::ClrModal()
    oBrwColors:goTopBlock := {|| oBrwColors:cargo[ 1 ] := 1 }
    oBrwColors:goBottomBlock := {|| oBrwColors:cargo[ 1 ] := Len( oBrwColors:cargo[ 2 ][ 1 ] ) }
@@ -2049,7 +2044,7 @@ METHOD PROCEDURE Open( cFileName ) CLASS HBDebugger
    LOCAL cRealName
    LOCAL aFiles
 
-   IF ! HB_ISSTRING( cFileName ) .OR. HB_ISNULL( cFileName )
+   IF ! HB_ISSTRING( cFileName ) .OR. cFileName == ""
       aFiles := ::GetSourceFiles()
       ASort( aFiles )
       hb_AIns( aFiles, 1, "(Another file)", .T. )
@@ -2066,7 +2061,7 @@ METHOD PROCEDURE Open( cFileName ) CLASS HBDebugger
       ENDSWITCH
    ENDIF
 
-   IF ! HB_ISNULL( cFileName ) .AND. ;
+   IF ! cFileName == "" .AND. ;
       ( ! HB_ISSTRING( ::cPrgName ) .OR. ! hb_FileMatch( cFileName, ::cPrgName ) )
 
       IF ! hb_vfExists( cFileName ) .AND. ::cPathForFiles != NIL
@@ -2190,7 +2185,7 @@ METHOD PathForFiles( cPathForFiles ) CLASS HBDebugger
    IF ! HB_ISSTRING( cPathForFiles )
       cPathForFiles := ::InputBox( "Search path for source files:", ::cPathForFiles )
    ENDIF
-   IF HB_ISNULL( cPathForFiles )
+   IF cPathForFiles == ""
       cPathForFiles := NIL
    ENDIF
    ::cPathForFiles := cPathForFiles
@@ -2353,7 +2348,7 @@ METHOD PROCEDURE RestoreAppState() CLASS HBDebugger
 
 METHOD PROCEDURE RestoreSettings( cFileName ) CLASS HBDebugger
 
-   IF ! HB_ISSTRING( cFileName ) .OR. HB_ISNULL( cFileName )
+   IF ! HB_ISSTRING( cFileName ) .OR. cFileName == ""
       ::cSettingsFileName := ::InputBox( "File name", ::cSettingsFileName )
       IF LastKey() == K_ESC
          RETURN
@@ -2431,7 +2426,7 @@ METHOD PROCEDURE SaveSettings( cFileName ) CLASS HBDebugger
    LOCAL oWnd
    LOCAL aBreak, aWatch
 
-   IF ! HB_ISSTRING( cFileName ) .OR. HB_ISNULL( cFileName )
+   IF ! HB_ISSTRING( cFileName ) .OR. cFileName == ""
       ::cSettingsFileName := ::InputBox( "File name", ::cSettingsFileName )
       IF LastKey() == K_ESC
          RETURN
@@ -3008,7 +3003,7 @@ METHOD BreakPointDelete( cPos ) CLASS HBDebugger
 
    LOCAL nAt
 
-   IF ! HB_ISSTRING( cPos ) .OR. HB_ISNULL( cPos )
+   IF ! HB_ISSTRING( cPos ) .OR. cPos == ""
       cPos := AllTrim( ::InputBox( "Item number to delete", "0" ) )
       IF LastKey() == K_ESC
          cPos := ""

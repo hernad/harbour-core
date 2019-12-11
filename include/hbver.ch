@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -59,12 +59,13 @@
 #define HB_VERSION_REVISION             6
 #define HB_VERSION_COMMIT_INFO          7
 #define HB_VERSION_ID                   8
+#define HB_VERSION_ID_SHORT             31  /* Latest value. Continue from here. */
 #define HB_VERSION_PCODE_VER            9
 #define HB_VERSION_PCODE_VER_STR        10
 #define HB_VERSION_BUILD_DATE_STR       11
 #define HB_VERSION_BUILD_DATE           12
 #define HB_VERSION_BUILD_TIME           13
-#define HB_VERSION_BUILD_TIMESTAMP_UTC  30  /* Latest value. Continue from here. */
+#define HB_VERSION_BUILD_TIMESTAMP_UTC  30
 #define HB_VERSION_BUILD_PLAT           22
 #define HB_VERSION_BUILD_COMP           23
 #define HB_VERSION_FLAG_PRG             14

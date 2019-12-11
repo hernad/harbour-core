@@ -15,9 +15,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -112,7 +112,7 @@ FUNCTION win_regDelete( cRegPath, nRegSam )
 
    win_regPathSplit( cRegPath, @nHKEY, @cKey, @cEntry )
 
-   IF HB_ISNULL( cEntry )
+   IF cEntry == ""
       lRetVal := win_regDeleteKey( nHKEY, cKey )
    ELSEIF win_regOpenKeyEx( nHKEY, cKey, 0, hb_bitOr( KEY_SET_VALUE, hb_defaultValue( nRegSam, 0 ) ), @pKeyHandle )
       lRetVal := win_regDeleteValue( pKeyHandle, cEntry )

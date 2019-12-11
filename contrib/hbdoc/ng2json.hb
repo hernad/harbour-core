@@ -20,9 +20,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA (or visit
- * their website at https://www.gnu.org/).
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * (or visit their website at https://www.gnu.org/licenses/).
  *
  */
 
@@ -46,6 +46,8 @@ procedure main( name )
     conv_one( name )
   endif
 
+  return
+
 static procedure conv_one( name )
 
   local a, p, ic, t1, t2, mt, mc, tmp
@@ -55,7 +57,7 @@ static procedure conv_one( name )
   a := hb_bleft( a, 378 ) + hb_strxor( hb_bsubstr( a, 378 + 1 ), 0x1a )  // "decrypt"
 
   if hb_lefteq( a, 'NG' ) .or. ;
-     hb_lefteq( a, 'EH' )
+     hb_lefteq( a, 'EH' )  // untested
 
     mc := bin2w( hb_bsubstr( a, 7, 2 ) )  // menu count
 
@@ -63,7 +65,7 @@ static procedure conv_one( name )
     for each tmp in r[ 'copy' ] := array( 5 )
       tmp := substrz( a, 0x31 + ( tmp:__enumindex() - 1 ) * 66, 66 )
     next
-    while ! empty( r[ 'copy' ] ) .and. hb_isnull( atail( r[ 'copy' ] ) )
+    while ! empty( r[ 'copy' ] ) .and. atail( r[ 'copy' ] ) == ''
       asize( r[ 'copy' ], len( r[ 'copy' ] ) - 1 )
     enddo
     r[ 'menu' ] := { => }

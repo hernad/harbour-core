@@ -1,5 +1,3 @@
-/* Requirement: Create certificate with ./mkcert.sh (rename to .bat as needed) */
-
 #require "hbssl"
 #require "hbhttpd"
 
@@ -14,12 +12,10 @@ MEMVAR server, get, post, cookie, session
 
 PROCEDURE Main()
 
-   LOCAL oServer
+   LOCAL oServer, hConfig
 
    LOCAL oLogAccess
    LOCAL oLogError
-
-   LOCAL nPort
 
    IF hb_argCheck( "help" )
       ? "Usage: app [options]"
@@ -34,15 +30,6 @@ PROCEDURE Main()
       RETURN
    ELSE
       hb_vfErase( ".uhttpd.stop" )
-   ENDIF
-
-   IF ! hb_vfExists( _FN_PKEY ) .OR. ;
-      ! hb_vfExists( _FN_CERT )
-
-      ? "Certificate and/or private key missing."
-      ? "Create them by running ./mkcert.sh"
-      ? "(rename to .bat if your platform doesn't support POSIX shell)"
-      RETURN
    ENDIF
 
    Set( _SET_DATEFORMAT, "yyyy-mm-dd" )
@@ -106,33 +93,46 @@ PROCEDURE Main()
       RETURN
    ENDIF
 
-   ? "Listening on port:", nPort := 8002
-
    oServer := UHttpdNew()
 
-   IF ! oServer:Run( { ;
-         "FirewallFilter"      => "", ;
-         "LogAccess"           => {| m | oLogAccess:Add( m + hb_eol() ) }, ;
-         "LogError"            => {| m | oLogError:Add( m + hb_eol() ) }, ;
-         "Trace"               => {| ... | QOut( ... ) }, ;
-         "Port"                => nPort, ;
-         "Idle"                => {| o | iif( hb_vfExists( ".uhttpd.stop" ), ( hb_vfErase( ".uhttpd.stop" ), o:Stop() ), NIL ) }, ;
-         "PrivateKeyFilename"  => _FN_PKEY, ;
-         "CertificateFilename" => _FN_CERT, ;
-         "SSL"                 => .T., ;
-         "Mount"          => { ;
-         "/hello"            => {|| UWrite( "Hello!" ) }, ;
-         "/info"             => {|| UProcInfo() }, ;
-         "/files/*"          => {| x | QOut( hb_DirBase() + "files/" + X ), UProcFiles( hb_DirBase() + "files/" + X, .F. ) }, ;
-         "/app/login"        => @proc_login(), ;
-         "/app/logout"       => @proc_logout(), ;
-         "/app/account"      => @proc_account(), ;
-         "/app/account/edit" => @proc_account_edit(), ;
-         "/app/register"     => @proc_register(), ;
-         "/app/main"         => @proc_main(), ;
-         "/app/shopping"     => @proc_shopping(), ;
-         "/app/cart"         => @proc_cart(), ;
-         "/"                 => {|| URedirect( "/app/login" ) } } } )
+   hConfig := { ;
+      "FirewallFilter"      => "", ;
+      "LogAccess"           => {| m | oLogAccess:Add( m + hb_eol() ) }, ;
+      "LogError"            => {| m | oLogError:Add( m + hb_eol() ) }, ;
+      "PostProcessRequest"  => {|| dbCloseAll() }, ;
+      "Trace"               => {| ... | QOut( ... ) }, ;
+      "Port"                => 8002, ;
+      "Idle"                => {| o | iif( hb_vfExists( ".uhttpd.stop" ), ( hb_vfErase( ".uhttpd.stop" ), o:Stop() ), NIL ) }, ;
+      "Mount"          => { ;
+      "/hello"            => {|| UWrite( "Hello!" ) }, ;
+      "/info"             => {|| UProcInfo() }, ;
+      "/files/*"          => {| x | QOut( hb_DirBase() + "files/" + X ), UProcFiles( hb_DirBase() + "files/" + X, .F. ) }, ;
+      "/app/login"        => @proc_login(), ;
+      "/app/logout"       => @proc_logout(), ;
+      "/app/account"      => @proc_account(), ;
+      "/app/account/edit" => @proc_account_edit(), ;
+      "/app/register"     => @proc_register(), ;
+      "/app/main"         => @proc_main(), ;
+      "/app/shopping"     => @proc_shopping(), ;
+      "/app/cart"         => @proc_cart(), ;
+      "/"                 => {|| URedirect( "/app/login" ) } } }
+
+   IF hb_vfExists( _FN_PKEY ) .OR. ;
+      hb_vfExists( _FN_CERT )
+      hConfig[ "SSL" ]                 := .T.
+      hConfig[ "PrivateKeyFilename" ]  := _FN_PKEY
+      hConfig[ "CertificateFilename" ] := _FN_CERT
+   ELSE
+      ? "Certificate and/or private key missing."
+      ? "Create them by running ./mkcert.sh"
+      ?
+      ? "WARNING: Continuing with insecure/cleartext communication."
+      ?
+   ENDIF
+
+   ? "Listening on port:", hConfig[ "Port" ]
+
+   IF ! oServer:Run( hConfig )
       oLogError:Close()
       oLogAccess:Close()
       ? "Server error:", oServer:cError
@@ -182,7 +182,7 @@ STATIC FUNCTION proc_logout()
 STATIC FUNCTION proc_main()
 
    USessionStart()
-   IF !( "user" $ session )
+   IF ! "user" $ session
       URedirect( "/app/login" )
       RETURN NIL
    ENDIF
@@ -194,7 +194,7 @@ STATIC FUNCTION proc_shopping()
    LOCAL oW, nT, cCode
 
    USessionStart()
-   IF !( "user" $ session )
+   IF ! "user" $ session
       URedirect( "/app/login" )
       RETURN NIL
    ENDIF
@@ -243,7 +243,7 @@ STATIC FUNCTION proc_cart()
    LOCAL oW, nT, cCode
 
    USessionStart()
-   IF !( "user" $ session )
+   IF ! "user" $ session
       URedirect( "/app/login" )
       RETURN NIL
    ENDIF
@@ -288,7 +288,7 @@ STATIC FUNCTION proc_cart()
 STATIC FUNCTION proc_account()
 
    USessionStart()
-   IF !( "user" $ session )
+   IF ! "user" $ session
       URedirect( "/app/login" )
       RETURN NIL
    ENDIF
@@ -303,7 +303,7 @@ STATIC FUNCTION proc_account_edit()
    LOCAL cName, cPassword1, cPassword2, aRet
 
    USessionStart()
-   IF !( "user" $ session )
+   IF ! "user" $ session
       URedirect( "/app/login" )
       RETURN NIL
    ENDIF
@@ -313,7 +313,7 @@ STATIC FUNCTION proc_account_edit()
 
    cName := users->NAME
    IF "formdata_account/edit" $ session
-      cName := session[ "formdata_account/edit", "name" ]
+      cName := session[ "formdata_account/edit" ][ "name" ]
    ENDIF
    IF server[ "REQUEST_METHOD" ] == "POST"
       cName := hb_HGetDef( post, "name", "" )
@@ -322,7 +322,7 @@ STATIC FUNCTION proc_account_edit()
       IF Empty( cName )
          session[ "formdata_account/edit" ] := { "name" => cName }
          URedirect( "?err=1" )
-      ELSEIF ( ! Empty( cPassword1 ) .OR. ! Empty( cPassword2 ) ) .AND. !( cPassword1 == cPassword2 )
+      ELSEIF ( ! Empty( cPassword1 ) .OR. ! Empty( cPassword2 ) ) .AND. ! cPassword1 == cPassword2
          session[ "formdata_account/edit" ] := { "name" => cName }
          URedirect( "?err=2" )
       ELSE
@@ -362,8 +362,8 @@ STATIC FUNCTION proc_register()
    cUser := ""
    cName := ""
    IF "formdata_register" $ session
-      cUser := session[ "formdata_register", "user" ]
-      cName := session[ "formdata_register", "name" ]
+      cUser := session[ "formdata_register" ][ "user" ]
+      cName := session[ "formdata_register" ][ "name" ]
    ENDIF
    IF server[ "REQUEST_METHOD" ] == "POST"
       dbUseArea( .T., , "users", "users", .T., .F. )
@@ -376,7 +376,7 @@ STATIC FUNCTION proc_register()
       IF Empty( cUser ) .OR. Empty( cName ) .OR. Empty( cPassword1 ) .OR. Empty( cPassword2 )
          session[ "formdata_register" ] := { "user" => cUser, "name" => cName }
          URedirect( "?err=1" )
-      ELSEIF !( cPassword1 == cPassword2 )
+      ELSEIF ! cPassword1 == cPassword2
          session[ "formdata_register" ] := { "user" => cUser, "name" => cName }
          URedirect( "?err=2" )
       ELSEIF dbSeek( cUser, .F. )

@@ -12,9 +12,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -72,7 +72,7 @@ METHOD New( cFileName ) CLASS TIniFile
    LOCAL lDone, hFile, cFile, cLine, cIdent, nPos
    LOCAL CurrArray
 
-   IF ! HB_ISSTRING( cFileName ) .OR. HB_ISNULL( cFileName )
+   IF ! HB_ISSTRING( cFileName ) .OR. cFileName == ""
       // raise an error?
       RETURN NIL
    ELSE
@@ -92,12 +92,12 @@ METHOD New( cFileName ) CLASS TIniFile
 
          // prepend last read
          cFile := cLine + cFile
-         DO WHILE ! HB_ISNULL( cFile )
+         DO WHILE ! cFile == ""
             IF ( nPos := At( Chr( 10 ), cFile ) ) > 0
                cLine := Left( cFile, nPos - 1 )
                cFile := SubStr( cFile, nPos + 1 )
 
-               IF ! HB_ISNULL( cLine )
+               IF ! cLine == ""
                   DO CASE
                   CASE hb_LeftEq( cLine, "[" )  // new section
                      IF ( nPos := At( "]", cLine ) ) > 1

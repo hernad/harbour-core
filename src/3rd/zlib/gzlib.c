@@ -5,11 +5,11 @@
 
 #include "gzguts.h"
 
-#if defined(__XCC__) || defined(__DMC__) || defined(__MINGW32CE__)
+#if defined(__MINGW32CE__)
 #  define LSEEK lseek
 #elif defined(__POCC__)
 #  define LSEEK _lseek64
-#elif defined(_WIN32) && !defined(__BORLANDC__)
+#elif defined(_WIN32) && !defined(__BORLANDC__) && !defined(__MINGW32__)
 #  define LSEEK _lseeki64
 #else
 #if defined(_LARGEFILE64_SOURCE) && _LFS64_LARGEFILE-0

@@ -35,13 +35,10 @@ C_SOURCES += \
 endif
 
 ifneq ($(HB_HAS_ZLIB_LOCAL),)
-   # To suppress new warnings in version 1.2.5
-   ifneq ($(filter $(HB_COMPILER),mingw mingw64 mingwarm cygwin djgpp),)
-      HB_CFLAGS += -DNO_VIZ
-   else
-      ifneq ($(filter $(HB_PLATFORM),aix),)
-         HB_CFLAGS += -DNO_VIZ
-      endif
+   HB_CFLAGS += -DNOBYFOUR
+   ifneq ($(filter $(HB_COMPILER),mingw mingw64),)
+      # Required to enable 64-bit lseek() since version 1.2.9
+      HB_CFLAGS += -D_LARGEFILE64_SOURCE=1 -D_LFS64_LARGEFILE=1
    endif
    ifneq ($(filter $(HB_PLATFORM),wce),)
       HB_CFLAGS += -D_WINCE
@@ -57,8 +54,8 @@ ifneq ($(HB_HAS_ZLIB_LOCAL),)
       endif
    endif
    ifneq ($(filter $(HB_COMPILER),msvc msvc64 msvcia64 msvcarm),)
-      ifeq ($(filter $(HB_COMPILER_VER),1200 1300 1310 1400 1500 1600),)
-         HB_CFLAGS += -sdl-
+      ifeq ($(filter $(__HB_COMPILER_VER),1200 1300 1310 1400 1500 1600),)
+         HB_CFLAGS += -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_SECURE_NO_WARNINGS
       endif
    endif
    include $(TOP)$(ROOT)config/lib.mk
@@ -67,10 +64,10 @@ else
    include $(TOP)$(ROOT)config/none.mk
 endif
 
-# URL    https://github.com/madler/zlib/archive/v1.2.11.zip
+# URL    https://github.com/madler/zlib/archive/v1.2.11.tar.gz
 # DIFF   zlib.diff
 #
-# MAP    README     README.txt
+# MAP    README
 # MAP    adler32.c
 # MAP    compress.c
 # MAP    crc32.c

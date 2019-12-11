@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -215,7 +215,7 @@ METHOD getAccel( xKey ) CLASS RadioGroup
       RETURN 0
    ENDCASE
 
-   IF ! HB_ISNULL( cKey )
+   IF ! cKey == ""
       cKey := Lower( cKey )
       RETURN AScan( ::aItems, {| o | o:isAccel( cKey ) } )
    ENDIF
@@ -529,7 +529,7 @@ METHOD caption( cCaption ) CLASS RadioGroup
 METHOD coldBox( cColdBox ) CLASS RadioGroup
 
    IF cColdBox != NIL
-      ::cColdBox := __eInstVar53( Self, "COLDBOX", cColdBox, "C", 1001, {|| HB_ISNULL( cColdBox ) .OR. hb_ULen( cColdBox ) == 8 } )
+      ::cColdBox := __eInstVar53( Self, "COLDBOX", cColdBox, "C", 1001, {|| cColdBox == "" .OR. hb_ULen( cColdBox ) == 8 } )
    ENDIF
 
    RETURN ::cColdBox
@@ -557,7 +557,7 @@ METHOD hasFocus() CLASS RadioGroup
 METHOD hotBox( cHotBox ) CLASS RadioGroup
 
    IF cHotBox != NIL
-      ::cHotBox := __eInstVar53( Self, "HOTBOX", cHotBox, "C", 1001, {|| HB_ISNULL( cHotBox ) .OR. hb_ULen( cHotBox ) == 8 } )
+      ::cHotBox := __eInstVar53( Self, "HOTBOX", cHotBox, "C", 1001, {|| cHotBox == "" .OR. hb_ULen( cHotBox ) == 8 } )
    ENDIF
 
    RETURN ::cHotBox

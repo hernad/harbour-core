@@ -1,35 +1,34 @@
 #!/usr/bin/env hbmk2
 
-/* Copyright 2015 Viktor Szakats (vszakats.net/harbour) */
+/* Copyright 2015-2017 Viktor Szakats (vszakats.net/harbour) */
 
-/* Set timestamps for non-generated (repository) files
-   before including them in a distributable package.
-   For reproducible builds. */
+/* Set timestamps for non-generated (repository) files before including them
+   in a distributable package. For reproducible builds. */
 
 #include "directry.ch"
 #include "fileio.ch"
 
-// #define DEBUG
+// #define TRACE
 
-#ifdef DEBUG
-   #translate _DEBUG( <x> ) => OutStd( __FILE__ + ": " + <x> + hb_eol() )
+#ifdef TRACE
+   #translate _TRACE( <x,...> ) => OutStd( __FILE__ + ":", <x> + hb_eol() )
 #else
-   #translate _DEBUG( <x> ) =>
+   #translate _TRACE( <x,...> ) =>
 #endif
 
 PROCEDURE Main( cMode )
 
    LOCAL tmp, aFiles, file, cStdOut, tDate, tDateHEAD
-   LOCAL cGitRoot, lShallow, cBinMask
+   LOCAL cGitRoot, lShallow, cBinMask, nUTCOffsetLocal
 
-   _DEBUG( "BEGIN" )
+   _TRACE( "BEGIN" )
 
    SWITCH Lower( cMode := hb_defaultValue( cMode, "" ) )
    CASE "pe"
 
       tmp := hb_DirSepToOS( hb_defaultValue( hb_PValue( 3 ), "" ) )
 
-      OutStd( "! mpkg.hb: Setting build times in executable headers of", tmp + hb_eol() )
+      OutStd( "! mpkg.hb: Timestamping executable header of", tmp + hb_eol() )
 
       FOR EACH file IN hb_vfDirectory( tmp )
          /* Use a fixed date to change binaries only if their ingredients have changed */
@@ -43,8 +42,8 @@ PROCEDURE Main( cMode )
       cGitRoot := hb_DirSepAdd( hb_DirSepToOS( hb_defaultValue( hb_PValue( 2 ), "." ) ) ) + ".git"
       IF hb_vfDirExists( cGitRoot )
 
-         _DEBUG( "cwd: " + hb_cwd() )
-         _DEBUG( "git: " + cGitRoot )
+         _TRACE( "cwd:", hb_cwd() )
+         _TRACE( "git:", cGitRoot )
 
          hb_processRun( "git" + ;
             " " + FNameEscape( "--git-dir=" + cGitRoot ) + ;
@@ -59,17 +58,21 @@ PROCEDURE Main( cMode )
 
          hb_processRun( "git log -1 --format=format:%ci",, @cStdOut )
 
+         _TRACE( "date HEAD (raw):", cStdOut )
+
          tDateHEAD := hb_CToT( cStdOut, "yyyy-mm-dd", "hh:mm:ss" )
+
+         nUTCOffsetLocal := hb_UTCOffset()
 
          IF Empty( tDateHEAD )
             OutStd( "! mpkg.hb: Error: Failed to obtain last commit timestamp." + hb_eol() )
          ELSE
             tDateHEAD -= ( ( ( iif( SubStr( cStdOut, 21, 1 ) == "-", -1, 1 ) * 60 * ;
                              ( Val( SubStr( cStdOut, 22, 2 ) ) * 60 + ;
-                               Val( SubStr( cStdOut, 24, 2 ) ) ) ) - hb_UTCOffset() ) / 86400 )
+                               Val( SubStr( cStdOut, 24, 2 ) ) ) ) - nUTCOffsetLocal ) / 86400 )
          ENDIF
 
-         _DEBUG( "date HEAD:" + hb_TToC( tDateHEAD ) )
+         _TRACE( "date HEAD:", hb_TToC( tDateHEAD ) )
 
          IF ! Empty( tDateHEAD ) .OR. ! lShallow
 
@@ -81,7 +84,9 @@ PROCEDURE Main( cMode )
 
             FOR EACH tmp IN { ;
                "bin/*.hb", ;
+               "doc/*.md", ;
                "doc/*.txt", ;
+               "addons/*.md", ;
                "addons/*.txt", ;
                "contrib/", ;
                "extras/", ;
@@ -107,7 +112,7 @@ PROCEDURE Main( cMode )
                      IF ! Empty( tDate )
                         tDate -= ( ( ( iif( SubStr( cStdOut, 21, 1 ) == "-", -1, 1 ) * 60 * ;
                                      ( Val( SubStr( cStdOut, 22, 2 ) ) * 60 + ;
-                                       Val( SubStr( cStdOut, 24, 2 ) ) ) ) - hb_UTCOffset() ) / 86400 )
+                                       Val( SubStr( cStdOut, 24, 2 ) ) ) ) - nUTCOffsetLocal ) / 86400 )
                         hb_vfTimeSet( file, tDate )
                      ENDIF
                   ENDIF
@@ -136,7 +141,7 @@ PROCEDURE Main( cMode )
       OutStd( "! mpkg.hb: Error: Wrong mode:", "'" + cMode + "'" + hb_eol() )
    ENDSWITCH
 
-   _DEBUG( "FINISH" )
+   _TRACE( "FINISH" )
 
    RETURN
 
@@ -164,7 +169,7 @@ STATIC FUNCTION win_PESetTimestamp( cFileName, tDateHdr )
             Bin2W( hb_vfReadLen( hFile, 2 ) ) + ;
             Bin2W( hb_vfReadLen( hFile, 2 ) ) * 0x10000
          hb_vfSeek( hFile, nPEPos, FS_SET )
-         IF !( hb_vfReadLen( hFile, 4 ) == "PE" + hb_BChar( 0 ) + hb_BChar( 0 ) )
+         IF ! hb_vfReadLen( hFile, 4 ) == "PE" + hb_BChar( 0 ) + hb_BChar( 0 )
             nPEPos := NIL
          ENDIF
       ELSEIF cSignature + hb_vfReadLen( hFile, 2 ) == "PE" + hb_BChar( 0 ) + hb_BChar( 0 )
@@ -189,7 +194,7 @@ STATIC FUNCTION win_PESetTimestamp( cFileName, tDateHdr )
                hb_BChar( nDWORD % 0x100 ) + ;
                hb_BChar( nDWORD / 0x100 )
 
-            IF !( hb_vfReadLen( hFile, 4 ) == cDWORD ) .AND. ;
+            IF ! hb_vfReadLen( hFile, 4 ) == cDWORD .AND. ;
                hb_vfSeek( hFile, nPEPos + 0x0008, FS_SET ) == nPEPos + 0x0008 .AND. ;
                hb_vfWrite( hFile, cDWORD ) == hb_BLen( cDWORD )
                lModified := .T.
@@ -225,7 +230,7 @@ STATIC FUNCTION win_PESetTimestamp( cFileName, tDateHdr )
                   NEXT
                   IF nPEPos != NIL .AND. ;
                      hb_vfSeek( hFile, nPEPos + 0x0004, FS_SET ) == nPEPos + 0x0004
-                     IF !( hb_vfReadLen( hFile, 4 ) == cDWORD ) .AND. ;
+                     IF ! hb_vfReadLen( hFile, 4 ) == cDWORD .AND. ;
                         hb_vfSeek( hFile, nPEPos + 0x0004, FS_SET ) == nPEPos + 0x0004 .AND. ;
                         hb_vfWrite( hFile, cDWORD ) == hb_BLen( cDWORD )
                         lModified := .T.
@@ -292,14 +297,3 @@ STATIC FUNCTION StringEOLConv( cFile )
 
    RETURN iif( hb_eol() == Chr( 10 ), cFile, ;
       StrTran( cFile, Chr( 10 ), Chr( 13 ) + Chr( 10 ) ) )
-
-STATIC FUNCTION FileConvEOL( cFileName )
-
-   LOCAL cFile, tDate
-
-   hb_vfTimeGet( cFileName, @tDate )
-
-   RETURN ;
-      ! HB_ISNULL( cFile := hb_MemoRead( cFileName ) ) .AND. ;
-      hb_MemoWrit( cFileName, StringEOLConv( cFile ) ) .AND. ;
-      hb_vfTimeSet( cFileName, tDate )

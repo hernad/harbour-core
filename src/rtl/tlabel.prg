@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -150,7 +150,7 @@ METHOD PROCEDURE New( cLBLName, lPrinter, cAltFile, lNoConsole, bFor, ;
    lConsoleOn := Set( _SET_CONSOLE )
    Set( _SET_CONSOLE, ! lNoConsole .AND. lConsoleOn )
 
-   IF HB_ISSTRING( cAltFile ) .AND. ! HB_ISNULL( cAltFile )     // To file
+   IF HB_ISSTRING( cAltFile ) .AND. ! cAltFile == ""     // To file
       lExtraState := Set( _SET_EXTRA, .T. )
       cExtraFile  := Set( _SET_EXTRAFILE, cAltFile )
    ENDIF
@@ -201,7 +201,7 @@ METHOD PROCEDURE New( cLBLName, lPrinter, cAltFile, lNoConsole, bFor, ;
    Set( _SET_PRINTER, lPrintOn ) // Set the printer back to prior state
    Set( _SET_CONSOLE, lConsoleOn )  // Set the console back to prior state
 
-   IF HB_ISSTRING( cAltFile ) .AND. ! HB_ISNULL( cAltFile )       // Set extrafile back
+   IF HB_ISSTRING( cAltFile ) .AND. ! cAltFile == ""       // Set extrafile back
       Set( _SET_EXTRAFILE, cExtraFile )
       Set( _SET_EXTRA, lExtraState )
    ENDIF
@@ -309,7 +309,7 @@ METHOD SampleLabels() CLASS HBLabelForm
       cKey := hb_keyChar( Inkey( 0 ) )
       DispOut( cKey )
       IF Row() == MaxRow()
-         hb_Scroll( 0, 0, MaxRow(), MaxCol(), 1 )
+         Scroll( 0, 0, MaxRow(), MaxCol(), 1 )
          SetPos( MaxRow(), 0 )
       ELSE
          SetPos( Row() + 1, 0 )

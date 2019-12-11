@@ -1,5 +1,5 @@
 /*
- * PostgreSQL RDBMS low level (client api) interface code.
+ * PostgreSQL RDBMS low-level (client API) interface code.
  *
  * Copyright 2003 Rodrigo Moreno rodrigo_moreno@yahoo.com
  *
@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -59,6 +59,7 @@ CREATE CLASS TPQServer
    VAR pDb
    VAR lTrans
    VAR lAllCols  INIT .T.
+   VAR lNull     INIT .F.
    VAR Schema    INIT "public"
    VAR lError    INIT .F.
    VAR cError    INIT ""
@@ -74,7 +75,7 @@ CREATE CLASS TPQServer
    METHOD Commit()
    METHOD Rollback()
 
-   METHOD Query( cQuery )
+   METHOD Query( cQuery, lNull )
    METHOD Execute( cQuery )    INLINE ::Query( cQuery )
    METHOD SetSchema( cSchema )
 
@@ -89,6 +90,7 @@ CREATE CLASS TPQServer
    METHOD TraceOn( cFile )
    METHOD TraceOff()
    METHOD SetVerbosity( num )  INLINE PQsetErrorVerbosity( ::pDb, iif( num >= 0 .AND. num <= 2, num, 1 )  )
+   METHOD SetNull( lValue )
 
 ENDCLASS
 
@@ -111,7 +113,7 @@ METHOD New( cHost, cDatabase, cUser, cPass, nPort, cSchema, hCustom ) CLASS TPQs
    ENDIF
 
    ::pDB := PQconnectdb( cConnect )
-   
+
    IF PQstatus( ::pDb ) != CONNECTION_OK
       ::lError := .T.
       ::cError := PQerrorMessage( ::pDb )
@@ -188,8 +190,13 @@ METHOD Rollback() CLASS TPQserver
 
    RETURN ::lError
 
-METHOD Query( cQuery ) CLASS TPQserver
-   RETURN TPQQuery():New( ::pDB, cQuery, ::lAllCols, ::Schema )
+METHOD Query( cQuery, lNull ) CLASS TPQserver
+
+   IF ! HB_ISLOGICAL( lNull )
+      lNull := ::lNull
+   ENDIF
+
+   RETURN TPQQuery():New( ::pDB, cQuery, ::lAllCols, ::Schema, lNull )
 
 METHOD TableExists( cTable ) CLASS TPQserver
 
@@ -295,7 +302,7 @@ METHOD TableStruct( cTable ) CLASS TPQserver
             /* Postgres doesn't store ".", but .dbf does, it can cause data width problem */
             nSize := Val( nSize ) + iif( nDec > 0, 1, 0 )
 
-            /* Numeric/Decimal without scale/precision can genarete big values, so, i limit this to 10,5 */
+            /* Numeric/Decimal without scale/precision can generate big values, so, I limit this to 10,5 */
 
             IF nDec > 100
                nDec := 5
@@ -353,7 +360,7 @@ METHOD TableStruct( cTable ) CLASS TPQserver
 
          ENDCASE
 
-         IF !( cType == "U" )
+         IF ! cType == "U"
             AAdd( result, { cField, cType, nSize, nDec } )
          ENDIF
       NEXT
@@ -437,6 +444,15 @@ METHOD PROCEDURE TraceOff() CLASS TPQserver
 
    RETURN
 
+METHOD SetNull( lValue ) CLASS TPQserver
+
+   LOCAL lOldValue := ::lNull
+
+   IF HB_ISLOGICAL( lValue )
+      ::lNull := lValue
+   ENDIF
+
+   RETURN lOldValue
 
 CREATE CLASS TPQQuery
 
@@ -449,6 +465,7 @@ CREATE CLASS TPQQuery
    VAR lEof
    VAR lRead
    VAR lAllCols INIT .T.
+   VAR lNull    INIT .F.
 
    VAR lError   INIT .F.
    VAR cError   INIT ""
@@ -464,7 +481,7 @@ CREATE CLASS TPQQuery
    VAR Schema
    VAR rows     INIT 0
 
-   METHOD New( pDB, cQuery, lAllCols, cSchema, res )
+   METHOD New( pDB, cQuery, lAllCols, cSchema, res, lNull )
    METHOD Destroy()
    METHOD Close()            INLINE ::Destroy()
 
@@ -493,7 +510,7 @@ CREATE CLASS TPQQuery
    METHOD Append( oRow )
    METHOD SetKey()
 
-   METHOD Changed( nField )  INLINE !( ::aRow[ nField ] == ::aOld[ nField ] )
+   METHOD Changed( nField )  INLINE ! ::aRow[ nField ] == ::aOld[ nField ]
    METHOD Blank()            INLINE ::GetBlankRow()
 
    METHOD Struct()
@@ -505,7 +522,7 @@ CREATE CLASS TPQQuery
 ENDCLASS
 
 
-METHOD New( pDB, cQuery, lAllCols, cSchema, res ) CLASS TPQquery
+METHOD New( pDB, cQuery, lAllCols, cSchema, res, lNull ) CLASS TPQquery
 
    ::pDB := pDB
    ::nResultStatus := -1
@@ -517,9 +534,13 @@ METHOD New( pDB, cQuery, lAllCols, cSchema, res ) CLASS TPQquery
       ::pQuery := res
    ENDIF
 
+   IF HB_ISLOGICAL( lNull )
+      ::lNull := lNull
+   ENDIF
+
    ::Refresh( res == NIL )
 
-   RETURN self
+   RETURN Self
 
 METHOD Destroy() CLASS TPQquery
 
@@ -583,7 +604,7 @@ METHOD Refresh( lQuery, lMeta ) CLASS TPQquery
                   /* Postgres don't store ".", but .dbf does, it can cause data width problem */
                   IF nDec > 0
                      nSize++
-                     /* Numeric/Decimal without scale/precision can genarete big values, so, i limit this to 10,5 */
+                     /* Numeric/Decimal without scale/precision can generate big values, so, I limit this to 10,5 */
                      IF nDec > 100
                         nDec := 5
                      ENDIF
@@ -648,7 +669,7 @@ METHOD Refresh( lQuery, lMeta ) CLASS TPQquery
                   nSize := 19
 
                OTHERWISE
-                  /* Unsuported */
+                  /* Unsupported */
                   cType := "K"
                ENDCASE
 
@@ -836,7 +857,7 @@ METHOD Delete( oRow ) CLASS TPQquery
          ENDIF
       NEXT
 
-      IF !( cWhere == "" )
+      IF ! cWhere == ""
 
          res := PQexecParams( ::pDB, ;
             "DELETE FROM " + ::Schema + "." + ::Tablename + " WHERE " + cWhere, aParams )
@@ -872,7 +893,7 @@ METHOD Append( oRow ) CLASS TPQquery
       cQuery := "INSERT INTO " + ::Schema + "." + ::Tablename + "("
 
       FOR i := 1 TO oRow:FCount()
-         IF ::lAllCols .OR. oRow:changed( i )
+         IF ::lAllCols .OR. oRow:Changed( i )
             lChanged := .T.
             cQuery += oRow:FieldName( i ) + ","
          ENDIF
@@ -949,7 +970,7 @@ METHOD Update( oRow ) CLASS TPQquery
          ENDIF
       NEXT
 
-      IF !( cWhere == "" ) .AND. lChanged
+      IF ! cWhere == "" .AND. lChanged
 
          cQuery := hb_StrShrink( cQuery ) + " WHERE " + cWhere
 
@@ -993,7 +1014,7 @@ METHOD FieldGet( nField, nRow ) CLASS TPQquery
       CASE "M"
          IF result != NIL
             result := result
-         ELSE
+         ELSEIF ! ::lNull
             result := ""
          ENDIF
          EXIT
@@ -1001,7 +1022,7 @@ METHOD FieldGet( nField, nRow ) CLASS TPQquery
       CASE "N"
          IF result != NIL
             result := Val( result )
-         ELSE
+         ELSEIF ! ::lNull
             result := 0
          ENDIF
          EXIT
@@ -1009,7 +1030,7 @@ METHOD FieldGet( nField, nRow ) CLASS TPQquery
       CASE "D"
          IF result != NIL
             result := hb_SToD( StrTran( result, "-" ) )
-         ELSE
+         ELSEIF ! ::lNull
             result := hb_SToD()
          ENDIF
          EXIT
@@ -1017,7 +1038,7 @@ METHOD FieldGet( nField, nRow ) CLASS TPQquery
       CASE "L"
          IF result != NIL
             result := ( result == "t" )
-         ELSE
+         ELSEIF ! ::lNull
             result := .F.
          ENDIF
          EXIT
@@ -1180,7 +1201,7 @@ CREATE CLASS TPQRow
    METHOD FieldLen( nField )
    METHOD FieldDec( nField )
    METHOD FieldType( nField )
-   METHOD Changed( nField )     INLINE !( ::aRow[ nField ] == ::aOld[ nField ] )
+   METHOD Changed( nField )     INLINE ! ::aRow[ nField ] == ::aOld[ nField ]
    METHOD FieldGetOld( nField ) INLINE ::aOld[ nField ]
 
 ENDCLASS
@@ -1192,7 +1213,7 @@ METHOD New( row, old, struct ) CLASS TPQrow
    ::aOld := old
    ::aStruct := struct
 
-   RETURN self
+   RETURN Self
 
 METHOD FieldGet( nField ) CLASS TPQrow
 

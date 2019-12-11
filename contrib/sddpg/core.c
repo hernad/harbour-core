@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -45,11 +45,10 @@
  */
 
 
-#include "hbapi.h"
+#include "hbrddsql.h"
+
 #include "hbapiitm.h"
 #include "hbvm.h"
-
-#include "hbrddsql.h"
 
 #include "libpq-fe.h"
 
@@ -326,7 +325,7 @@ static HB_ERRCODE pgsqlOpen( SQLBASEAREAP pArea )
             dbFieldInfo.uiLen = 16;
             dbFieldInfo.uiDec = 0;
             break;
-             
+
          case INT4OID:
             dbFieldInfo.uiType = HB_FT_INTEGER;
             dbFieldInfo.uiLen  = 11;
@@ -541,7 +540,7 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
    LPFIELD   pField;
    char *    pValue;
    HB_BOOL   bError;
-   HB_SIZE   ulLen;
+   HB_SIZE   nLen;
 
    char * pszDst;
    HB_SIZE nDst;
@@ -565,11 +564,11 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
    }
    else {
        pValue = PQgetvalue( pSDDData->pResult, pArea->ulRecNo - 1, uiIndex );
-       ulLen  = ( HB_SIZE ) PQgetlength( pSDDData->pResult, pArea->ulRecNo - 1, uiIndex );
+       nLen  = ( HB_SIZE ) PQgetlength( pSDDData->pResult, pArea->ulRecNo - 1, uiIndex );
    }
 
 #if 0
-   HB_TRACE( HB_TR_ALWAYS, ( "fieldget recno=%d index=%d value=%s len=%d", dbFieldInfo.atomName, PQftype( pResult, ( int ) uiCount ), pArea->ulRecNo, uiIndex, pValue, ulLen ) );
+   HB_TRACE( HB_TR_ALWAYS, ( "fieldget recno=%d index=%d value=%s len=%d", dbFieldInfo.atomName, PQftype( pResult, ( int ) uiCount ), pArea->ulRecNo, uiIndex, pValue, nLen ) );
 #endif
 
    switch( pField->uiType )
@@ -592,9 +591,9 @@ static HB_ERRCODE pgsqlGetValue( SQLBASEAREAP pArea, HB_USHORT uiIndex, PHB_ITEM
          else {
             cdpIn = hb_cdpFindExt( "UTF8" );
             cdpOut = hb_cdpFindExt( hb_cdpID() );
-            nDst = hb_cdpTransLen( pValue, ulLen, 0, cdpIn, cdpOut);
+            nDst = hb_cdpTransLen( pValue, nLen, 0, cdpIn, cdpOut);
             pszDst = (char *) hb_xgrab( nDst + 1);
-            hb_cdpTransTo( pValue, ulLen + 1, pszDst, nDst + 1, cdpIn, cdpOut);
+            hb_cdpTransTo( pValue, nLen + 1, pszDst, nDst + 1, cdpIn, cdpOut);
             hb_itemPutCL( pItem, pszDst, nDst );
             hb_xfree( pszDst );
          }

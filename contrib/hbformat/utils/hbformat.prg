@@ -1,5 +1,5 @@
 /*
- * Harbour source code formatter (cmdline wrapper)
+ * Harbour source code formatter (command-line wrapper)
  *
  * Copyright 2009 Alexander S.Kresin <alex@belacy.belgorod.su>
  *
@@ -14,9 +14,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -95,7 +95,7 @@ PROCEDURE Main( ... )
          OutErr( I_( "Wrong mask" ) + hb_eol() )
       ELSE
          cInitDir := hb_FNameDir( cFileName )
-         IF HB_ISNULL( cInitDir )
+         IF cInitDir == ""
             cInitDir := "." + hb_ps()
          ENDIF
          DirEval( cInitDir, hb_FNameNameExt( cFileName ), lRecursive, {| name | Reformat( oRef, name ) } )
@@ -142,8 +142,8 @@ STATIC PROCEDURE DirEval( cInitDir, cMask, lRecur, bCode )
 
    FOR EACH file IN hb_vfDirectory( cInitDir + cMask, "HSD" )
       IF "D" $ file[ F_ATTR ]
-         IF !( "." == file[ F_NAME ] ) .AND. ;
-            !( ".." == file[ F_NAME ] ) .AND. lRecur
+         IF ! "." == file[ F_NAME ] .AND. ;
+            ! ".." == file[ F_NAME ] .AND. lRecur
             DirEval( cInitDir + file[ F_NAME ], cMask, lRecur, bCode )
          ENDIF
       ELSE
@@ -159,8 +159,10 @@ STATIC PROCEDURE About()
 
    OutStd( ;
       "Harbour Source Formatter " + HBRawVersion() + hb_eol() + ;
-      "Copyright (c) 2009-2017, Alexander S.Kresin" + hb_eol() + ;
-      hb_Version( HB_VERSION_URL_BASE ) + hb_eol() + ;
+      "Copyright (c) 2010-" + ;
+         hb_ntos( Year( hb_Version( HB_VERSION_BUILD_DATE ) ) ) + ", " + ;
+         hb_Version( HB_VERSION_URL_BASE ) + hb_eol() + ;
+      "Copyright (c) 2009, Alexander S.Kresin" + hb_eol() + ;
       hb_eol() )
 
    OutStd( ;
@@ -175,5 +177,5 @@ STATIC FUNCTION HBRawVersion()
       hb_Version( HB_VERSION_MINOR ), ;
       hb_Version( HB_VERSION_RELEASE ), ;
       hb_Version( HB_VERSION_STATUS ), ;
-      hb_Version( HB_VERSION_ID ), ;
+      hb_Version( HB_VERSION_ID_SHORT ), ;
       "20" + Transform( hb_Version( HB_VERSION_REVISION ), "99-99-99 99:99" ) )

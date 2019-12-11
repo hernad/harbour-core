@@ -36,7 +36,7 @@ CREATE CLASS TTextFile STATIC
 
    VAR cFileName               // Filename spec. by user
    VAR hFile                   // File handle
-   VAR nLine     INIT 0        // Current linenumber
+   VAR nLine     INIT 0        // Current line number
    VAR nError                  // Last error
    VAR lEoF      INIT .F.      // End of file
    VAR cBlock    INIT ""       // Storage block
@@ -59,7 +59,7 @@ ENDCLASS
 //
 // <cFile>      file name. No wild characters
 // <cMode>      mode for opening. Default "R"
-// <nBlockSize> Optional maximum blocksize
+// <nBlockSize> Optional maximum block size
 //
 METHOD New( cFileName, cMode, nBlock ) CLASS TTextFile
 
@@ -82,7 +82,7 @@ METHOD New( cFileName, cMode, nBlock ) CLASS TTextFile
       ? "Error", ::nError := FError()
    ENDIF
 
-   RETURN self
+   RETURN Self
 
 // Close the file handle
 METHOD Dispose() CLASS TTextFile
@@ -93,7 +93,7 @@ METHOD Dispose() CLASS TTextFile
       ? "Error closing", ::cFileName, " Code", ::nError
    ENDIF
 
-   RETURN self
+   RETURN Self
 
 // Read a single line
 METHOD Read() CLASS TTextFile
@@ -105,12 +105,12 @@ METHOD Read() CLASS TTextFile
 
    IF ::hFile == NIL
       ? "File:Read: No file open"
-   ELSEIF !( ::cMode == "R" )
+   ELSEIF ! ::cMode == "R"
       ? "File", ::cFileName, "not open for reading"
    ELSEIF ! ::lEoF
 
-      IF HB_ISNULL( ::cBlock )                  // Read new block
-         IF HB_ISNULL( cBlock := hb_vfReadLen( ::hFile, ::nBlockSize ) )
+      IF ::cBlock == ""                         // Read new block
+         IF ( cBlock := hb_vfReadLen( ::hFile, ::nBlockSize ) ) == ""
             ::nError := FError()                // Error or EOF
             ::lEoF   := .T.
          ELSE
@@ -153,7 +153,7 @@ METHOD WriteLn( xTxt, lCRLF ) CLASS TTextFile
 
    IF ::hFile == NIL
       ? "File:Write: No file open"
-   ELSEIF !( ::cMode == "W" )
+   ELSEIF ! ::cMode == "W"
       ? "File", ::cFileName, "not opened for writing"
    ELSE
       cBlock := hb_ValToExp( xTxt )             // Convert to string
@@ -166,7 +166,7 @@ METHOD WriteLn( xTxt, lCRLF ) CLASS TTextFile
       ::nLine++
    ENDIF
 
-   RETURN self
+   RETURN Self
 
 // Go to a specified line number
 METHOD Goto( nLine ) CLASS TTextFile
@@ -175,7 +175,7 @@ METHOD Goto( nLine ) CLASS TTextFile
 
    IF ::hFile == NIL
       ? "File:Goto: No file open"
-   ELSEIF !( ::cMode == "R" )
+   ELSEIF ! ::cMode == "R"
       ? "File", ::cFileName, "not open for reading"
    ELSE
       ::lEoF   := .F.                           // Clear (old) End of file

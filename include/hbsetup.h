@@ -15,9 +15,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.txt.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
+ * along with this program; see the file LICENSE.txt.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -48,12 +48,12 @@
 #ifndef HB_SETUP_H_
 #define HB_SETUP_H_
 
-/* ***********************************************************************
+/*
  * Include settings common for .prg and .c files
  */
 #include "hbsetup.ch"
 
-/* ***********************************************************************
+/*
  * Define PCODE version number
  * HB_PCODE_VER_MIN define minimum supported PCODE by HVM
  */
@@ -61,25 +61,25 @@
 #define HB_PCODE_VER          0x0003
 #define HB_PCODE_VER_MIN      0x0002
 
-/* ***********************************************************************
- * NOTE: You can select the default language modul used by Harbour, by
- *       defining this to a valid language modul identifier.
+/*
+ * NOTE: You can select the default language module used by Harbour, by
+ *       defining this to a valid language module identifier.
  */
 
 #ifndef HB_LANG_DEFAULT
    #define HB_LANG_DEFAULT       EN
 #endif
 
-/* ***********************************************************************
+/*
  * NOTE: You can select the default codepage used by Harbour, by
- *       defining this to a valid codepage modul identifier.
+ *       defining this to a valid codepage module identifier.
  */
 
 #ifndef HB_CODEPAGE_DEFAULT
    #define HB_CODEPAGE_DEFAULT   EN
 #endif
 
-/* ***********************************************************************
+/*
  * Enable profiler support in HVM
  * By default this is turned off. Define HB_USE_PROFILER to turn it on.
  */
@@ -88,7 +88,7 @@
    #define HB_NO_PROFILER
 #endif
 
-/* ***********************************************************************
+/*
  * This symbol defines if Harbour is compiled using C compiler
  * that support strict ANSI C only
  *
@@ -96,7 +96,7 @@
  * to call functions before the 'main' module is called.
  * This trick is used to automatically join all symbol tables defined
  * in run-time support modules and in user defined modules.
- *   If strict ANSI C compability is required then all symbol tables
+ *   If strict ANSI C compatibility is required then all symbol tables
  * have to be joined manually by calling special function named
  * hb_vm_SymbolInit_<module_name>
  * (for example for myfirst.prg it will be: 'hb_vm_SymbolInit_MYFIRST'
@@ -107,17 +107,17 @@
  */
 /* #define HB_STRICT_ANSI_C */
 
-/* ***********************************************************************
+/*
  * Define this option if you want the /y YACC trace option to be available
  * in the Harbour compiler.
  *
- * Note that if you turn this on, the compiler will slighly grow in size.
+ * Note that if you turn this on, the compiler will slightly grow in size.
  *
  * By default this is turned off.
  */
 /* #define HB_YYDEBUG */
 
-/* ***********************************************************************
+/*
  * Use native Windows memory allocation functions (HB_OS_WIN)
  * This option can disable compiler memory allocation optimization
  * so you should really have a good reason to enable it
@@ -125,13 +125,13 @@
 
 /* #define HB_FM_WIN_ALLOC */
 
-/* ***********************************************************************
+/*
  * CPU detection
  */
 
 /* Partially based on:
-      https://duckduckgo.com/?q=pre-defined+compiler+macros
-      http://poshlib.hookatooka.com/poshlib/trac.cgi/browser/posh.h
+      https://sourceforge.net/p/predef/wiki/
+      http://guest:guest123@poshlib.hookatooka.com/poshlib/trac.cgi/browser/posh.h
       [vszakats]
  */
 
@@ -255,7 +255,7 @@
 
 #endif
 
-/* ***********************************************************************
+/*
  * You can select here, what type of main entry will be used in the
  * application (main() or WinMain()).
  *
@@ -284,11 +284,16 @@
    Visual Studio 2012, version 11.0        1700
    Visual Studio 2013, version 12.0        1800
    Visual Studio 2015, version 14.0        1900
-   Visual Studio 2017, version 15.0        2000
+   Visual Studio 2017, version 14.1        1910
+
+   For newer versions, refer to this page:
+      https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B#Internal_version_numbering
 */
 
-/* ***********************************************************************
+/*
  * Platform detection
+ *
+ * Ref: http://nadeausoftware.com/articles/2012/01/c_c_tip_how_use_compiler_predefined_macros_detect_operating_system
  */
 
 #if defined( __WATCOMC__ )
@@ -308,7 +313,7 @@
 #endif
 
 #ifndef HB_OS_DOS
-   #if defined( DOS ) || defined( _QC ) || defined( __DOS__ ) || defined( MSDOS ) || defined( __MSDOS__ ) || defined( __RSX32__ )
+   #if defined( DOS ) || defined( _QC ) || defined( __DOS__ ) || defined( MSDOS ) || defined( __MSDOS__ )
       #define HB_OS_DOS
       #if defined( __386__ ) || defined( __DJGPP__ )
          #define HB_OS_DOS_32
@@ -318,7 +323,7 @@
    #endif
 #endif
 
-#if defined( __EMX__ ) && ! defined( __RSXNT__ )
+#if defined( __EMX__ )
    #define HB_OS_OS2_GCC
 #endif
 #ifndef HB_OS_OS2
@@ -348,7 +353,7 @@
 #endif
 
 #ifndef HB_OS_LINUX
-   #if defined( linux ) || defined( __linux ) || defined( __linux__ ) || defined( __gnu_linux__ )
+   #if defined( linux ) || defined( __linux ) || defined( __linux__ ) || defined( __gnu_linux__ ) || defined( __EMSCRIPTEN__ )
       #define HB_OS_LINUX
    #endif
 #endif
@@ -396,7 +401,7 @@
 #ifndef HB_OS_QNX
    #if defined( __QNX__ ) || defined( __QNXNTO__ )
       #define HB_OS_QNX
-      #if defined( __QNXNTO__ ) /* TOFIX */
+      #if defined( __QNXNTO__ ) /* FIXME */
          #define HB_OS_QNX_BB10
       #endif
    #endif
@@ -405,12 +410,6 @@
 #ifndef HB_OS_VXWORKS
    #if defined( __VXWORKS__ ) || defined( __vxworks )
       #define HB_OS_VXWORKS
-   #endif
-#endif
-
-#ifndef HB_OS_SYMBIAN
-   #if defined( __symbian__ )
-      #define HB_OS_SYMBIAN
    #endif
 #endif
 
@@ -447,7 +446,6 @@
        defined( HB_OS_QNX ) || \
        defined( HB_OS_VXWORKS ) || \
        defined( HB_OS_BEOS ) || \
-       defined( HB_OS_SYMBIAN ) || \
        defined( HB_OS_ANDROID ) || \
        defined( HB_OS_CYGWIN ) || \
        defined( HB_OS_MINIX ) || \
@@ -461,11 +459,9 @@
    #define HB_USE_SHARELOCKS_OFF
    /* NOTE: Needed to avoid 'implicit bzero() declaration' warnings */
    extern void bzero( char * buffer, int nbytes );
-#elif defined( HB_OS_SYMBIAN )
-   #define HB_NO_FNMATCH
 #endif
 
-/* ***********************************************************************
+/*
  * Operating system specific definitions
  */
 #if defined( HB_OS_UNIX )
@@ -499,7 +495,7 @@
 
 #define HB_PATH_MAX     264 /* with trailing 0 byte */
 
-/* ***********************************************************************
+/*
  * Here you can force the EOL string to be CRLF
  *
  * By default, the EOL string depends upon the detected platform.
@@ -510,13 +506,13 @@
    #define HB_OS_EOL_LEN 2
 #endif
 
-/* ***********************************************************************
+/*
  * See also the following files for task specific definitions/settings
  *
  * hbmather.h    - math errors handling
  */
 
-/* ***********************************************************************
+/*
  * Extern "C" detection
  */
 
@@ -530,7 +526,14 @@
    #define HB_EXTERN_END
 #endif
 
-#if defined( __GNUC__ )
+#define HB_PP_VALTOSTR( x )    #x
+#define HB_PP_VAL( x )         HB_PP_VALTOSTR( x )
+#define HB_PP_VALDEBUG( var )  #var "=" HB_PP_VAL( var )
+
+#if defined( __clang__ )
+   #define HB_GCC_HAS_DIAG
+   #define HB_GCC_VER  0
+#elif defined( __GNUC__ )
    #define HB_GCC_VER  ( ( ( __GNUC__ - 0 ) * 100 ) + ( __GNUC_MINOR__ - 0 ) )
 #  if HB_GCC_VER >= 406
       #define HB_GCC_HAS_DIAG
@@ -606,8 +609,7 @@
 #if defined( __GNUC__ ) || defined( __SUNPRO_C )
    #define _HB_INLINE_  __inline__
 #elif defined( __BORLANDC__ ) || defined( _MSC_VER ) || \
-      defined( __WATCOMC__ ) || defined( __POCC__ ) || defined( __XCC__ ) || \
-      defined( __LCC__ ) || defined( __DMC__ )
+      defined( __WATCOMC__ ) || defined( __POCC__ )
    #define _HB_INLINE_  __inline
 #else /* __cplusplus */
    #define _HB_INLINE_  inline
