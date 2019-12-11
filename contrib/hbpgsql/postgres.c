@@ -1,5 +1,5 @@
 /*
- * PostgreSQL RDBMS low-level (client API) interface code.
+ * PostgreSQL RDBMS low level (client api) interface code.
  *
  * Copyright 2010 Viktor Szakats (vszakats.net/harbour) (GC support)
  * Copyright 2003 Rodrigo Moreno rodrigo_moreno@yahoo.com
@@ -15,9 +15,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; see the file LICENSE.txt.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301 USA (or visit https://www.gnu.org/licenses/).
+ * along with this software; see the file COPYING.txt.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
+ * Boston, MA 02111-1307 USA (or visit the web site https://www.gnu.org/).
  *
  * As a special exception, the Harbour Project gives permission for
  * additional uses of the text contained in its release of Harbour.
@@ -253,7 +253,7 @@ processNotice(void *arg, const char *message)
 HB_FUNC( PQNOTICEPROCESSOR )
 {
 
-   PGconn * conn = hb_PGconn_par( 1 );
+   PGconn * conn = hb_PGconn_par( 1 ); 
 
    if( conn ) {
       PQsetNoticeProcessor(conn, processNotice, NULL);
@@ -305,7 +305,7 @@ HB_FUNC ( PQRECEIVE )
       fprintf(stderr,
          "ASYNC NOTIFY of '%s' : payload: '%s' received from backend PID %d\n",
                     notify->relname, notify->extra, notify->be_pid);
-
+   
       // hb_arraySetNI( aInfo, 1, cf.iPointSize );
       // hb_arraySetNInt( aInfo, 2, cf.rgbColors  );
 
@@ -314,7 +314,7 @@ HB_FUNC ( PQRECEIVE )
       hb_arraySetC(  pRet, 1, notify->relname );
       hb_arraySetC(  pRet, 2, notify->extra );
       hb_arraySetNInt( pRet, 3, notify->be_pid  );
-
+      
       PQfreemem(notify);
 
       hb_itemReturnRelease( pRet );
@@ -323,8 +323,8 @@ HB_FUNC ( PQRECEIVE )
       hb_ret();
 
    // fprintf(stderr, "kraj saslusanja\n");
-
-
+   
+   
 }
 
 

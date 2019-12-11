@@ -56,6 +56,7 @@ PROCEDURE Main( cHost, cDatabase, cUser, cPass )
 
    RETURN
 
+
 /* Put theses functions in a library */
 
 FUNCTION SQLApplyUpdates()
@@ -78,7 +79,7 @@ FUNCTION SQLApplyUpdates()
 
          IF i > oQuery:LastRec()
 
-            /* Check if it's a new record */
+            /* Verifica se eh um registro novo */
             IF ! Deleted()
 
                oRow := oQuery:GetBlankRow()
@@ -94,21 +95,28 @@ FUNCTION SQLApplyUpdates()
                lError := oQuery:NetErr()
             ENDIF
          ELSE
+
             oRow := oQuery:GetRow( i )
 
+            lUpdate := .F.
+
             IF Deleted()
+
                oQuery:Delete( oRow )
                cError := oQuery:ErrorMsg()
                lError := oQuery:NetErr()
             ELSE
-               /* Update if any of the fields have changed */
 
-               lUpdate := .F.
+               /* Faz update, mas compara quais campos sao diferentes */
+
                FOR x := 1 TO FCount()
-                  IF oRow:FieldPos( FieldName( x ) ) != 0 .AND. ;
-                     ! FieldGet( x ) == oRow:FieldGet( FieldName( x ) )
-                     oRow:FieldPut( FieldName( x ), FieldGet( x ) )
-                     lUpdate := .T.
+
+                  IF oRow:FieldPos( FieldName( x ) ) != 0
+
+                     IF !( FieldGet( x ) == oRow:FieldGet( FieldName( x ) ) )
+                        oRow:FieldPut( FieldName( x ), FieldGet( x ) )
+                        lUpdate := .T.
+                     ENDIF
                   ENDIF
                NEXT
 
@@ -132,6 +140,7 @@ FUNCTION SQLApplyUpdates()
 
    RETURN ! lError
 
+
 PROCEDURE SQLCloseTemp( cAlias )
 
    LOCAL x
@@ -145,6 +154,7 @@ PROCEDURE SQLCloseTemp( cAlias )
    ENDIF
 
    RETURN
+
 
 PROCEDURE SQLGarbageCollector()
 
@@ -163,6 +173,7 @@ PROCEDURE SQLGarbageCollector()
 
    RETURN
 
+
 FUNCTION SQLFetch( lFetchAll )
 
    LOCAL oQuery
@@ -174,10 +185,11 @@ FUNCTION SQLFetch( lFetchAll )
 
    hb_default( @lFetchAll, .F. )
 
-   /* Search for table in array */
-   IF ( i := AScan( t_aTableTemp, {| aVal | aVal[ DB_ALIAS ] == cAlias } ) ) > 0
+   /* Procura pela tabela no array */
 
-      /* Get database records */
+   IF ( i := AScan( t_aTableTemp, {| aVal | aVal[ DB_ALIAS ] == cAlias } ) ) > 0
+      /* Traz registros da base de dados */
+
       oQuery := t_aTableTemp[ i ][ DB_QUERY ]
       nPos   := t_aTableTemp[ i ][ DB_ROW ] + 1
 
@@ -211,12 +223,14 @@ FUNCTION SQLFetch( lFetchAll )
 
    RETURN lEof
 
+
 PROCEDURE SQLFetchAll()
 
    SQLFetch( .T. )
    dbGoTop()
 
    RETURN
+
 
 FUNCTION SQLOpen( cAlias, cQuery, xFetch, cOrder )
 
@@ -228,7 +242,7 @@ FUNCTION SQLOpen( cAlias, cQuery, xFetch, cOrder )
    oServer := SQLCurrentServer()
    cAlias := Upper( cAlias )
 
-   /* Search by query in temporary area */
+   /* Procura por query na area temporaria */
    IF ( x := AScan( t_aTableTemp, {| aVal | aVal[ DB_ALIAS ] == cAlias } ) ) > 0
       oQuery := t_aTableTemp[ x ][ DB_QUERY ]
       oQuery:Destroy()
@@ -261,7 +275,7 @@ FUNCTION SQLOpen( cAlias, cQuery, xFetch, cOrder )
       lFetch := .F.
    ENDIF
 
-   /* If there is no query in the temporary area then add, otherwise just refresh. */
+   /* Se nao houver query na area temporaria entao adiciona, caso contrario, apenas atualiza */
    IF x == 0
       AAdd( t_aTableTemp, { ;
          cAlias, ;  // DB_ALIAS
@@ -276,7 +290,7 @@ FUNCTION SQLOpen( cAlias, cQuery, xFetch, cOrder )
 
    ENDIF
 
-   /* Get database records */
+   /* Traz registros da base de dados */
    SQLFetch( lFetch )
 
    IF lFetch
@@ -284,6 +298,7 @@ FUNCTION SQLOpen( cAlias, cQuery, xFetch, cOrder )
    ENDIF
 
    RETURN .T.
+
 
 FUNCTION SQLConnect( cHost, cDatabase, cUser, cPassword, cSchema )
 
@@ -298,6 +313,7 @@ FUNCTION SQLConnect( cHost, cDatabase, cUser, cPassword, cSchema )
 
    RETURN lRetval
 
+
 PROCEDURE SQLDestroy()
 
    IF t_oServer != NIL
@@ -306,8 +322,10 @@ PROCEDURE SQLDestroy()
 
    RETURN
 
+
 FUNCTION SQLCurrentServer
    RETURN t_oServer
+
 
 FUNCTION SQLQuery( cQuery )
 
@@ -318,6 +336,7 @@ FUNCTION SQLQuery( cQuery )
    ENDIF
 
    RETURN oQuery
+
 
 FUNCTION SQLExecQuery( cQuery )
 
@@ -332,17 +351,18 @@ FUNCTION SQLExecQuery( cQuery )
 
    RETURN .T.
 
+
 FUNCTION SQLPrepare( cQuery, ... )
 
    LOCAL i, x
 
    IF PCount() >= 2
-      /* Remove unnecessary whitespace */
+      /* Limpa espacos desnecessarios */
       DO WHILE Space( 2 ) $ cQuery
          cQuery := StrTran( cQuery, Space( 2 ), Space( 1 ) )
       ENDDO
 
-      /* Place {} in the parameters */
+      /* Coloca {} nos parametros */
       FOR i := 1 TO PCount() - 1
          IF ( x := At( ":" + hb_ntos( i ), cQuery ) ) > 0
             cQuery := Stuff( cQuery, x, 0, "{" )
@@ -350,7 +370,7 @@ FUNCTION SQLPrepare( cQuery, ... )
          ENDIF
       NEXT
 
-      /* Replace parameters with values */
+      /* Substitui parametros por valores passados */
       FOR i := 2 TO PCount()
          x := hb_PValue( i )
 
@@ -385,9 +405,11 @@ FUNCTION SQLPrepare( cQuery, ... )
       ".or."  => "or"  , ;
       ".not." => "not" } )
 
-/* Get next result of a sequence */
+
+/* Pega resultado de uma sequence */
 FUNCTION SQLSequence( Sequence_name )
    RETURN Val( QuickQuery( "SELECT nextval(" + SToQ( sequence_name ) + ")" ) )
+
 
 PROCEDURE SQLStartTrans()
 
@@ -397,8 +419,10 @@ PROCEDURE SQLStartTrans()
 
    RETURN
 
+
 FUNCTION SQLInTrans()
    RETURN PQtransactionStatus( t_oServer:pDB ) == PQTRANS_INTRANS
+
 
 PROCEDURE SQLCommitTrans()
 
@@ -406,13 +430,15 @@ PROCEDURE SQLCommitTrans()
 
    RETURN
 
+
 PROCEDURE SQLRollbackTrans()
 
    t_oServer:rollback()
 
    RETURN
 
-/* Do query that returns only 1 column value */
+
+/* Faz querie que retorna apenas 1 valor de coluna */
 FUNCTION QuickQuery( cQuery )
 
    LOCAL result := ""
@@ -441,6 +467,7 @@ FUNCTION QuickQuery( cQuery )
    ENDIF
 
    RETURN result
+
 
 FUNCTION SToQ( cData )
    RETURN "'" + cData + "'"
